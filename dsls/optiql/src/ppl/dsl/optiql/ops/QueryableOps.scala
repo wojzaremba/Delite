@@ -59,7 +59,7 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   
   case class QueryableSum[TSource:Manifest](s: Exp[DataTable[TSource]], sumSelector: Rep[TSource] => Rep[Float]) extends DeliteOpLoop[Float] {
 	val size = s.size
-	val v = fresh[Int]
+	//val v = fresh[Int]
 	private[this] val rV = (fresh[Float], fresh[Float])
 	val body: Def[Float] = DeliteReduceElem[Float](
 		func = sumSelector(s(v)),
