@@ -10,11 +10,11 @@ object DataTable {
     if(i.isInstanceOf[DataTable[T]]) {
       i.asInstanceOf[DataTable[T]]
     }
-    else if(i.isInstanceOf[ArrayBuffer[T]]) {
+    else if(i.isInstanceOf[ArrayBufferQL[T]]) {
 
       return new DataTable[T] {
 
-        data = i.asInstanceOf[ArrayBuffer[T]]
+        data = i.asInstanceOf[ArrayBufferQL[T]]
 
         override def addRecord(arr: Array[String]) {
           throw new RuntimeException("Cannot add Record into a projected DataTable")
@@ -25,10 +25,10 @@ object DataTable {
 	else if(i.isInstanceOf[Grouping[_,T]]) {
 	  println("converting grouping to DataTable")
 	  val g = i.asInstanceOf[Grouping[_,T]]
-	  assert(g.elems.isInstanceOf[ArrayBuffer[T]])
+	  assert(g.elems.isInstanceOf[ArrayBufferQL[T]])
 	  return new DataTable[T] {
 
-        data = g.elems.asInstanceOf[ArrayBuffer[T]]
+        data = g.elems.asInstanceOf[ArrayBufferQL[T]]
 
         override def addRecord(arr: Array[String]) {
           throw new RuntimeException("Cannot add Record into a projected DataTable")
@@ -37,7 +37,7 @@ object DataTable {
 	  
 	}
     else {
-      val arrbuf = new ArrayBuffer[T]();
+      val arrbuf = new ArrayBufferQL[T]();
       for (e <- i) {
         arrbuf.append(e)
       }
@@ -53,11 +53,22 @@ object DataTable {
   }
 }
 
+class ArrayBufferQL[T](initialSize: Int) extends ArrayBuffer[T](initialSize) {
+  def this() = this(16)
+  def unsafeArray: Array[Any] = array.asInstanceOf[Array[Any]]
+  def unsafeSetArray(xs: Array[T], len: Int): Unit = {
+    array = xs.asInstanceOf[Array[AnyRef]]
+    size0 = len
+  }
+}
+
+
 class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.delite.framework.datastruct.scala.DeliteCollection[TSource] {
   import DataTable._
 
   println("initialSize : " + initialSize)
-  var data = ArrayBuffer.fill[TSource](initialSize)(null.asInstanceOf[TSource])
+  var data = new ArrayBufferQL[TSource](initialSize)
+  for (i <- 0 until initialSize) data += (null.asInstanceOf[TSource])
   println("size of internal data is : " + data.size)
   val grouped = false
   def iterator = data.iterator
@@ -65,13 +76,16 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
 
   def dcApply(idx: Int) = data(idx)
   def dcUpdate(idx: Int, x: TSource) {
-    data(idx) = x
+    if (idx >= data.size) println("error: write beyond: "+idx+">="+data.size)
+    else data(idx) = x
   }
   
   def this() = this(0)
 	
 
   //TODO HCXXX: NEED TO REMOVE ALL THIS STUFF OR ADD IT TO DELITE COLLECTION
+  def unsafeData = data.unsafeArray
+  def unsafeSetData(xs: Array[TSource], len: Int): Unit = data.unsafeSetArray(xs, len)
   def apply(idx: Int): TSource = data(idx)
   def cloneL = new DataTable[TSource]
   def insert(pos: Int, x: TSource) {
@@ -240,7 +254,7 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
       override val grouped = true
     }
     for(key <- keys) {
-      result.data += new Grouping(key,hTable.getOrElse(key, new ArrayBuffer[TSource]))
+      result.data += new Grouping(key,hTable.getOrElse(key, new ArrayBufferQL[TSource]))
     }
     result
   }
@@ -249,12 +263,12 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
    * Internal Implementation functions
    */
   private def buildHash[TSource,TKey](source:Iterable[TSource], keySelector: TSource => TKey) = {
-    val hash = HashMap[TKey, ArrayBuffer[TSource]]()
-    val keys = new ArrayBuffer[TKey]
+    val hash = HashMap[TKey, ArrayBufferQL[TSource]]()
+    val keys = new ArrayBufferQL[TKey]
     for (elem <- source; key = keySelector(elem)) {
       hash.getOrElseUpdate(key,{
         keys.append(key)
-        new ArrayBuffer[TSource]() //if there is no key
+        new ArrayBufferQL[TSource]() //if there is no key
       }) += elem
     }
     (hash,keys)

@@ -1003,8 +1003,8 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with BaseGenDeliteOps {
       case (sym, elem: DeliteCollectElem[_,_]) =>
         if (elem.cond.nonEmpty) {
           //calculate start offset from rhs.offset + rhs.size
-          stream.println("if (__act." + quote(sym) + ".data ne __act." + quote(sym) + "_buf)")
-          stream.println("System.arraycopy(__act." + quote(sym) + "_buf, 0, __act." + quote(sym) + ".data, __act." + quote(sym) + "_offset, __act." + quote(sym) + "_size)")
+          stream.println("if (__act." + quote(sym) + ".unsafeData ne __act." + quote(sym) + "_buf)")
+          stream.println("System.arraycopy(__act." + quote(sym) + "_buf, 0, __act." + quote(sym) + ".unsafeData, __act." + quote(sym) + "_offset, __act." + quote(sym) + "_size)")
           stream.println("__act." + quote(sym) + "_buf = null")
         }
       case (sym, elem: DeliteForeachElem[_]) =>
