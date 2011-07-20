@@ -43,7 +43,24 @@ class TestSingle[T: Manifest](kernel: String)(deps: DeliteOP*)(inputs: DeliteOP*
   }
 
   for (input <- inputs.reverse) { //need a reverse to preserve order (addInput prepends)
-    this.addInput(input, input.id)
+    this.addInput(input, input.getOutputs.head)
+  }
+
+}
+
+class TestMap[T: Manifest](func: String)(deps: DeliteOP*)(inputs: DeliteOP*)
+        extends OP_MultiLoop("", "", false, func, null, false, false) {
+
+  override val id = System.identityHashCode(this).toString
+  override private[graph] val outputTypesMap = Map(Targets.Scala -> Map("out" -> manifest[T].toString, "functionReturn" -> ("ppl.delite.runtime.graph.Activation[" + manifest[T].toString + "]")))
+
+  for (dep <- deps) {
+    this.addDependency(dep)
+    dep.addConsumer(this)
+  }
+
+  for (input <- inputs.reverse) { //need a reverse to preserve order (addInput prepends)
+    this.addInput(input, input.getOutputs.head)
   }
 
 }
@@ -60,8 +77,8 @@ class TestForeach(func: String)(deps: DeliteOP*)(input: DeliteOP, free: DeliteOP
   }
 
   for (f <- free.reverse) { //need a reverse to preserve order (addInput prepends)
-    this.addInput(f, f.id)
+    this.addInput(f, f.getOutputs.head)
   }
-  this.addInput(input, input.id)
+  this.addInput(input, input.getOutputs.head)
 
 }

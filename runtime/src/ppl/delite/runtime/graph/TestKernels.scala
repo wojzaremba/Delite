@@ -47,7 +47,7 @@ object TestKernel3 {
 
 object TestKernelBegin {
   def apply() = {
-    val res = new ArrayColl[Int](10)
+    val res = new ArrayColl[Int](0, 10)
     for (i <- 0 until 10) res.dcUpdate(i, i)
     res
   }
@@ -65,74 +65,110 @@ object TestKernelEnd {
   }
 }
 
-abstract class DeliteCollection[T] {
+trait DeliteCollection[T] {
   def size: Int
   def dcApply(idx: Int): T
   def dcUpdate(idx: Int, x: T)
 }
 
-class ArrayColl[T: Manifest](val length: Int) extends DeliteCollection[T] {
+trait DeliteChunkableCollection[T] extends DeliteCollection[T] {
+  def index(logical: Int): Int = logical - start //logical to physical index mapping
+  def start: Int
+  def end: Int
+  //? def size = start - end
+  abstract override def dcApply(idx: Int) = super.dcApply(index(idx))
+  abstract override def dcUpdate(idx: Int, x: T) = super.dcUpdate(index(idx), x)
+}
+
+class SimpleArrayColl[T: Manifest](val length: Int) extends DeliteCollection[T] {
   val _data = new Array[T](length)
   def foreach[U](f: T => U) = _data.foreach[U](f)
   def size = length
-  def dcApply(idx: Int): T = _data(idx)
+
+  def apply(idx: Int): T = dcApply(idx)
+  def dcApply(idx: Int) = _data(idx)
+
+  def update(idx: Int, x: T) = dcUpdate(idx, x)
   def dcUpdate(idx: Int, x: T) { _data(idx) = x }
 }
 
-abstract class DeliteOPMap[A,B, CR <: DeliteCollection[B]] {
-  def in: DeliteCollection[A]
-  def alloc: CR
-  def map(a: A): B
+class ArrayColl[T: Manifest](val start: Int, val end: Int) extends SimpleArrayColl[T](end-start) with DeliteChunkableCollection[T]
+
+class Activation[T] {
+  var out: T = null.asInstanceOf[T]
+}
+
+abstract class DeliteOpMultiLoop[T] {
+  def size: Int
+  def alloc: Activation[T]
+  def init(act: Activation[T], index: Int): Activation[T]
+  def process(act: Activation[T], index: Int)
+  def combine(act: Activation[T], rhs: Activation[T])
+
+  //def split(numChunks: Int, data: Seq[DeliteCollection[_]]): Seq[Seq[DeliteCollectionChunk[_]]] //inputs //TODO: is there a common type signature?
+  //def update(data: Seq[Seq[DeliteCollection[_]]]) //mutated inputs //TODO: Delite can always provide this using dcUpdate?
+  //def combine(data: Seq[Seq[DeliteCollectionChunk[_]]]): Seq[DeliteCollection[_]] //outputs
 }
 
 object TestKernelMap {
-  def apply(in0: ArrayColl[Int], in1: ArrayColl[Int]): DeliteOPMap[Int,Int, ArrayColl[Int]] = {
-    new DeliteOPMap[Int,Int, ArrayColl[Int]] {
-      def in = in1
-      def alloc = in0
-      def map(a: Int) = a + 1
+  def apply(in0: ArrayColl[Int]) = {
+    new DeliteOpMultiLoop[ArrayColl[Int]] {
+      def size = in0.length
+
+      def alloc = {
+        val act = new Activation[ArrayColl[Int]]
+        act.out = new ArrayColl[Int](in0.start, in0.end)
+        act
+      }
+
+      def init(act: Activation[ArrayColl[Int]], index: Int) = {
+        process(act, index)
+        act
+      }
+
+      def process(act: Activation[ArrayColl[Int]], index: Int) {
+        act.out(index) = in0(index) * 2
+      }
+
+      def combine(act: Activation[ArrayColl[Int]], rhs: Activation[ArrayColl[Int]]) { }
+    }
+  }
+
+  def split(numChunks: Int, in0: ArrayColl[Int]): Seq[Seq[ArrayColl[Int]]] = {
+    for (input <- Seq(in0)) yield {
+      for (idx <- 0 until numChunks) yield {
+        val start = (input.size * idx) / numChunks
+        val end = (input.size * (idx+1)) / numChunks
+        val chunk = new ArrayColl[Int](start, end)
+        for (j <- start until end) {
+          chunk(j) = input.dcApply(j)
+        }
+        chunk
+      }
+    }
+  }
+
+  def combine(out: Seq[ArrayColl[Int]]): Seq[ArrayColl[Int]] = {
+    for (output <- Seq(out)) yield {
+      val length = output.map(_.size).reduceLeft(_ + _)
+      val start = output(0).start
+      val full = new ArrayColl[Int](start, start + length)
+      for (chunk <- output) {
+        for (i <- chunk.start until chunk.end) {
+          full(i) = chunk.dcApply(i)
+        }
+      }
+      full
     }
   }
 }
 
-object TestKernelImmutableMap {
-  def apply(in0: ArrayColl[Int]): DeliteOPMap[Int,Int, ArrayColl[Int]] = {
-    new DeliteOPMap[Int,Int, ArrayColl[Int]] {
-      def in = in0
-      def alloc = new ArrayColl[Int](in0.length)
-      def map(a: Int) = a + 1
-    }
-  }
-}
-
-abstract class DeliteOPReduce[R] {
-  def in: DeliteCollection[R]
-  def reduce(r1: R, r2: R): R
-}
-
+/*
 object TestKernelReduce {
   def apply(in0: ArrayColl[Int]): DeliteOPReduce[Int] = {
     new DeliteOPReduce[Int] {
       def in = in0
       def reduce(r1: Int, r2: Int) = r1 + r2
-    }
-  }
-}
-
-abstract class DeliteOPZip[A,B,R, CR <: DeliteCollection[R]] {
-  def inA: DeliteCollection[A]
-  def inB: DeliteCollection[B]
-  def alloc: CR
-  def zip(a: A, b: B): R
-}
-
-object TestKernelZip {
-  def apply(in0: ArrayColl[Int], in1: ArrayColl[Int], in2: ArrayColl[Int]): DeliteOPZip[Int,Int,Int, ArrayColl[Int]] = {
-    new DeliteOPZip[Int,Int,Int, ArrayColl[Int]] {
-      def inA = in1
-      def inB = in2
-      def alloc = in0
-      def zip(a: Int, b: Int) = a + b
     }
   }
 }
@@ -148,13 +184,6 @@ object TestKernelImmutableZip {
   }
 }
 
-abstract class DeliteOPMapReduce[A,R] {
-  def in: DeliteCollection[A]
-  def map(elem: A): R
-  def reduce(r1: R, r2: R): R
-  def mapreduce(acc: R, elem: A) = reduce(acc, map(elem))
-}
-
 object TestKernelMapReduce {
   def apply(in0: ArrayColl[Int]): DeliteOPMapReduce[Int,Int] = {
     new DeliteOPMapReduce[Int,Int] {
@@ -164,10 +193,11 @@ object TestKernelMapReduce {
     }
   }
 }
+*/
 
 abstract class DeliteOPForeach[A] {
   def in: DeliteCollection[A]
-  def foreach(elem: A): Unit
+  def foreach(elem: A)
   def sync(idx: Int): List[Any]
 }
 
@@ -188,7 +218,7 @@ object TestKernelForeach {
 }
 
 object TestKernelOut {
-  def apply() = new ArrayColl[Int](1)
+  def apply() = new ArrayColl[Int](0,1)
 }
 
 object TestKernelPrint0 {
