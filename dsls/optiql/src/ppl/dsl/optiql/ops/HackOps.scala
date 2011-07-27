@@ -97,7 +97,15 @@ trait HackOpsExp extends HackOps with FieldAccessOpsExp with EffectExp {
     avgPrice: Rep[Float], 
     avgDiscount: Rep[Float],	
 	count: Rep[Int]) = HackOpsObjResultQ1(returnFlag, lineStatus, sumQty, sumBasePrice, sumDiscountedPrice, sumCharge, avgQty, avgPrice, avgDiscount, count)
+
   
+  /**
+   * Mirroring
+   */
+  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+    case e@HackOpsObjResultQ1(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10) => toAtom(HackOpsObjResultQ1(f(x1),f(x2),f(x3),f(x4),f(x5),f(x6),f(x7),f(x8),f(x9),f(x10)))(mtype(manifest[A]))
+    case _ => super.mirror(e, f)
+  }).asInstanceOf[Exp[A]] // why??
 
 }
 
@@ -108,7 +116,7 @@ trait ScalaGenHackOps extends ScalaGenEffect {
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
     case HackOpsObjLoadCustomers(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadCustomers(" + quote(path) + ")")
     case HackOpsObjLoadLineItems(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadLineItems(" + quote(path) + ")")
-	case HackOpsObjResultQ1(rF, lS, sQ, sBP, sDP, sC, aQ, aP, aD, c) => emitValDef(sym, "new generated.scala.hacks.Q1(" + quote(rF) + "," + quote(lS) + "," + quote(sQ) + "," + quote(sBP) + "," + quote(sDP) + "," + quote(sC) + ","  + quote(aQ) + "," + quote(aP) + "," + quote(aD) + "," +  quote(c) + ")")
+	  case HackOpsObjResultQ1(rF, lS, sQ, sBP, sDP, sC, aQ, aP, aD, c) => emitValDef(sym, "new generated.scala.hacks.Q1(" + quote(rF) + "," + quote(lS) + "," + quote(sQ) + "," + quote(sBP) + "," + quote(sDP) + "," + quote(sC) + ","  + quote(aQ) + "," + quote(aP) + "," + quote(aD) + "," +  quote(c) + ")")
     case _ => super.emitNode(sym, rhs)
   }
 }

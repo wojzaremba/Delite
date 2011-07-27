@@ -125,4 +125,10 @@ class TestAppCodegen extends FileDiffSuite {
 
   def testGradientFusing = testAppFusing("gradient", ppl.apps.robotics.gradient.gradientRunner)
 
+  // --- dataquery
+  
+  def testTPCH = testApp("tpch", ppl.apps.dataquery.tpch.TPCHRunner)
+
+  def testTPCHFusing = testAppFusing("tpch", ppl.apps.dataquery.tpch.TPCHRunner)
+
 }

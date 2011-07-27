@@ -16,11 +16,17 @@ trait OptiQLMiscOps extends Base {  this : OptiQL =>
 
 trait OptiQLMiscOpsExp extends OptiQLMiscOps with EffectExp { this : OptiQLExp =>
 
-  case class OptiQLProfileStart(deps: Exp[Seq[Any]]) extends Def[Unit]
-  case class OptiQLProfileStop(deps: Exp[Seq[Any]]) extends Def[Unit]
+  case class OptiQLProfileStart(deps: List[Exp[Any]]) extends Def[Unit]
+  case class OptiQLProfileStop(deps: List[Exp[Any]]) extends Def[Unit]
 
-  def optiql_profile_start(deps: Seq[Rep[Any]]): Rep[Unit] = reflectEffect(OptiQLProfileStart(Seq(deps: _*)))
-  def optiql_profile_stop(deps: Seq[Rep[Any]]): Rep[Unit] =  reflectEffect(OptiQLProfileStop(Seq(deps: _*)))
+  def optiql_profile_start(deps: Seq[Rep[Any]]): Rep[Unit] = reflectEffect(OptiQLProfileStart(deps.toList))
+  def optiql_profile_stop(deps: Seq[Rep[Any]]): Rep[Unit] =  reflectEffect(OptiQLProfileStop(deps.toList))
+  
+  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+    case Reflect(OptiQLProfileStart(deps), u, es) => reflectMirrored(Reflect(OptiQLProfileStart(f(deps)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+    case Reflect(OptiQLProfileStop(deps), u, es) => reflectMirrored(Reflect(OptiQLProfileStop(f(deps)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+    case _ => super.mirror(e,f)
+  }).asInstanceOf[Exp[A]]  
 }
 
 trait ScalaGenOptiQLMiscOps extends ScalaGenEffect {

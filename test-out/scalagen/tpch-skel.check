@@ -1,0 +1,658 @@
+object TPCHRunnerMain {
+  def main(args: Array[String]) { }
+}
+class TPCHRunner extends ((Array[java.lang.String])=>(Unit)) {
+  def apply(x0:Array[java.lang.String]): Unit = {
+    val x6 = if (x2) { } else { }
+    val x18 = { }
+    if (x10 > 0) { }
+    while (x11 < x10) {  // begin fat loop x18 } // end fat loop x18
+    val x23 =  x18.GroupBy( x19 => { x22})
+    val x97 = { }
+    if (x24 > 0) {
+      if (x33 > 0) {
+        x40 = { }
+      }
+      while (x34 < x33) {  // begin fat loop x40 } // end fat loop x40
+      if (x33 > 0) {
+        x47 = { }
+      }
+      while (x41 < x33) {  // begin fat loop x47 } // end fat loop x47
+      if (x33 > 0) {
+        x57 = { }
+      }
+      while (x48 < x33) {  // begin fat loop x57 } // end fat loop x57
+      if (x33 > 0) {
+        x70 = { }
+      }
+      while (x58 < x33) {  // begin fat loop x70 } // end fat loop x70
+      if (x33 > 0) {
+        x77 = { }
+      }
+      while (x71 < x33) {  // begin fat loop x77 } // end fat loop x77
+      if (x33 > 0) {
+        x86 = { }
+      }
+      while (x80 < x33) {  // begin fat loop x86 } // end fat loop x86
+      if (x33 > 0) {
+        x94 = { }
+      }
+      while (x88 < x33) {  // begin fat loop x94 } // end fat loop x94
+    }
+    while (x25 < x24) {  // begin fat loop x97
+      if (x33 > 0) {
+        x40 = { }
+      }
+      while (x34 < x33) {  // begin fat loop x40 } // end fat loop x40
+      if (x33 > 0) {
+        x47 = { }
+      }
+      while (x41 < x33) {  // begin fat loop x47 } // end fat loop x47
+      if (x33 > 0) {
+        x57 = { }
+      }
+      while (x48 < x33) {  // begin fat loop x57 } // end fat loop x57
+      if (x33 > 0) {
+        x70 = { }
+      }
+      while (x58 < x33) {  // begin fat loop x70 } // end fat loop x70
+      if (x33 > 0) {
+        x77 = { }
+      }
+      while (x71 < x33) {  // begin fat loop x77 } // end fat loop x77
+      if (x33 > 0) {
+        x86 = { }
+      }
+      while (x80 < x33) {  // begin fat loop x86 } // end fat loop x86
+      if (x33 > 0) {
+        x94 = { }
+      }
+      while (x88 < x33) {  // begin fat loop x94 } // end fat loop x94
+    } // end fat loop x97
+    val x104 = { }
+    if (x10 > 0) { }
+    while (x98 < x10) {  // begin fat loop x104 } // end fat loop x104
+    val x109 =  x104.GroupBy( x105 => { x108})
+    val x183 = { }
+    if (x110 > 0) {
+      if (x119 > 0) {
+        x126 = { }
+      }
+      while (x120 < x119) {  // begin fat loop x126 } // end fat loop x126
+      if (x119 > 0) {
+        x133 = { }
+      }
+      while (x127 < x119) {  // begin fat loop x133 } // end fat loop x133
+      if (x119 > 0) {
+        x143 = { }
+      }
+      while (x134 < x119) {  // begin fat loop x143 } // end fat loop x143
+      if (x119 > 0) {
+        x156 = { }
+      }
+      while (x144 < x119) {  // begin fat loop x156 } // end fat loop x156
+      if (x119 > 0) {
+        x163 = { }
+      }
+      while (x157 < x119) {  // begin fat loop x163 } // end fat loop x163
+      if (x119 > 0) {
+        x172 = { }
+      }
+      while (x166 < x119) {  // begin fat loop x172 } // end fat loop x172
+      if (x119 > 0) {
+        x180 = { }
+      }
+      while (x174 < x119) {  // begin fat loop x180 } // end fat loop x180
+    }
+    while (x111 < x110) {  // begin fat loop x183
+      if (x119 > 0) {
+        x126 = { }
+      }
+      while (x120 < x119) {  // begin fat loop x126 } // end fat loop x126
+      if (x119 > 0) {
+        x133 = { }
+      }
+      while (x127 < x119) {  // begin fat loop x133 } // end fat loop x133
+      if (x119 > 0) {
+        x143 = { }
+      }
+      while (x134 < x119) {  // begin fat loop x143 } // end fat loop x143
+      if (x119 > 0) {
+        x156 = { }
+      }
+      while (x144 < x119) {  // begin fat loop x156 } // end fat loop x156
+      if (x119 > 0) {
+        x163 = { }
+      }
+      while (x157 < x119) {  // begin fat loop x163 } // end fat loop x163
+      if (x119 > 0) {
+        x172 = { }
+      }
+      while (x166 < x119) {  // begin fat loop x172 } // end fat loop x172
+      if (x119 > 0) {
+        x180 = { }
+      }
+      while (x174 < x119) {  // begin fat loop x180 } // end fat loop x180
+    } // end fat loop x183
+    val x190 = { }
+    if (x10 > 0) { }
+    while (x184 < x10) {  // begin fat loop x190 } // end fat loop x190
+    val x195 =  x190.GroupBy( x191 => { x194})
+    val x269 = { }
+    if (x196 > 0) {
+      if (x205 > 0) {
+        x212 = { }
+      }
+      while (x206 < x205) {  // begin fat loop x212 } // end fat loop x212
+      if (x205 > 0) {
+        x219 = { }
+      }
+      while (x213 < x205) {  // begin fat loop x219 } // end fat loop x219
+      if (x205 > 0) {
+        x229 = { }
+      }
+      while (x220 < x205) {  // begin fat loop x229 } // end fat loop x229
+      if (x205 > 0) {
+        x242 = { }
+      }
+      while (x230 < x205) {  // begin fat loop x242 } // end fat loop x242
+      if (x205 > 0) {
+        x249 = { }
+      }
+      while (x243 < x205) {  // begin fat loop x249 } // end fat loop x249
+      if (x205 > 0) {
+        x258 = { }
+      }
+      while (x252 < x205) {  // begin fat loop x258 } // end fat loop x258
+      if (x205 > 0) {
+        x266 = { }
+      }
+      while (x260 < x205) {  // begin fat loop x266 } // end fat loop x266
+    }
+    while (x197 < x196) {  // begin fat loop x269
+      if (x205 > 0) {
+        x212 = { }
+      }
+      while (x206 < x205) {  // begin fat loop x212 } // end fat loop x212
+      if (x205 > 0) {
+        x219 = { }
+      }
+      while (x213 < x205) {  // begin fat loop x219 } // end fat loop x219
+      if (x205 > 0) {
+        x229 = { }
+      }
+      while (x220 < x205) {  // begin fat loop x229 } // end fat loop x229
+      if (x205 > 0) {
+        x242 = { }
+      }
+      while (x230 < x205) {  // begin fat loop x242 } // end fat loop x242
+      if (x205 > 0) {
+        x249 = { }
+      }
+      while (x243 < x205) {  // begin fat loop x249 } // end fat loop x249
+      if (x205 > 0) {
+        x258 = { }
+      }
+      while (x252 < x205) {  // begin fat loop x258 } // end fat loop x258
+      if (x205 > 0) {
+        x266 = { }
+      }
+      while (x260 < x205) {  // begin fat loop x266 } // end fat loop x266
+    } // end fat loop x269
+    val x276 = { }
+    if (x10 > 0) { }
+    while (x270 < x10) {  // begin fat loop x276 } // end fat loop x276
+    val x281 =  x276.GroupBy( x277 => { x280})
+    val x355 = { }
+    if (x282 > 0) {
+      if (x291 > 0) {
+        x298 = { }
+      }
+      while (x292 < x291) {  // begin fat loop x298 } // end fat loop x298
+      if (x291 > 0) {
+        x305 = { }
+      }
+      while (x299 < x291) {  // begin fat loop x305 } // end fat loop x305
+      if (x291 > 0) {
+        x315 = { }
+      }
+      while (x306 < x291) {  // begin fat loop x315 } // end fat loop x315
+      if (x291 > 0) {
+        x328 = { }
+      }
+      while (x316 < x291) {  // begin fat loop x328 } // end fat loop x328
+      if (x291 > 0) {
+        x335 = { }
+      }
+      while (x329 < x291) {  // begin fat loop x335 } // end fat loop x335
+      if (x291 > 0) {
+        x344 = { }
+      }
+      while (x338 < x291) {  // begin fat loop x344 } // end fat loop x344
+      if (x291 > 0) {
+        x352 = { }
+      }
+      while (x346 < x291) {  // begin fat loop x352 } // end fat loop x352
+    }
+    while (x283 < x282) {  // begin fat loop x355
+      if (x291 > 0) {
+        x298 = { }
+      }
+      while (x292 < x291) {  // begin fat loop x298 } // end fat loop x298
+      if (x291 > 0) {
+        x305 = { }
+      }
+      while (x299 < x291) {  // begin fat loop x305 } // end fat loop x305
+      if (x291 > 0) {
+        x315 = { }
+      }
+      while (x306 < x291) {  // begin fat loop x315 } // end fat loop x315
+      if (x291 > 0) {
+        x328 = { }
+      }
+      while (x316 < x291) {  // begin fat loop x328 } // end fat loop x328
+      if (x291 > 0) {
+        x335 = { }
+      }
+      while (x329 < x291) {  // begin fat loop x335 } // end fat loop x335
+      if (x291 > 0) {
+        x344 = { }
+      }
+      while (x338 < x291) {  // begin fat loop x344 } // end fat loop x344
+      if (x291 > 0) {
+        x352 = { }
+      }
+      while (x346 < x291) {  // begin fat loop x352 } // end fat loop x352
+    } // end fat loop x355
+    val x362 = { }
+    if (x10 > 0) { }
+    while (x356 < x10) {  // begin fat loop x362 } // end fat loop x362
+    val x367 =  x362.GroupBy( x363 => { x366})
+    val x441 = { }
+    if (x368 > 0) {
+      if (x377 > 0) {
+        x384 = { }
+      }
+      while (x378 < x377) {  // begin fat loop x384 } // end fat loop x384
+      if (x377 > 0) {
+        x391 = { }
+      }
+      while (x385 < x377) {  // begin fat loop x391 } // end fat loop x391
+      if (x377 > 0) {
+        x401 = { }
+      }
+      while (x392 < x377) {  // begin fat loop x401 } // end fat loop x401
+      if (x377 > 0) {
+        x414 = { }
+      }
+      while (x402 < x377) {  // begin fat loop x414 } // end fat loop x414
+      if (x377 > 0) {
+        x421 = { }
+      }
+      while (x415 < x377) {  // begin fat loop x421 } // end fat loop x421
+      if (x377 > 0) {
+        x430 = { }
+      }
+      while (x424 < x377) {  // begin fat loop x430 } // end fat loop x430
+      if (x377 > 0) {
+        x438 = { }
+      }
+      while (x432 < x377) {  // begin fat loop x438 } // end fat loop x438
+    }
+    while (x369 < x368) {  // begin fat loop x441
+      if (x377 > 0) {
+        x384 = { }
+      }
+      while (x378 < x377) {  // begin fat loop x384 } // end fat loop x384
+      if (x377 > 0) {
+        x391 = { }
+      }
+      while (x385 < x377) {  // begin fat loop x391 } // end fat loop x391
+      if (x377 > 0) {
+        x401 = { }
+      }
+      while (x392 < x377) {  // begin fat loop x401 } // end fat loop x401
+      if (x377 > 0) {
+        x414 = { }
+      }
+      while (x402 < x377) {  // begin fat loop x414 } // end fat loop x414
+      if (x377 > 0) {
+        x421 = { }
+      }
+      while (x415 < x377) {  // begin fat loop x421 } // end fat loop x421
+      if (x377 > 0) {
+        x430 = { }
+      }
+      while (x424 < x377) {  // begin fat loop x430 } // end fat loop x430
+      if (x377 > 0) {
+        x438 = { }
+      }
+      while (x432 < x377) {  // begin fat loop x438 } // end fat loop x438
+    } // end fat loop x441
+    val x448 = { }
+    if (x10 > 0) { }
+    while (x442 < x10) {  // begin fat loop x448 } // end fat loop x448
+    val x453 =  x448.GroupBy( x449 => { x452})
+    val x527 = { }
+    if (x454 > 0) {
+      if (x463 > 0) {
+        x470 = { }
+      }
+      while (x464 < x463) {  // begin fat loop x470 } // end fat loop x470
+      if (x463 > 0) {
+        x477 = { }
+      }
+      while (x471 < x463) {  // begin fat loop x477 } // end fat loop x477
+      if (x463 > 0) {
+        x487 = { }
+      }
+      while (x478 < x463) {  // begin fat loop x487 } // end fat loop x487
+      if (x463 > 0) {
+        x500 = { }
+      }
+      while (x488 < x463) {  // begin fat loop x500 } // end fat loop x500
+      if (x463 > 0) {
+        x507 = { }
+      }
+      while (x501 < x463) {  // begin fat loop x507 } // end fat loop x507
+      if (x463 > 0) {
+        x516 = { }
+      }
+      while (x510 < x463) {  // begin fat loop x516 } // end fat loop x516
+      if (x463 > 0) {
+        x524 = { }
+      }
+      while (x518 < x463) {  // begin fat loop x524 } // end fat loop x524
+    }
+    while (x455 < x454) {  // begin fat loop x527
+      if (x463 > 0) {
+        x470 = { }
+      }
+      while (x464 < x463) {  // begin fat loop x470 } // end fat loop x470
+      if (x463 > 0) {
+        x477 = { }
+      }
+      while (x471 < x463) {  // begin fat loop x477 } // end fat loop x477
+      if (x463 > 0) {
+        x487 = { }
+      }
+      while (x478 < x463) {  // begin fat loop x487 } // end fat loop x487
+      if (x463 > 0) {
+        x500 = { }
+      }
+      while (x488 < x463) {  // begin fat loop x500 } // end fat loop x500
+      if (x463 > 0) {
+        x507 = { }
+      }
+      while (x501 < x463) {  // begin fat loop x507 } // end fat loop x507
+      if (x463 > 0) {
+        x516 = { }
+      }
+      while (x510 < x463) {  // begin fat loop x516 } // end fat loop x516
+      if (x463 > 0) {
+        x524 = { }
+      }
+      while (x518 < x463) {  // begin fat loop x524 } // end fat loop x524
+    } // end fat loop x527
+    val x534 = { }
+    if (x10 > 0) { }
+    while (x528 < x10) {  // begin fat loop x534 } // end fat loop x534
+    val x539 =  x534.GroupBy( x535 => { x538})
+    val x613 = { }
+    if (x540 > 0) {
+      if (x549 > 0) {
+        x556 = { }
+      }
+      while (x550 < x549) {  // begin fat loop x556 } // end fat loop x556
+      if (x549 > 0) {
+        x563 = { }
+      }
+      while (x557 < x549) {  // begin fat loop x563 } // end fat loop x563
+      if (x549 > 0) {
+        x573 = { }
+      }
+      while (x564 < x549) {  // begin fat loop x573 } // end fat loop x573
+      if (x549 > 0) {
+        x586 = { }
+      }
+      while (x574 < x549) {  // begin fat loop x586 } // end fat loop x586
+      if (x549 > 0) {
+        x593 = { }
+      }
+      while (x587 < x549) {  // begin fat loop x593 } // end fat loop x593
+      if (x549 > 0) {
+        x602 = { }
+      }
+      while (x596 < x549) {  // begin fat loop x602 } // end fat loop x602
+      if (x549 > 0) {
+        x610 = { }
+      }
+      while (x604 < x549) {  // begin fat loop x610 } // end fat loop x610
+    }
+    while (x541 < x540) {  // begin fat loop x613
+      if (x549 > 0) {
+        x556 = { }
+      }
+      while (x550 < x549) {  // begin fat loop x556 } // end fat loop x556
+      if (x549 > 0) {
+        x563 = { }
+      }
+      while (x557 < x549) {  // begin fat loop x563 } // end fat loop x563
+      if (x549 > 0) {
+        x573 = { }
+      }
+      while (x564 < x549) {  // begin fat loop x573 } // end fat loop x573
+      if (x549 > 0) {
+        x586 = { }
+      }
+      while (x574 < x549) {  // begin fat loop x586 } // end fat loop x586
+      if (x549 > 0) {
+        x593 = { }
+      }
+      while (x587 < x549) {  // begin fat loop x593 } // end fat loop x593
+      if (x549 > 0) {
+        x602 = { }
+      }
+      while (x596 < x549) {  // begin fat loop x602 } // end fat loop x602
+      if (x549 > 0) {
+        x610 = { }
+      }
+      while (x604 < x549) {  // begin fat loop x610 } // end fat loop x610
+    } // end fat loop x613
+    val x620 = { }
+    if (x10 > 0) { }
+    while (x614 < x10) {  // begin fat loop x620 } // end fat loop x620
+    val x625 =  x620.GroupBy( x621 => { x624})
+    val x699 = { }
+    if (x626 > 0) {
+      if (x635 > 0) {
+        x642 = { }
+      }
+      while (x636 < x635) {  // begin fat loop x642 } // end fat loop x642
+      if (x635 > 0) {
+        x649 = { }
+      }
+      while (x643 < x635) {  // begin fat loop x649 } // end fat loop x649
+      if (x635 > 0) {
+        x659 = { }
+      }
+      while (x650 < x635) {  // begin fat loop x659 } // end fat loop x659
+      if (x635 > 0) {
+        x672 = { }
+      }
+      while (x660 < x635) {  // begin fat loop x672 } // end fat loop x672
+      if (x635 > 0) {
+        x679 = { }
+      }
+      while (x673 < x635) {  // begin fat loop x679 } // end fat loop x679
+      if (x635 > 0) {
+        x688 = { }
+      }
+      while (x682 < x635) {  // begin fat loop x688 } // end fat loop x688
+      if (x635 > 0) {
+        x696 = { }
+      }
+      while (x690 < x635) {  // begin fat loop x696 } // end fat loop x696
+    }
+    while (x627 < x626) {  // begin fat loop x699
+      if (x635 > 0) {
+        x642 = { }
+      }
+      while (x636 < x635) {  // begin fat loop x642 } // end fat loop x642
+      if (x635 > 0) {
+        x649 = { }
+      }
+      while (x643 < x635) {  // begin fat loop x649 } // end fat loop x649
+      if (x635 > 0) {
+        x659 = { }
+      }
+      while (x650 < x635) {  // begin fat loop x659 } // end fat loop x659
+      if (x635 > 0) {
+        x672 = { }
+      }
+      while (x660 < x635) {  // begin fat loop x672 } // end fat loop x672
+      if (x635 > 0) {
+        x679 = { }
+      }
+      while (x673 < x635) {  // begin fat loop x679 } // end fat loop x679
+      if (x635 > 0) {
+        x688 = { }
+      }
+      while (x682 < x635) {  // begin fat loop x688 } // end fat loop x688
+      if (x635 > 0) {
+        x696 = { }
+      }
+      while (x690 < x635) {  // begin fat loop x696 } // end fat loop x696
+    } // end fat loop x699
+    val x706 = { }
+    if (x10 > 0) { }
+    while (x700 < x10) {  // begin fat loop x706 } // end fat loop x706
+    val x711 =  x706.GroupBy( x707 => { x710})
+    val x785 = { }
+    if (x712 > 0) {
+      if (x721 > 0) {
+        x728 = { }
+      }
+      while (x722 < x721) {  // begin fat loop x728 } // end fat loop x728
+      if (x721 > 0) {
+        x735 = { }
+      }
+      while (x729 < x721) {  // begin fat loop x735 } // end fat loop x735
+      if (x721 > 0) {
+        x745 = { }
+      }
+      while (x736 < x721) {  // begin fat loop x745 } // end fat loop x745
+      if (x721 > 0) {
+        x758 = { }
+      }
+      while (x746 < x721) {  // begin fat loop x758 } // end fat loop x758
+      if (x721 > 0) {
+        x765 = { }
+      }
+      while (x759 < x721) {  // begin fat loop x765 } // end fat loop x765
+      if (x721 > 0) {
+        x774 = { }
+      }
+      while (x768 < x721) {  // begin fat loop x774 } // end fat loop x774
+      if (x721 > 0) {
+        x782 = { }
+      }
+      while (x776 < x721) {  // begin fat loop x782 } // end fat loop x782
+    }
+    while (x713 < x712) {  // begin fat loop x785
+      if (x721 > 0) {
+        x728 = { }
+      }
+      while (x722 < x721) {  // begin fat loop x728 } // end fat loop x728
+      if (x721 > 0) {
+        x735 = { }
+      }
+      while (x729 < x721) {  // begin fat loop x735 } // end fat loop x735
+      if (x721 > 0) {
+        x745 = { }
+      }
+      while (x736 < x721) {  // begin fat loop x745 } // end fat loop x745
+      if (x721 > 0) {
+        x758 = { }
+      }
+      while (x746 < x721) {  // begin fat loop x758 } // end fat loop x758
+      if (x721 > 0) {
+        x765 = { }
+      }
+      while (x759 < x721) {  // begin fat loop x765 } // end fat loop x765
+      if (x721 > 0) {
+        x774 = { }
+      }
+      while (x768 < x721) {  // begin fat loop x774 } // end fat loop x774
+      if (x721 > 0) {
+        x782 = { }
+      }
+      while (x776 < x721) {  // begin fat loop x782 } // end fat loop x782
+    } // end fat loop x785
+    val x792 = { }
+    if (x10 > 0) { }
+    while (x786 < x10) {  // begin fat loop x792 } // end fat loop x792
+    val x797 =  x792.GroupBy( x793 => { x796})
+    val x871 = { }
+    if (x798 > 0) {
+      if (x807 > 0) {
+        x814 = { }
+      }
+      while (x808 < x807) {  // begin fat loop x814 } // end fat loop x814
+      if (x807 > 0) {
+        x821 = { }
+      }
+      while (x815 < x807) {  // begin fat loop x821 } // end fat loop x821
+      if (x807 > 0) {
+        x831 = { }
+      }
+      while (x822 < x807) {  // begin fat loop x831 } // end fat loop x831
+      if (x807 > 0) {
+        x844 = { }
+      }
+      while (x832 < x807) {  // begin fat loop x844 } // end fat loop x844
+      if (x807 > 0) {
+        x851 = { }
+      }
+      while (x845 < x807) {  // begin fat loop x851 } // end fat loop x851
+      if (x807 > 0) {
+        x860 = { }
+      }
+      while (x854 < x807) {  // begin fat loop x860 } // end fat loop x860
+      if (x807 > 0) {
+        x868 = { }
+      }
+      while (x862 < x807) {  // begin fat loop x868 } // end fat loop x868
+    }
+    while (x799 < x798) {  // begin fat loop x871
+      if (x807 > 0) {
+        x814 = { }
+      }
+      while (x808 < x807) {  // begin fat loop x814 } // end fat loop x814
+      if (x807 > 0) {
+        x821 = { }
+      }
+      while (x815 < x807) {  // begin fat loop x821 } // end fat loop x821
+      if (x807 > 0) {
+        x831 = { }
+      }
+      while (x822 < x807) {  // begin fat loop x831 } // end fat loop x831
+      if (x807 > 0) {
+        x844 = { }
+      }
+      while (x832 < x807) {  // begin fat loop x844 } // end fat loop x844
+      if (x807 > 0) {
+        x851 = { }
+      }
+      while (x845 < x807) {  // begin fat loop x851 } // end fat loop x851
+      if (x807 > 0) {
+        x860 = { }
+      }
+      while (x854 < x807) {  // begin fat loop x860 } // end fat loop x860
+      if (x807 > 0) {
+        x868 = { }
+      }
+      while (x862 < x807) {  // begin fat loop x868 } // end fat loop x868
+    } // end fat loop x871
+  }
+}
