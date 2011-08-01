@@ -28,8 +28,8 @@ abstract class NestedGenerator(nested: OP_Nested, location: Int) extends Executa
   override protected def getSym(op: DeliteOP, name: String): String = "x" + baseId + "_" + name
 
   protected def writeHeader(location: Int, out: StringBuilder) {
+    ScalaGenerator.writePath(out)
     out.append("import java.util.concurrent.locks._\n") //locking primitives
-    ExecutableGenerator.writePath(nested.nestedGraphs(0).kernelPath, out) //package of scala kernels
     out.append("object ")
     out.append(kernelName)
     out.append(" {\n")
@@ -104,7 +104,7 @@ abstract class GPUScalaNestedGenerator(nested: OP_Nested, location: Int) extends
   def emitScala(syncList: ArrayBuffer[DeliteOP]) = {
     val out = new StringBuilder
     writeHeader(location, out)
-    addSync(syncList, out) //the sync methods/objects
+    addLocalSync(out) //the sync methods/objects
     writeOuterSet(syncList, out) //helper set methods for JNI calls to access
     out.append("}\n")
     out.toString
@@ -115,8 +115,8 @@ abstract class GPUScalaNestedGenerator(nested: OP_Nested, location: Int) extends
   override protected def getSync(op: DeliteOP, name: String) = "Result_" + baseId + "_" + name
 
   protected def writeHeader(location: Int, out: StringBuilder) {
+    ScalaGenerator.writePath(out)
     out.append("import java.util.concurrent.locks._\n") //locking primitives
-    ExecutableGenerator.writePath(nested.nestedGraphs(0).kernelPath, out) //package of scala kernels
     out.append("object ")
     out.append(kernelName)
     out.append(" {\n")

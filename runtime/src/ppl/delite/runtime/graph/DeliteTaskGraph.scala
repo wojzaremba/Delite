@@ -488,7 +488,7 @@ object DeliteTaskGraph {
 }
 
 
-class DeliteTaskGraph {
+class DeliteTaskGraph extends Serializable {
 
   def registerOp(op: DeliteOP, overwrite: Boolean = false) {
     for (o <- op.getOutputs) {

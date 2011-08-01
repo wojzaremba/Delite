@@ -46,20 +46,61 @@ object Delite {
     val scheduler = Config.scheduler match {
       case "SMP" => new SMPStaticScheduler
       case "SMP+GPU" => new SMP_GPU_StaticScheduler
+      case "Cluster" => new ClusterScheduler
       case "default" => {
-        if (Config.numGPUs == 0) new SMPStaticScheduler
-        else if (Config.numGPUs == 1) new SMP_GPU_StaticScheduler
+        if (Config.numThreads == 1 && Config.numGPUs == 0) {
+          new ClusterScheduler
+        }
+        //if (Config.numGPUs == 0) new SMPStaticScheduler
+        //else if (Config.numGPUs == 1) new SMP_GPU_StaticScheduler
         else sys.error("No scheduler currently exists that can handle the requested resources")
       }
       case _ => throw new IllegalArgumentException("Requested scheduler is not recognized")
     }
 
-    val executor = Config.executor match {
+    //load task graph
+    //val graph = loadDeliteDEG(args(0))
+    val graph = new TestGraph
+
+    //load kernels & data structures
+    loadSources(graph)
+
+    //schedule
+    scheduler.schedule(graph)
+
+    //execute
+    val executor = new ClusterExecutor //TODO: push this into execute
+    executor.init()
+    executor.run(graph)
+    //execute(graph, Config.executor, 0, graph.schedule.numResources)
+  }
+
+  def execute(graph: DeliteTaskGraph, executorType: String, startLocation: Int, endLocation: Int) {
+
+    val executor = executorType match {
       case "SMP" => new SMPExecutor
       case "SMP+GPU" => new SMP_GPU_Executor
+      case "Cluster" => new ClusterExecutor
+      //case "Cluster+SMP" => new Cluster_SMP_Executor
+      //case "Cluster+SMP+GPU" => new Cluster_SMP_GPU_Executor
       case "default" => {
-        if (Config.numGPUs == 0) new SMPExecutor
-        else new SMP_GPU_Executor
+        new ClusterExecutor
+        /*  if (Config.numNodes > 1) {
+         if (Config.numGPUs == 0) {
+           if (Config.numThreads > 1)
+             new Cluster_SMP_Executor
+           else
+             new ClusterExecutor
+         }
+         else
+           new Cluster_SMP_GPU_Executor
+       }
+       else {
+         if (Config.numGPUs == 0)
+           new SMPExecutor
+         else
+           new SMP_GPU_Executor
+       } */
       }
       case _ => throw new IllegalArgumentException("Requested executor is not recognized")
     }
@@ -74,18 +115,8 @@ object Delite {
 
       executor.init() //call this first because could take a while and can be done in parallel
 
-      //load task graph
-      val graph = loadDeliteDEG(args(0))
-      //val graph = new TestGraph
-
-      //load kernels & data structures
-      loadSources(graph)
-
-      //schedule
-      scheduler.schedule(graph)
-
       //compile
-      val executable = Compilers.compileSchedule(graph)
+      val executable = Compilers.compileSchedule(graph, startLocation, endLocation)
 
       //execute
       val numTimes = Config.numRuns

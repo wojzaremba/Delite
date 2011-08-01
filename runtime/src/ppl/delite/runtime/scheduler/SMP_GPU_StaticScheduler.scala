@@ -54,11 +54,7 @@ final class SMP_GPU_StaticScheduler extends StaticScheduler with ParallelUtiliza
       case c: OP_Nested => addNested(c, graph, schedule, Range(0, numCPUs + numGPUs))
       case _ => {
         if (op.supportsTarget(Targets.Cuda) && numGPUs > 0) { //schedule on GPU resource
-          if (op.isDataParallel)
-            splitGPU(op, schedule)
-          else {
-            scheduleOn(op, schedule, gpu)
-          }
+          scheduleOn(op, schedule, gpu)
         }
         else if (op.variant != null && numGPUs > 0) { //kernel could be partially GPUable
           addNested(op.variant, graph, schedule, Range(0, numCPUs + numGPUs))
@@ -93,11 +89,6 @@ final class SMP_GPU_StaticScheduler extends StaticScheduler with ParallelUtiliza
       scheduleOn(op, schedule, nextThread)
       nextThread = (nextThread + 1) % numCPUs
     }
-  }
-
-  private def splitGPU(op: DeliteOP, schedule: PartialSchedule) {
-    val chunk = OpHelper.splitGPU(op)
-    scheduleOn(chunk, schedule, gpu)
   }
 
 }

@@ -65,22 +65,22 @@ object TestKernelEnd {
   }
 }
 
-trait DeliteCollection[T] {
+/* trait DeliteCollection[T] {
   def size: Int
   def dcApply(idx: Int): T
   def dcUpdate(idx: Int, x: T)
 }
 
-trait DeliteChunkableCollection[T] extends DeliteCollection[T] {
-  def index(logical: Int): Int = logical - start //logical to physical index mapping
-  def start: Int
-  def end: Int
-  //? def size = start - end
+trait DeliteChunkableCollection[T] extends DeliteCollection[T] with Serializable {
+  def index(logical: Int): Int = logical - startIndex //logical to physical index mapping
+  def startIndex: Int
+  def endIndex: Int
+  //def size = endIndex - startIndex
   abstract override def dcApply(idx: Int) = super.dcApply(index(idx))
   abstract override def dcUpdate(idx: Int, x: T) = super.dcUpdate(index(idx), x)
 }
 
-class SimpleArrayColl[T: Manifest](val length: Int) extends DeliteCollection[T] {
+class ArrayCollBase[T: Manifest](val length: Int) extends DeliteCollection[T] {
   val _data = new Array[T](length)
   def foreach[U](f: T => U) = _data.foreach[U](f)
   def size = length
@@ -92,7 +92,24 @@ class SimpleArrayColl[T: Manifest](val length: Int) extends DeliteCollection[T] 
   def dcUpdate(idx: Int, x: T) { _data(idx) = x }
 }
 
-class ArrayColl[T: Manifest](val start: Int, val end: Int) extends SimpleArrayColl[T](end-start) with DeliteChunkableCollection[T]
+class ArrayColl[T: Manifest](val startIndex: Int, val endIndex: Int) extends ArrayCollBase[T](endIndex - startIndex) with DeliteChunkableCollection[T]
+*/
+abstract class DeliteCollection[T: Manifest] extends Serializable {
+  private val _data = new Array[T](size)
+
+  def startIndex: Int
+  def endIndex: Int
+  def size = endIndex - startIndex
+  def mapIndex(logical: Int) = logical - startIndex
+
+  final def dcApply(idx: Int): T = _data(mapIndex(idx))
+  final def dcUpdate(idx: Int, x: T) { _data(mapIndex(idx)) = x }
+}
+
+class ArrayColl[T: Manifest](val startIndex: Int, val endIndex: Int) extends DeliteCollection[T] {
+  def apply(idx: Int) = dcApply(idx)
+  def update(idx: Int, x: T) = dcUpdate(idx, x)
+}
 
 class Activation[T] {
   var out: T = null.asInstanceOf[T]
@@ -117,7 +134,7 @@ object TestKernelMap {
 
       def alloc = {
         val act = new Activation[ArrayColl[Int]]
-        act.out = new ArrayColl[Int](in0.start, in0.end)
+        act.out = new ArrayColl[Int](in0.startIndex, in0.endIndex)
         act
       }
 
@@ -134,32 +151,30 @@ object TestKernelMap {
     }
   }
 
-  def split(numChunks: Int, in0: ArrayColl[Int]): Seq[Seq[ArrayColl[Int]]] = {
-    for (input <- Seq(in0)) yield {
-      for (idx <- 0 until numChunks) yield {
-        val start = (input.size * idx) / numChunks
-        val end = (input.size * (idx+1)) / numChunks
-        val chunk = new ArrayColl[Int](start, end)
-        for (j <- start until end) {
-          chunk(j) = input.dcApply(j)
-        }
-        chunk
+  def split_in0(numChunks: Int, in0: ArrayColl[Int]): Seq[ArrayColl[Int]] = {
+    for (idx <- 0 until numChunks) yield {
+      val start = (in0.size * idx) / numChunks
+      val end = (in0.size * (idx+1)) / numChunks
+      val chunk = new ArrayColl[Int](start, end)
+      for (j <- start until end) {
+        chunk(j) = in0(j)
       }
+      chunk
     }
   }
 
-  def combine(out: Seq[ArrayColl[Int]]): Seq[ArrayColl[Int]] = {
-    for (output <- Seq(out)) yield {
-      val length = output.map(_.size).reduceLeft(_ + _)
-      val start = output(0).start
-      val full = new ArrayColl[Int](start, start + length)
-      for (chunk <- output) {
-        for (i <- chunk.start until chunk.end) {
-          full(i) = chunk.dcApply(i)
-        }
+  //def split_in1(numChunks: Int, in1: T): Seq[T]
+
+  def combine_out(out: ArrayColl[Int]*): ArrayColl[Int] = {
+    val length = out.map(_.size).reduceLeft(_ + _)
+    val start = out(0).startIndex
+    val full = new ArrayColl[Int](start, start + length)
+    for (chunk <- out) {
+      for (i <- chunk.startIndex until chunk.endIndex) {
+        full(i) = chunk(i)
       }
-      full
     }
+    full
   }
 }
 

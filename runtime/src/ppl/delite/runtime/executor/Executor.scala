@@ -1,6 +1,7 @@
 package ppl.delite.runtime.executor
 
 import ppl.delite.runtime.scheduler.StaticSchedule
+import ppl.delite.runtime.graph.DeliteTaskGraph
 
 /**
  * Author: Kevin J. Brown
@@ -19,6 +20,8 @@ import ppl.delite.runtime.scheduler.StaticSchedule
 abstract class Executor {
 
   def run(schedule: StaticSchedule)
+
+  def run(graph: DeliteTaskGraph) { } //TODO: this only run?
 
   def init()
 

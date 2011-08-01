@@ -29,7 +29,7 @@ class VariantGenerator(variant: OP_Variant, location: Int) extends NestedGenerat
     available ++= inputs
 
     //output body
-    addKernelCalls(variant.variantGraph.schedule(location), location, out, available, syncList)
+    addKernelCalls(variant.variantGraph.schedule(location), location, out)
     if (hasOutput) {
       out.append(getSym(variant.variantGraph.result._1, variant.variantGraph.result._2))
       out.append('\n')
@@ -37,7 +37,7 @@ class VariantGenerator(variant: OP_Variant, location: Int) extends NestedGenerat
     out.append("}\n") //end of method
 
     //the sync methods/objects
-    addSync(syncList, out)
+    addLocalSync(out)
 
     //the footer
     out.append("}\n")

@@ -24,7 +24,7 @@ class OP_Input(op: DeliteOP) extends DeliteOP {
   isSchedulable = true
   isScheduled = true
 
-  def task = null
+  def task(location: Int) = null
   def isDataParallel = false
   def cost = 0
   def size = 0

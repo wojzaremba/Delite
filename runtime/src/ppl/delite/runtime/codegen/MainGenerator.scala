@@ -15,21 +15,22 @@ import ppl.delite.runtime.scheduler.PartialSchedule
 
 object MainGenerator extends ExecutableGenerator {
   protected def executableName = "Executable"
+
+  def className(location: Int) = ScalaGenerator.classPath + "." + executableName + location
 }
 
 object GPUMainGenerator extends GPUExecutableGenerator {
 
-  def makeExecutable(schedule: PartialSchedule, kernelPath: String) {
+  def makeExecutable(schedule: PartialSchedule, location: Int) {
     assert(schedule.numResources == 1) //this implementation does not attempt to create an Executable than can efficiently handle hosting multiple kernel streams
 
-    val location = schedule(0).peek.scheduledResource //look up location id for this GPU device resource
     val syncList = new ArrayBuffer[DeliteOP] //list of ops needing sync added
 
     addFunction(emitCppHeader)
     addFunction(emitCppBody(schedule(0), location, syncList))
     CudaCompile.addSource(buildCppSource(), executableName + location)
 
-    val scalaSource = GPUScalaMainGenerator.emitScala(location, syncList, kernelPath)
+    val scalaSource = GPUScalaMainGenerator.emitScala(location, syncList)
     ScalaCompile.addSource(scalaSource, executableName + location)
   }
 

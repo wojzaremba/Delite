@@ -13,7 +13,7 @@ import ppl.delite.runtime.graph.targets.Targets
 
 class TestOP(kernel: String)(deps: DeliteOP*) extends OP_Executable {
 
-  def task = kernel
+  def task(location: Int) = kernel
 
   def id = System.identityHashCode(this).toString
 
@@ -31,11 +31,8 @@ class TestOP(kernel: String)(deps: DeliteOP*) extends OP_Executable {
 
 }
 
-class TestSingle[T: Manifest](kernel: String)(deps: DeliteOP*)(inputs: DeliteOP*)
-        extends OP_Single("", kernel, null) {
-
-  override val id = System.identityHashCode(this).toString
-  override private[graph] val outputTypesMap = Map(Targets.Scala -> Map(id -> manifest[T].toString, "functionReturn" -> manifest[T].toString))
+class TestSingle[T: Manifest](id: String, kernel: String)(deps: DeliteOP*)(inputs: DeliteOP*)
+        extends OP_Single(id, kernel, Map(Targets.Scala -> Map(id -> manifest[T].toString, "functionReturn" -> manifest[T].toString))) {
 
   for (dep <- deps) {
     this.addDependency(dep)
@@ -48,11 +45,8 @@ class TestSingle[T: Manifest](kernel: String)(deps: DeliteOP*)(inputs: DeliteOP*
 
 }
 
-class TestMap[T: Manifest](func: String)(deps: DeliteOP*)(inputs: DeliteOP*)
-        extends OP_MultiLoop("", "", false, func, null, false, false) {
-
-  override val id = System.identityHashCode(this).toString
-  override private[graph] val outputTypesMap = Map(Targets.Scala -> Map("out" -> manifest[T].toString, "functionReturn" -> ("ppl.delite.runtime.graph.Activation[" + manifest[T].toString + "]")))
+class TestMap[T: Manifest](id: String, func: String)(deps: DeliteOP*)(inputs: DeliteOP*)
+        extends OP_MultiLoop(id, "", false, func,  Map(Targets.Scala -> Map(id -> manifest[T].toString, "functionReturn" -> ("ppl.delite.runtime.graph.Activation[" + manifest[T].toString + "]"))), false, false) {
 
   for (dep <- deps) {
     this.addDependency(dep)
@@ -65,11 +59,8 @@ class TestMap[T: Manifest](func: String)(deps: DeliteOP*)(inputs: DeliteOP*)
 
 }
 
-class TestForeach(func: String)(deps: DeliteOP*)(input: DeliteOP, free: DeliteOP*)
-        extends OP_Foreach("", func, null) {
-
-  override val id = System.identityHashCode(this).toString
-  override private[graph] val outputTypesMap = Map(Targets.Scala -> Map(id -> "Unit", "functionReturn" -> "Unit"))
+class TestForeach(id: String, func: String)(deps: DeliteOP*)(input: DeliteOP, free: DeliteOP*)
+        extends OP_Foreach(id, func, Map(Targets.Scala -> Map(id -> "Unit", "functionReturn" -> "Unit"))) {
 
   for (dep <- deps) {
     this.addDependency(dep)

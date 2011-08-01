@@ -11,14 +11,7 @@ object ScalaCompile extends CodeCache {
 
   private val classCacheHome = cacheHome + "classes" + File.separator
 
-  private val sourceBuffer = new ArrayBuffer[(String, String)]
-
   def target = "scala"
-
-  def addSource(source: String, name: String) {
-    if (!sourceBuffer.contains((source, name))) //avoid duplicate kernels //TODO: there must be a better way
-      sourceBuffer += Pair(source, name)
-  }
 
   def compile: ClassLoader = {
     cacheRuntimeSources(sourceBuffer.toArray)
@@ -63,13 +56,6 @@ object ScalaCompile extends CodeCache {
       if (!compile()) {
         sys.error("Compilation failed")
       }
-    }
-  }
-
-  def printSources() {
-    for (i <- 0 until sourceBuffer.length) {
-      print(sourceBuffer(i))
-      print("\n /*********/ \n \n")
     }
   }
 

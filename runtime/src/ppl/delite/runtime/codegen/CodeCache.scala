@@ -9,7 +9,7 @@ package ppl.delite.runtime.codegen
 import ppl.delite.runtime.Config
 import tools.nsc.io._
 import java.io.FileWriter
-import collection.mutable.ListBuffer
+import collection.mutable.{ArrayBuffer, ListBuffer}
 
 /**
  * @author Kevin J. Brown
@@ -20,6 +20,12 @@ trait CodeCache {
   protected val cacheHome = Config.codeCacheHome + File.separator + target + File.separator
   protected val sourceCacheHome = cacheHome + "src" + File.separator
   protected var modules = List(new Module("runtime", List()))
+
+  protected val sourceBuffer = new ArrayBuffer[(String, String)]
+
+  def addSource(source: String, name: String) {
+    sourceBuffer += Pair(source, name)
+  }
 
   def cacheDegSources(directory: Directory) {
     parseModules(directory)
@@ -143,6 +149,13 @@ trait CodeCache {
 
     for (file <- source.files)
       file.copyTo(Path(base + file.name))
+  }
+
+  def printSources() {
+    for (i <- 0 until sourceBuffer.length) {
+      print(sourceBuffer(i))
+      print("\n /*********/ \n \n")
+    }
   }
 
 }

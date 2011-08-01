@@ -21,7 +21,7 @@ final class Arguments(val id: String) extends OP_Executable {
 
   def isDataParallel = false
 
-  def task = "ppl.delite.runtime.graph.ops.ArgsKernel"
+  def task(location: Int) = "ppl.delite.runtime.graph.ops.ArgsKernel"
 
   def cost = 0
   def size = 0

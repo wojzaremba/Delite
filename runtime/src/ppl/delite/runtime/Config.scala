@@ -15,6 +15,8 @@ object Config {
 
   val numGPUs: Int = System.getProperty("delite.gpus", "0").toInt
 
+  val numNodes: Int = System.getProperty("delite.nodes", "1").toInt
+
   val queueSize: Int = System.getProperty("delite.debug.queue.size", "128").toInt
 
   val scheduler: String = System.getProperty("delite.scheduler", "default")

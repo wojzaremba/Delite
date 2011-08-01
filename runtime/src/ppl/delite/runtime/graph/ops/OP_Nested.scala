@@ -1,6 +1,5 @@
 package ppl.delite.runtime.graph.ops
 
-import ppl.delite.runtime.graph.targets.Targets
 import ppl.delite.runtime.graph.DeliteTaskGraph
 
 /**
@@ -18,7 +17,7 @@ abstract class OP_Nested extends DeliteOP {
 
   def nestedGraphs: Seq[DeliteTaskGraph]
 
-  final def task = functionName
+  final def task(location: Int) = sys.error("nested ops not implemeted")
 
   private var functionName = ""
 
@@ -35,10 +34,10 @@ abstract class OP_Nested extends DeliteOP {
     for (in <- inputs.reverse) {
       this.addInput(in, in.id)
     }
-    scheduledResource = resource
+    scheduledResources += resource
 
     private[graph] val outputTypesMap = null
-    def task = null
+    def task(location: Int) = null
     def isDataParallel = false
   }
 

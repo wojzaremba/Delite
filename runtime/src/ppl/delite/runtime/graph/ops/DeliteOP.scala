@@ -2,6 +2,7 @@ package ppl.delite.runtime.graph.ops
 
 import ppl.delite.runtime.graph.DeliteTaskGraph
 import ppl.delite.runtime.graph.targets._
+import collection.mutable.ArrayBuffer
 
 /**
  * Author: Kevin J. Brown
@@ -12,12 +13,12 @@ import ppl.delite.runtime.graph.targets._
  * Stanford University
  */
 
-abstract class DeliteOP {
+abstract class DeliteOP extends Serializable {
 
   /**
    * these methods should be instantiated from parsing the Delite Execution Graph input
    */
-  def task : String
+  def task(location: Int): String
 
   private[graph] val outputTypesMap: Map[Targets.Value, Map[String,String]]
 
@@ -108,6 +109,10 @@ abstract class DeliteOP {
   //TODO: should revisit this when we have more complex dataParallel patterns
   def isDataParallel : Boolean
 
+  def splitInput(name: String): Boolean = false //TODO: these should be abstract
+
+  def combineOutput(name: String): Boolean = false
+
   //TODO: do all OP subtypes support CUDA? (maybe shouldn't be here)
   var cudaMetadata = new CudaMetadata
 
@@ -118,7 +123,7 @@ abstract class DeliteOP {
 
   var isScheduled = false
 
-  def processSchedulable {
+  def processSchedulable() {
     var free = true
     for (dep <- getDependencies) {
       free &&= dep.isScheduled
@@ -129,7 +134,8 @@ abstract class DeliteOP {
   /**
    * these methods/state are used for code generation
    */
-  var scheduledResource = -1
+  val scheduledResource = -1
+  val scheduledResources = new ArrayBuffer[Int]
 
   override def toString = id
 

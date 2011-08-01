@@ -15,7 +15,7 @@ class OP_Single(val id: String, kernel: String, private[graph] val outputTypesMa
 
   final def isDataParallel = false
 
-  def task = kernel
+  def task(location: Int) = kernel
 
   def cost = 0
   def size = 0

@@ -33,22 +33,15 @@ trait StaticScheduler {
   protected def enqueueRoots(graph: DeliteTaskGraph, opQueue: ArrayDeque[DeliteOP]) {
     for (op <- graph.ops) {
       if (!op.isSchedulable) {//if not already in opQueue (protects against same consumer appearing in list multiple times)
-        op.processSchedulable
+        op.processSchedulable()
         if (op.isSchedulable) opQueue.add(op)
       }
     }
   }
 
   protected def split(op: DeliteOP, graph: DeliteTaskGraph, schedule: PartialSchedule, resourceList: Seq[Int]) {
-    val header = OpHelper.expand(op, resourceList.length, graph)
-    if (resourceList.length == 1) //if confined to one resource, ensure header is put on the same resource
-      scheduleOn(header, schedule, resourceList(0))
-    else
-      scheduleOne(header, graph, schedule)
-
-    for (i <- resourceList) {
-      val chunk = OpHelper.split(op, i, resourceList.length, graph.kernelPath)
-      scheduleOn(chunk, schedule, i)
+    for (resource <- resourceList) {
+      scheduleOn(op, schedule, resource)
     }
   }
 
@@ -99,7 +92,7 @@ trait StaticScheduler {
 
   protected def scheduleOn(op: DeliteOP, schedule: PartialSchedule, resource: Int) {
     schedule(resource).add(op)
-    op.scheduledResource = resource
+    op.scheduledResources += resource
     op.isSchedulable = true
     op.isScheduled = true
   }

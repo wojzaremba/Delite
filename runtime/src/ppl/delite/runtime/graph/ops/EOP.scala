@@ -27,7 +27,7 @@ object EOP extends OP_Executable {
 
   def isDataParallel = false
 
-  def task = "ppl.delite.runtime.graph.ops.EOP_Kernel"
+  def task(location: Int) = "ppl.delite.runtime.graph.ops.EOP_Kernel"
 
   def id = "eop"
 

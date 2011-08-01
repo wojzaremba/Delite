@@ -48,9 +48,9 @@ abstract class SingleGraph extends DeliteTaskGraph {
 //simple map test
 abstract class MapGraph extends DeliteTaskGraph {
   val base = "ppl.delite.runtime.graph.TestKernel"
-  val node1 = new TestSingle[ArrayColl[Int]](base+"Begin")()()
-  val node2 = new TestMap[ArrayColl[Int]](base+"Map")(node1)(node1)
-  val node3 = new TestSingle[Unit](base +"End")(node2)(node2)
+  val node1 = new TestSingle[ArrayColl[Int]]("in0", base+"Begin")()()
+  val node2 = new TestMap[ArrayColl[Int]]("out", base+"Map")(node1)(node1)
+  val node3 = new TestSingle[Unit]("end", base +"End")(node2)(node2)
 
   registerOp(node1)
   registerOp(node2)
@@ -62,10 +62,10 @@ abstract class MapGraph extends DeliteTaskGraph {
 //simple foreach test
 abstract class ForeachGraph extends DeliteTaskGraph {
   val base = "ppl.delite.runtime.graph.TestKernel"
-  val node1 = new TestSingle[ArrayColl[Int]](base+"Begin")()()
-  val node2 = new TestSingle[ArrayColl[Int]](base+"Out")()()
-  val node3 = new TestForeach(base+"Foreach")(node1,node2)(node1,node2)
-  val node4 = new TestSingle[Unit](base+"Print0")(node3)(node2)
+  val node1 = new TestSingle[ArrayColl[Int]]("in", base+"Begin")()()
+  val node2 = new TestSingle[ArrayColl[Int]]("out", base+"Out")()()
+  val node3 = new TestForeach("foreach", base+"Foreach")(node1,node2)(node1,node2)
+  val node4 = new TestSingle[Unit]("end", base+"Print0")(node3)(node2)
 
   registerOp(node1)
   registerOp(node2)

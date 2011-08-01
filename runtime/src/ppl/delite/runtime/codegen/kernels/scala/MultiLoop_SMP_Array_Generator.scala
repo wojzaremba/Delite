@@ -1,8 +1,7 @@
 package ppl.delite.runtime.codegen.kernels.scala
 
 import ppl.delite.runtime.graph.ops.OP_MultiLoop
-import ppl.delite.runtime.codegen.{ExecutableGenerator, ScalaCompile}
-import ppl.delite.runtime.graph.DeliteTaskGraph
+import ppl.delite.runtime.codegen.{ScalaGenerator, ScalaCompile}
 
 /**
  * Author: Kevin J. Brown
@@ -21,49 +20,61 @@ import ppl.delite.runtime.graph.DeliteTaskGraph
 
 object MultiLoop_SMP_Array_Generator {
 
-  def makeChunk(op: OP_MultiLoop, chunkIdx: Int, numChunks: Int, kernelPath: String): OP_MultiLoop = {
-    val chunk = if (chunkIdx == 0) op else op.chunk(chunkIdx)
-    val src = makeKernel(chunk, op, chunkIdx, numChunks, kernelPath)
-    ScalaCompile.addSource(src, kernelName(op, chunkIdx))
-    chunk
-  }
-
-  private def makeKernel(op: OP_MultiLoop, master: OP_MultiLoop, chunkIdx: Int, numChunks: Int, kernelPath: String) = {
+  //TODO: make all smp chunks at one time?
+  def makeKernel(op: OP_MultiLoop, location: Int, numChunks: Int) = {
     val out = new StringBuilder
 
-    //update the op with this kernel
-    updateOP(op, master, chunkIdx)
-
-    //the header
-    writeHeader(out, master, chunkIdx, kernelPath)
-
     //the kernel
-    writeKernel(out, op, master, chunkIdx, numChunks)
+    writeKernel(out, op, location, numChunks)
 
-    //the footer
-    out.append("}\n")
+    //the global state
+    makeHeader(out, op, location, numChunks)
 
-    out.toString
+    ScalaCompile.addSource(out.toString, kernelName(op, location))
+
+    kernelName(op, location)
   }
 
-  private def updateOP(op: OP_MultiLoop, master: OP_MultiLoop, idx: Int) {
-    op.setKernelName(kernelName(master, idx))
-  }
-
-  private def writeHeader(out: StringBuilder, master: OP_MultiLoop, idx: Int, kernelPath: String) {
-    ExecutableGenerator.writePath(kernelPath, out)
+  private def writeObjectHeader(out: StringBuilder, op: OP_MultiLoop, location: Int) {
+    ScalaGenerator.writePath(out)
     out.append("object ")
-    out.append(kernelName(master, idx))
+    out.append(kernelName(op, location))
     out.append(" {\n")
   }
 
-  private def writeKernel(out: StringBuilder, op: OP_MultiLoop, master: OP_MultiLoop, chunkIdx: Int, numChunks: Int) {
-    out.append("def apply(head: ")
-    out.append(op.getInputs.head._1.outputType)
+  private def writeInputList(out: StringBuilder, op: OP_MultiLoop, typed: Boolean) {
+    var first = true
+    for ((input, name) <- op.getInputs) {
+      if (!first) out.append(", ")
+      first = false
+      out.append(getSym(name))
+      if (typed) {
+        out.append(": ")
+        out.append(input.outputType(name))
+      }
+    }
+  }
+
+  private def getSym(name: String) = "x" + name
+
+  private def writeKernel(out: StringBuilder, op: OP_MultiLoop, location: Int, numChunks: Int) {
+    writeObjectHeader(out, op, location)
+
+    out.append("def apply(")
+    writeInputList(out, op, true)
     out.append("): ")
     out.append(op.outputType)
     out.append(" = {\n")
 
+    //TODO: If master, make header and set, else get header
+    out.append("val head = new ")
+    out.append(headerName(op, location))
+    out.append('(')
+    writeInputList(out, op, false)
+    out.append(")\n")
+
+
+    val chunkIdx = location //TODO: global vs. local chunk indices?
     //tree reduction
     //first every chunk performs its primary (map-)reduction
     out.append("val size = head.closure.size\n")
@@ -112,26 +123,67 @@ object MultiLoop_SMP_Array_Generator {
       if (chunkIdx != numChunks-1) out.append("head.getB"+(numChunks-1)+"\n") // wait for last one
       out.append("head.closure.postProcess(acc)\n")
     }
-    if (chunkIdx == 0) out.append("acc\n")    
-    out.append("}\n")
+    /*if (chunkIdx == 0)*/ out.append("acc\n") //TODO: need to check if chunkIdx equals a local master
+    out.append("}\n") //end apply
+
+    //data chunking methods
+    writeSplits(out, op)
+    writeCombines(out, op)
+
+    out.append("}\n") //end object
   }
 
-  private def kernelName(master: OP_MultiLoop, idx: Int) = {
-    "MultiLoop_SMP_Array_" + master.id + "_Chunk_" + idx
+  private def writeSplits(out: StringBuilder, op: OP_MultiLoop) {
+    for ((input, name) <- op.getInputs if op.splitInput(name)) {
+      val funcName = "split_" + name
+
+      out.append("def ")
+      out.append(funcName)
+      out.append("(numChunks: Int, ")
+      out.append(name)
+      out.append(": ")
+      out.append(input.outputType(name))
+      out.append("): Seq[")
+      out.append(input.outputType(name))
+      out.append("] = ")
+      out.append(op.function)
+      out.append('.')
+      out.append(funcName)
+      out.append("(numChunks, ")
+      out.append(name)
+      out.append(")\n")
+    }
   }
 
-}
+  private def writeCombines(out: StringBuilder, op: OP_MultiLoop) {
+    for (name <- op.getOutputs if op.combineOutput(name)) {
+      val funcName = "combine_" + name
 
-object MultiLoop_SMP_Array_Header_Generator {
+      out.append("def ")
+      out.append(funcName)
+      out.append('(')
+      out.append(name)
+      out.append(": ")
+      out.append(op.outputType(name))
+      out.append("*): ")
+      out.append(op.outputType(name))
+      out.append(" = ")
+      out.append(op.function)
+      out.append('.')
+      out.append(funcName)
+      out.append('(')
+      out.append(name)
+      out.append(":_*)\n")
+    }
+  }
 
-  def makeHeader(op: OP_MultiLoop, numChunks: Int, graph: DeliteTaskGraph) = {
-    val out = new StringBuilder
+  private def kernelName(op: OP_MultiLoop, location: Int) = {
+    "MultiLoop_SMP_Array_" + op.id + "_Chunk_" + location
+  }
 
-    //the header
-    writeObject(out, op, graph.kernelPath)
-
+  private def makeHeader(out: StringBuilder, op: OP_MultiLoop, location: Int, numChunks: Int) {
     //the kernel
-    writeClass(out, op)
+    writeClass(out, op, location)
 
     if (op.needsCombine) {
       //the sync state
@@ -145,73 +197,19 @@ object MultiLoop_SMP_Array_Header_Generator {
     
     //the footer
     out.append("}\n")
-
-    //add header for compilation
-    val src = out.toString
-    ScalaCompile.addSource(src, kernelName(op))
-
-    //return header OP
-    op.header(kernelName(op), graph)
   }
 
-  private def writeObject(out: StringBuilder, op: OP_MultiLoop, kernelPath: String) {
-    ExecutableGenerator.writePath(kernelPath, out)
-    out.append("object ")
-    out.append(kernelName(op))
-    out.append(" {\n")
-    writeObjectApply(out, op)
-    out.append("}\n")
-  }
-
-  private def writeObjectApply(out: StringBuilder, op: OP_MultiLoop) {
-    out.append("def apply(")
-    var inIdx = 0
-    var first = true
-    for ((input, name) <- op.getInputs) {
-      if (!first) out.append(", ")
-      first = false
-      out.append("in")
-      out.append(inIdx)
-      inIdx += 1
-      out.append(": ")
-      out.append(input.outputType(name))
-    }
-    out.append(") = new ")
-    out.append(kernelName(op))
-    out.append("(")
-    for (i <- 0 until inIdx) {
-      if (i > 0) out.append(", ")
-      out.append("in")
-      out.append(i)
-    }
-    out.append(")\n")
-  }
-
-  private def writeClass(out: StringBuilder, op: OP_MultiLoop) {
+  private def writeClass(out: StringBuilder, op: OP_MultiLoop, location: Int) {
     out.append("final class ")
-    out.append(kernelName(op))
-    out.append("(")
-    var inIdx = 0
-    var first = true
-    for ((input, name) <- op.getInputs) {
-      if (!first) out.append(", ")
-      first = false
-      out.append("in")
-      out.append(inIdx)
-      inIdx += 1
-      out.append(": ")
-      out.append(input.outputType(name))
-    }
+    out.append(headerName(op, location))
+    out.append('(')
+    writeInputList(out, op, true)
     out.append(") {\n")
 
     out.append("val closure = ")
     out.append(op.function)
-    out.append("(")
-    for (i <- 0 until inIdx) {
-      if (i > 0) out.append(", ")
-      out.append("in")
-      out.append(i)
-    }
+    out.append('(')
+    writeInputList(out, op, false)
     out.append(")\n")
 
     out.append("val out: ")
@@ -250,8 +248,9 @@ object MultiLoop_SMP_Array_Header_Generator {
     out.append(key)
     out.append(" = false }\n")
   }
-  
-  private def kernelName(op: OP_MultiLoop) = {
-    "MultiLoop_SMP_Array_Header_" + op.id
+
+  private def headerName(op: OP_MultiLoop, location: Int) = {
+    "MultiLoop_SMP_Array_" + op.id + "_Header_" + location
   }
+
 }

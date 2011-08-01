@@ -29,7 +29,7 @@ class ConditionGenerator(condition: OP_Condition, location: Int) extends NestedG
     //output predicate
     if (condition.predicateValue == "") {
       available ++= inputs
-      addKernelCalls(condition.predicateGraph.schedule(location), location, out, available, syncList)
+      addKernelCalls(condition.predicateGraph.schedule(location), location, out)
     }
 
     //write if
@@ -42,7 +42,7 @@ class ConditionGenerator(condition: OP_Condition, location: Int) extends NestedG
     if (condition.thenValue == "") {
       available.clear()
       available ++= inputs
-      addKernelCalls(condition.thenGraph.schedule(location), location, out, available, syncList)
+      addKernelCalls(condition.thenGraph.schedule(location), location, out)
       if (hasOutput) out.append(getSym(condition.thenGraph.result._1, condition.thenGraph.result._2))
     }
     else if (hasOutput) out.append(condition.thenValue)
@@ -55,7 +55,7 @@ class ConditionGenerator(condition: OP_Condition, location: Int) extends NestedG
     if (condition.elseValue == "") {
       available.clear()
       available ++= inputs
-      addKernelCalls(condition.elseGraph.schedule(location), location, out, available, syncList)
+      addKernelCalls(condition.elseGraph.schedule(location), location, out)
       if (hasOutput) out.append(getSym(condition.elseGraph.result._1, condition.elseGraph.result._2))
     }
     else if (hasOutput) out.append(condition.elseValue)
@@ -65,7 +65,7 @@ class ConditionGenerator(condition: OP_Condition, location: Int) extends NestedG
     out.append("}\n}\n")
 
     //the sync methods/objects
-    addSync(syncList, out)
+    addLocalSync(out)
 
     //the footer
     out.append("}\n")

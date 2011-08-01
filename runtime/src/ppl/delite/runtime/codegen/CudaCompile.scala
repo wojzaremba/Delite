@@ -18,24 +18,19 @@ object CudaCompile extends CodeCache {
 
   val binCacheHome = cacheHome + "bin" + File.separator + "runtime" + File.separator
 
-  private val sourceBuffer = new ArrayBuffer[(String, String)]
-
   def target = "cuda"
 
   override def ext = "cu"
 
-  def addSource(source: String, name: String) {
-    if (!sourceBuffer.contains((source, name)))
-      sourceBuffer += Pair(source, name)
-  }
-
   def compile() {
     if (sourceBuffer.length == 0) return
     cacheRuntimeSources(sourceBuffer.toArray)
-    sourceBuffer.clear()
 
-    val paths = modules.map(m => Path(sourceCacheHome + m.name).path).toArray
-    compile(binCacheHome, sourceCacheHome + "runtime" + File.separator + "source0.cu", paths)
+    for ((source, name) <- sourceBuffer) {
+      val paths = modules.map(m => Path(sourceCacheHome + m.name).path).toArray
+      compile(binCacheHome, sourceCacheHome + "runtime" + File.separator + name + ext, paths)
+    }
+    sourceBuffer.clear()
   }
 
   //TODO: handle more than one runtime object
@@ -60,7 +55,7 @@ object CudaCompile extends CodeCache {
       "-I" + javaHome + sep + ".." + sep + "include" + "," + javaHome + sep + ".." + sep + "include" + sep + suffix, //jni
       "-I" + paths.mkString(","),
       "-I" + deliteHome + sep + "runtime" + sep + "cuda",
-      "-O2", //optimized
+      "-O3", //optimized
       "-arch", "compute_20",
       "-code", "sm_20",
       "-shared", "-Xcompiler", "\'-fPIC\'", //dynamic shared library
@@ -83,13 +78,6 @@ object CudaCompile extends CodeCache {
       }
       println()
       sys.error("nvcc compilation failed")
-    }
-  }
-
-  def printSources() {
-    for (i <- 0 until sourceBuffer.length) {
-      print(sourceBuffer(i))
-      print("\n /*********/ \n \n")
     }
   }
 

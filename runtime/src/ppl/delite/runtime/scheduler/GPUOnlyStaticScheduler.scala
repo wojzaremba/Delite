@@ -56,36 +56,16 @@ final class GPUOnlyStaticScheduler extends StaticScheduler with ParallelUtilizat
       case c: OP_Nested => addNested(c, graph, schedule, Seq(cpu,gpu))
       case _ => {
         if (op.supportsTarget(Targets.Cuda)) { //schedule on GPU resource
-          if (op.isDataParallel) {
-            splitGPU(op, schedule)
-          }
-          else {
-            schedule(gpu).add(op)
-            op.scheduledResource = gpu
-          }
+          scheduleOn(op, schedule, gpu)
         }
         else if (op.variant != null) { //kernel could be partially GPUable
           addNested(op.variant, graph, schedule, Seq(cpu,gpu))
         }
         else { //schedule on CPU resource
-          if (op.isDataParallel) {
-            split(op, graph, schedule, Seq(cpu))
-          }
-          else {
-            schedule(cpu).add(op)
-            op.scheduledResource = cpu
-          }
+          scheduleOn(op, schedule, cpu)
         }
-        op.isScheduled = true
       }
     }
-  }
-
-  private def splitGPU(op: DeliteOP, schedule: PartialSchedule) {
-    val chunk = OpHelper.splitGPU(op)
-    schedule(gpu).add(chunk)
-    chunk.scheduledResource = gpu
-    chunk.isScheduled = true
   }
 
 }

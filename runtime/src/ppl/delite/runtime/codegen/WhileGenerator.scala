@@ -27,46 +27,33 @@ class WhileGenerator(whileLoop: OP_While, location: Int) extends NestedGenerator
     val available = new ArrayBuffer[DeliteOP]
     //output predicate
     if (whileLoop.predicateValue == "") {
+      out.append("def predicate: Boolean = {\n")
       available ++= inputs
-      addKernelCalls(whileLoop.predicateGraph.schedule(location), location, out, available, syncList)
+      addKernelCalls(whileLoop.predicateGraph.schedule(location), location, out)
+      out.append(getSym(whileLoop.predicateGraph.result._1, whileLoop.predicateGraph.result._2))
+      out.append("\n}\n")
     }
 
     //write while
-    if (whileLoop.predicateValue == "") {
-      out.append("var pred: Boolean = ")
-      out.append(getSym(whileLoop.predicateGraph.result._1, whileLoop.predicateGraph.result._2))
-      out.append('\n')
-      out.append("while (pred")
-    }
-    else {
-      out.append("while (")
+    out.append("while (")
+    if (whileLoop.predicateValue == "")
+      out.append("predicate")
+    else
       out.append(whileLoop.predicateValue)
-    }
     out.append(") {\n")
 
     //output while body
     if (whileLoop.bodyValue == "") {
       available.clear()
       available ++= inputs
-      addKernelCalls(whileLoop.bodyGraph.schedule(location), location, out, available, syncList)
-    }
-
-    //reevaluate predicate
-    if (whileLoop.predicateValue == "") {
-      available.clear()
-      available ++= inputs
-      out.append(";{\n")
-      addKernelCalls(whileLoop.predicateGraph.schedule(location), location, out, available, new ArrayBuffer[DeliteOP]) //dummy syncList b/c already added
-      out.append("pred = ") //update var
-      out.append(getSym(whileLoop.predicateGraph.result._1, whileLoop.predicateGraph.result._2))
-      out.append("\n}\n")
+      addKernelCalls(whileLoop.bodyGraph.schedule(location), location, out)
     }
 
     //print end of while and method
     out.append("}\n}\n")
 
     //the sync methods/objects
-    addSync(syncList, out)
+    addLocalSync(out)
 
     //the footer
     out.append("}\n")

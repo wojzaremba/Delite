@@ -16,15 +16,16 @@ import ppl.delite.runtime.Config
 
 object Compilers {
 
-  def compileSchedule(graph: DeliteTaskGraph): StaticSchedule = {
+  def compileSchedule(graph: DeliteTaskGraph, startLocation: Int, endLocation: Int): StaticSchedule = {
     //generate executable(s) for all the ops in each proc
     //TODO: this is a poor method of separating CPU from GPU, should be encoded
     val numThreads = Config.numThreads
     val numGPUs = Config.numGPUs
-    val schedule = graph.schedule
+    val schedule = graph.schedule.slice(startLocation, endLocation)
     assert((numThreads + numGPUs) == schedule.numResources)
-    MainGenerator.makeExecutables(schedule.slice(0,numThreads), graph.kernelPath)
-    for (i <- 0 until numGPUs) GPUMainGenerator.makeExecutable(schedule.slice(numThreads+i, numThreads+i+1), graph.kernelPath)
+    MainGenerator.makeExecutables(schedule.slice(startLocation, startLocation + numThreads))
+    for (location <- startLocation + numThreads until startLocation + numThreads + numGPUs)
+      GPUMainGenerator.makeExecutable(schedule.slice(location, location+1), location)
 
     if (Config.printSources) { //DEBUG option
       ScalaCompile.printSources()
@@ -36,7 +37,7 @@ object Compilers {
     val classLoader = ScalaCompile.compile
     val queues = new Array[ArrayDeque[DeliteExecutable]](schedule.numResources)
     for (i <- 0 until schedule.numResources) {
-      val cls = classLoader.loadClass("Executable"+i) //load the Executable class
+      val cls = classLoader.loadClass(MainGenerator.className(i)) //load the Executable class
       val executable = cls.getMethod("self").invoke(null).asInstanceOf[DeliteExecutable] //retrieve the singleton instance
 
       queues(i) = new ArrayDeque[DeliteExecutable]

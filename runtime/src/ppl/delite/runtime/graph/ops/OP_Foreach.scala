@@ -16,7 +16,7 @@ class OP_Foreach(val id: String, func: String, private[graph] val outputTypesMap
 
   final def isDataParallel = true
 
-  def task = kernelName
+  def task(location: Int) = sys.error("Foreach not implemented")
 
   private var kernelName: String = ""
 

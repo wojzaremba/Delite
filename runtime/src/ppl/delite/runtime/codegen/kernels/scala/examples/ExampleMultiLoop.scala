@@ -90,7 +90,11 @@ final class ExampleMultiLoopHeader(in0: Array[Double], in1: Double, in2: Double)
 object ExampleMultiLoop0 {
 
   //apply for the master (chunk 0) returns the result
-  def apply(header: ExampleMultiLoopHeader): Activation = {
+  def apply(in0: Array[Double], in1: Double, in2: Double): Activation = {
+    //initialize single-threaded
+    val header = new ExampleMultiLoopHeader(in0, in1, in2)
+    setHeader(header)
+
     //first level of tree (log(numChunks) levels total)
     val acc = process(header)
     //second level of tree
@@ -118,12 +122,18 @@ object ExampleMultiLoop0 {
     acc
   }
 
+  def setHeader(header: ExampleMultiLoopHeader) { }
+  def getHeader: ExampleMultiLoopHeader = null
+
 }
 
 object ExampleMultiLoop6 {
 
   //apply for the helper chunks all return Unit
-  def apply(header: ExampleMultiLoopHeader) {
+  def apply() {
+    //get initialized
+    val header = ExampleMultiLoop0.getHeader
+
     //first level of tree
     val acc = process(header)
     //second level of tree

@@ -68,3 +68,8 @@ object Targets extends Enumeration {
   }
   */
 }
+
+object HardwareTargets extends Enumeration {
+  val cpu = Value("cpu")
+  val gpu = Value("gpu")
+}

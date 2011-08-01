@@ -170,11 +170,11 @@ abstract class GPUExecutableGenerator {
       writeOutputAlloc(op, out)
       //write the call
       if (op.isInstanceOf[OP_Nested])
-        writeFunctionCall(op, out)
+        writeFunctionCall(op, location, out)
       else if (op.cudaMetadata.libCall != null)
         writeLibraryCall(op, out)
       else
-        writeKernelCall(op, out)
+        writeKernelCall(op, location, out)
 
       //write the setter
       var addSetter = false
@@ -256,9 +256,9 @@ abstract class GPUExecutableGenerator {
     }
   }
 
-  protected def writeKernelCall(op: DeliteOP, out: StringBuilder) {
-    if (op.task == null) return //dummy op
-    out.append(op.task) //kernel name
+  protected def writeKernelCall(op: DeliteOP, location: Int, out: StringBuilder) {
+    if (op.task(location) == null) return //dummy op
+    out.append(op.task(location)) //kernel name
     val dims = op.cudaMetadata
     out.append("<<<") //kernel dimensions
     //grid dimensions
@@ -327,14 +327,14 @@ abstract class GPUExecutableGenerator {
     out.append(");\n")
   }
 
-  protected def writeFunctionCall(op: DeliteOP, out: StringBuilder) {
+  protected def writeFunctionCall(op: DeliteOP, location: Int, out: StringBuilder) {
     if (op.outputType != "Unit") {
       out.append(op.outputType(Targets.Cuda))
       out.append(' ')
       out.append(getSymGPU(op))
       out.append(" = ")
     }
-    out.append(op.task)
+    out.append(op.task(location))
     out.append('(')
     var first = true
     for ((input,sym) <- op.getInputs) {
@@ -667,20 +667,19 @@ abstract class GPUExecutableGenerator {
 
 abstract class GPUScalaExecutableGenerator extends ExecutableGenerator {
 
-  def emitScala(location: Int, syncList: ArrayBuffer[DeliteOP], kernelPath: String): String = {
+  def emitScala(location: Int, syncList: ArrayBuffer[DeliteOP]): String = {
     val out = new StringBuilder
 
     //the header
-    writeHeader(out, location, "")
+    addObjectHeader(out, location)
 
     //the run method
-    out.append("def run() {\n")
-    out.append("hostGPU\n")
-    out.append('}')
-    out.append('\n')
+    addMethodHeader(out)
+    out.append("hostGPU()\n")
+    addMethodFooter(out)
 
     //the native method
-    out.append("@native def hostGPU : Unit\n")
+    out.append("@native def hostGPU()\n")
 
     //link the native code upon object creation
     out.append("System.load(\"")
@@ -688,15 +687,14 @@ abstract class GPUScalaExecutableGenerator extends ExecutableGenerator {
     out.append("cudaHost.so\")\n")
 
     //the sync methods/objects
-    addSync(syncList, out)
+    addLocalSync(out)
     writeOuterSet(syncList, out) //helper set methods for JNI calls to access
 
     //an accessor method for the object
     addAccessor(out)
 
     //the footer
-    out.append('}')
-    out.append('\n')
+    addObjectFooter(out)
 
     out.toString
   }

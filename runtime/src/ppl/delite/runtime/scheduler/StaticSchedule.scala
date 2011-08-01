@@ -8,7 +8,7 @@ import ppl.delite.runtime.graph.ops.DeliteOP
  * Author: Kevin J. Brown
  * Date: Oct 11, 2010
  * Time: 4:34:43 PM
- * 
+ *
  * Pervasive Parallelism Laboratory (PPL)
  * Stanford University
  */
@@ -26,24 +26,30 @@ class StaticSchedule(val resources: Array[ArrayDeque[DeliteExecutable]]) {
 }
 
 object PartialSchedule {
-  def apply(numResources: Int) = {
-    val r = new Array[ArrayDeque[DeliteOP]](numResources)
-    for (i <- 0 until numResources) r(i) = new ArrayDeque[DeliteOP]
-    new PartialSchedule(r)
+  def apply(startLocation: Int, endLocation: Int): PartialSchedule = {
+    val r = new Array[ArrayDeque[DeliteOP]](endLocation - startLocation)
+    for (i <- 0 until endLocation - startLocation) r(i) = new ArrayDeque[DeliteOP]
+    new PartialSchedule(startLocation, endLocation, r)
   }
 
-  def apply(resources: Array[ArrayDeque[DeliteOP]]) {
-    new PartialSchedule(resources)
+  def apply(startLocation: Int, endLocation: Int, resources: Array[ArrayDeque[DeliteOP]]): PartialSchedule = {
+    new PartialSchedule(startLocation, endLocation, resources)
   }
+
+  def apply(numResources: Int): PartialSchedule = apply(0, numResources)
+
+  def apply(resources: Array[ArrayDeque[DeliteOP]]): PartialSchedule = apply(0, resources.length, resources)
 }
 
-class PartialSchedule(resources: Array[ArrayDeque[DeliteOP]]) {
+class PartialSchedule(val startLocation: Int, val endLocation: Int, resources: Array[ArrayDeque[DeliteOP]]) extends Serializable {
 
-  val numResources = resources.length
+  val numResources = endLocation - startLocation
 
-  def apply(idx: Int) = resources(idx)
+  private def index(logical: Int) = logical - startLocation
 
-  def slice(start: Int, end: Int) = new PartialSchedule(resources.slice(start,end))
+  def apply(idx: Int) = resources(index(idx))
+
+  def slice(start: Int, end: Int) = new PartialSchedule(start, end, resources.slice(index(start),index(end)))
 
   def foreach[U](f: ArrayDeque[DeliteOP] => U) = resources.foreach(f)
 
@@ -58,3 +64,35 @@ class PartialSchedule(resources: Array[ArrayDeque[DeliteOP]]) {
    * Designed to grow
    */
 }
+
+/* TODO: hierarchical vs. flat?
+object PartialClusterSchedule {
+  def apply(numNodes: Int) = {
+    new PartialClusterSchedule(new Array[PartialSchedule](numNodes))
+  }
+
+  def apply(resources: Seq[Int]) = {
+    val nodes = new Array[PartialSchedule](resources.length)
+    for (idx <- 0 until resources.length)
+      nodes(idx) = new PartialSchedule(resources(idx))
+    new PartialClusterSchedule(nodes)
+  }
+
+  def apply(nodes: Array[PartialSchedule]) {
+    new PartialClusterSchedule(nodes)
+  }
+}
+
+class PartialClusterSchedule(nodes: Array[PartialSchedule]) {
+
+  val numNodes = nodes.length
+
+  def apply(idx: Int) = nodes(idx)
+
+  def foreach[U](f: PartialSchedule => U) = nodes.foreach(f)
+
+  def map[B](f: PartialSchedule => B) = nodes.map(f)
+
+  def withFiler(p: PartialSchedule => Boolean) = nodes.withFilter(p)
+
+} */

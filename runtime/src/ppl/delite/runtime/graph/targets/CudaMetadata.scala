@@ -11,7 +11,7 @@ import ppl.delite.runtime.graph.ops.DeliteOP
  * Stanford University
  */
 
-final class CudaMetadata {
+final class CudaMetadata extends Serializable {
 
   var libCall: String = null
   val blockSizeX = new OPData
@@ -64,7 +64,7 @@ final class CudaMetadata {
 
 }
 
-final class OPData {
+final class OPData extends Serializable {
 
   var func: String = _
   var funcReturn: String = _
