@@ -61,6 +61,7 @@ object Delite {
     //load task graph
     //val graph = loadDeliteDEG(args(0))
     val graph = new TestGraph
+    Config.deliteBuildHome = graph.kernelPath    
 
     //load kernels & data structures
     loadSources(graph)
@@ -114,6 +115,16 @@ object Delite {
     try {
 
       executor.init() //call this first because could take a while and can be done in parallel
+
+      //load task graph
+      val graph = loadDeliteDEG(args(0))
+      //val graph = new TestGraph
+
+      //load kernels & data structures
+      loadSources(graph)
+
+      //schedule
+      scheduler.schedule(graph)
 
       //compile
       val executable = Compilers.compileSchedule(graph, startLocation, endLocation)
