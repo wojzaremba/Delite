@@ -8,10 +8,11 @@ import java.io.{FileWriter, BufferedWriter, File, PrintWriter}
 
 import ppl.delite.framework.{Config, DeliteApplication}
 import ppl.delite.framework.extern.lib._
+import ppl.delite.framework.extern.xplatform._
 import ppl.delite.framework.ops._
 import ppl.delite.framework.codegen.delite._
 
-trait GenericGenExternal extends GenericCodegen {
+trait GenericGenExternal extends GenericCodegen with Crossplatform {
   val IR: DeliteOpsExp
   import IR._
 
@@ -24,7 +25,7 @@ trait GenericGenExternal extends GenericCodegen {
   /* location for generated native method wrappers */
   val nativeDir = new File(Config.buildDir + "/native/")
   
-  /* location for compiled .so shared libraries */
+  /* location for compiled native libraries */
   val libDir = new File(Config.buildDir + "/libraries/")
   
   def libInterfaceHdr(lib: ExternalLibrary) = ""
@@ -44,7 +45,7 @@ trait GenericGenExternal extends GenericCodegen {
     nativeStreams foreach { v => val s = v._2; s.close() }
     
     // compile native code into .so
-    libraries foreach { v => val lib = v._1; lib.compile(new File(nativeDir, "/" + lib.name + "." + lib.ext) toString, libDir.toString) }
+    libraries foreach { v => val lib = v._1; lib.compile(new File(nativeDir, File.separator + lib.name + "." + lib.ext) toString, libDir.toString) }
     
     super.finalizeGenerator()    
   }
@@ -80,12 +81,12 @@ trait GenericGenExternal extends GenericCodegen {
     assert(!nativeStreams.contains(lib))
 
     // interface file header
-    val i = new PrintWriter(new File(headerDir, "/" + hdrName(lib) + "." + hdrExt))
+    val i = new PrintWriter(new File(headerDir, File.separator + hdrName(lib) + "." + hdrExt))
     i.println(libInterfaceHdr(lib))
     interfaceStreams.put(lib, i)
 
     // native file header
-    val n = new PrintWriter(new File(nativeDir, "/" + lib.name + "." + lib.ext))
+    val n = new PrintWriter(new File(nativeDir, File.separator + lib.name + "." + lib.ext))
     n.println(lib.header)
     nativeStreams.put(lib, n)    
   }

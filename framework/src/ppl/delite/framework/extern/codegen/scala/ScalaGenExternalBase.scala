@@ -21,8 +21,8 @@ trait ScalaGenExternalBase extends GenericGenExternal with ScalaGenBase {
   override def libInterfaceHdr(lib: ExternalLibrary) = """
 package %s
 object %s {
-System.load("%s")
-""".format("generated.scala", lib.name, new File(libDir, "/" + lib.name + ".so"))
+System.load(%s)
+""".format("generated.scala", lib.name, "\"\"\"" + new File(libDir, File.separator + lib.name + extSharedLib).getAbsolutePath + "\"\"\"")
 
   override def libInterfaceFtr(lib: ExternalLibrary) = "}"
 

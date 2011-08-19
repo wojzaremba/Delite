@@ -1,4 +1,4 @@
-package ppl.delite.framework.extern
+package ppl.delite.framework.extern.xplatform
 
 trait Crossplatform {
   var os : String = null // todo. make this an enum or a case class
@@ -14,7 +14,7 @@ trait Crossplatform {
 
   val shellScriptHeader = if (unix) "#!/usr/bin/env bash" else ""
   val extShellScript = if (unix) ".sh" else ".bat"
-  val extSharedLib = Map("windows" -> "dll", "linux" -> "so", "mac" -> "dylib")(os)
+  val extSharedLib = Map("windows" -> ".dll", "linux" -> ".so", "mac" -> ".dylib")(os)
 
   class ShellCommand(command: String, args: List[String]) {
     def this(command:String, args: String*) = this(command, args.toList)

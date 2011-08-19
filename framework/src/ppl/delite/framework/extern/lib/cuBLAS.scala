@@ -2,9 +2,11 @@ package ppl.delite.framework.extern.lib
 
 import ppl.delite.framework._
 import ppl.delite.framework.codegen.scala._
+import ppl.delite.framework.extern.xplatform._
 import java.io._
 
 object cuBLAS extends ExternalLibrary {
+  val configFile = "cuBLAS.xml"
   val libName = "cudaBLAS"
   val ext = "cu"
 
@@ -17,7 +19,7 @@ object cuBLAS extends ExternalLibrary {
 """
   
   val javaHome = System.getProperty("java.home")
-  val cudaHome = config \\ "home" text
+  val cudaHome = (config \\ "home" text).expandEnvironmentVars
   val arch = config \\ "arch" text
   val code = config \\ "code" text
 
@@ -28,8 +30,8 @@ object cuBLAS extends ExternalLibrary {
       flags += """/nologo"""
       flags += """/w"""
       flags += """/O3"""
-      flags += """/I"%s\..\include"""".format(javaHome)
-      flags += """/I"%s\..\include\win32"""".format(javaHome)
+      flags += """/I%s\..\include""".format(javaHome)
+      flags += """/I%s\..\include\win32""".format(javaHome)
       flags += "/LD"
       val args = flags.toList
       val output = List("/Fe:%s")
@@ -40,9 +42,9 @@ object cuBLAS extends ExternalLibrary {
       val flags = scala.collection.mutable.ListBuffer[String]()
       flags += """-w"""
       flags += """-O3"""
-      flags += """-I"%s/../include"""".format(javaHome)
-      flags += """-I"%s/../include/linux"""".format(javaHome)
-      flags += "-shared -Xcompiler -fPIC"
+      flags += """-I%s/../include""".format(javaHome)
+      flags += """-I%s/../include/linux""".format(javaHome)
+      flags ++= List("-shared", "-Xcompiler", "-fPIC")
       val args = flags.toList
       val output = List("-o", "%s")
     }
@@ -52,8 +54,8 @@ object cuBLAS extends ExternalLibrary {
       val flags = scala.collection.mutable.ListBuffer[String]()
       flags += """-w"""
       flags += """-O3"""
-      flags += """-I"/System/Library/Frameworks/JavaVM.framework/Headers""""
-      flags += "-dynamiclib -fPIC"
+      flags += """-I/System/Library/Frameworks/JavaVM.framework/Headers"""
+      flags ++= List("-dynamiclib", "-Xcompiler", "-fPIC")
       val args = flags.toList
       val output = List("-o", "%s")
     }

@@ -17,7 +17,7 @@ trait CudaGenExternalBase extends GenericGenExternal with CudaGenBase {
   import IR._
 
   val hdrExt = "h"
-  lazy val globalInterfaceStream = new PrintWriter(new File(headerDir + "/" + "library" + "." + hdrExt)) // runtime conventions with GPUExecutableGenerator
+  lazy val globalInterfaceStream = new PrintWriter(new File(headerDir + File.separator + "library" + "." + hdrExt)) // runtime conventions with GPUExecutableGenerator
 
   override def finalizeGenerator() {
     globalInterfaceStream.close()

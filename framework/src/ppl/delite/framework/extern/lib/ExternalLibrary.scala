@@ -1,7 +1,7 @@
 package ppl.delite.framework.extern.lib
 
 import ppl.delite.framework._
-import ppl.delite.framework.extern._
+import ppl.delite.framework.extern.xplatform._
 import java.io._
 import scala.xml._
 
@@ -21,7 +21,7 @@ trait ExternalLibrary extends Crossplatform {
   val compiler: ExternalLibraryCompiler 
 
   lazy val config = loadConfig(configFile)
-  val configFile: String = this.getClass.getSimpleName + ".xml" // name of file, will always be searched for inside extern/src/ppl/delite/extern/lib/config
+  val configFile: String // name of file, will always be searched for inside extern/src/ppl/delite/extern/lib/config
   def loadConfig(f: String) = {
     // parse XML, return configuration
     val configFile = new File(Config.homeDir, "/framework/src/ppl/delite/framework/extern/lib/config/" + f)
