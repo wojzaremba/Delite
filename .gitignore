@@ -26,3 +26,4 @@ test-out/*/*-src
 \#*
 .\#*
 *~
+framework/src/ppl/delite/framework/extern/lib/config/*.xml
