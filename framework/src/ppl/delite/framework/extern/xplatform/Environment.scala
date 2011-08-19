@@ -15,7 +15,7 @@ object `package` {
       }
 
       var result = s
-      result = """\$(\w+?)""".r.replaceAllIn(result, expandVar _)
+      result = """\$(\w+)""".r.replaceAllIn(result, expandVar _)
       result = """\$\{(\w+?)\}""".r.replaceAllIn(result, expandVar _)
       result = """%(\w+?)%""".r.replaceAllIn(result, expandVar _)
       result
