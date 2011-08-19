@@ -27,7 +27,7 @@ var (java_opts, runner_opts, other_opts, other_args) = parse_args_with_runner(ar
 if (windows) { java_opts = java_opts map { arg => wrap(arg) }; env("JAVA_OPTS") = java_opts mkString " " }
 
 println("(Phase one) Scala compilation...")
-if (other_args.length == 0) { println("Please, provide at least one input Scala source file"); sys.exit(1); 
+if (other_args.length == 0) { println("Please, provide at least one input Scala source file"); sys.exit(1); }
 args = java_opts ++ other_opts ++ other_args
 classpath = env_classpath + config.optiml_classes + config.framework_classes + config.lms_classes
 val (_, lines1) = run(config.scala_virtualized_compiler)
