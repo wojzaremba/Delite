@@ -35,7 +35,6 @@ if (unix) {
   var libscalaBLAS = degDir + "generated" + File.separator + "libraries" + File.separator + "libscalaBLAS"
   if (linux) libscalaBLAS += ".so"
   if (mac) libscalaBLAS += ".dylib"
-  println(libscalaBLAS)
 
   if (libscalaBLAS.exist) {
     val blasConfigFile: String = config.delite_home + "/framework/src/ppl/delite/framework/extern/lib/config/".replace("/", File.separator) + "BLAS.xml"
