@@ -25,4 +25,4 @@ test-out/*/*-skel
 test-out/*/*-src
 \#*
 .\#*
-*.~*~
+*~

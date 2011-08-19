@@ -6,11 +6,8 @@ import java.io._
 
 object cuBLAS extends ExternalLibrary {
   val libName = "cudaBLAS"
-  val configFile = "cuBLAS.xml"  
   val ext = "cu"
-  val compileFlags = List( "-w", "-lcublas", "-O3", "-arch", "compute_20", "-code", "sm_20", "-shared", "-Xcompiler", "-fPIC") // HJ TODO: these are Fermi-specific; where should they be specified?                           
-  val outputSwitch = "-o"
-  
+
   override val header = """
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,4 +15,51 @@ object cuBLAS extends ExternalLibrary {
 #include <cuda_runtime.h>
 #include <cublas.h>
 """
+  
+  val javaHome = System.getProperty("java.home")
+  val cudaHome = config \\ "home" text
+  val arch = config \\ "arch" text
+  val code = config \\ "code" text
+
+  val compiler = os match {
+    case "windows" => new ExternalLibraryCompiler {
+      val path = "nvcc"
+      val flags = scala.collection.mutable.ListBuffer[String]()
+      flags += """/nologo"""
+      flags += """/w"""
+      flags += """/O3"""
+      flags += """/I"%s\..\include"""".format(javaHome)
+      flags += """/I"%s\..\include\win32"""".format(javaHome)
+      flags += "/LD"
+      val args = flags.toList
+      val output = List("/Fe:%s")
+    }
+
+    case "linux" => new ExternalLibraryCompiler {
+      val path = "nvcc"
+      val flags = scala.collection.mutable.ListBuffer[String]()
+      flags += """-w"""
+      flags += """-O3"""
+      flags += """-I"%s/../include"""".format(javaHome)
+      flags += """-I"%s/../include/linux"""".format(javaHome)
+      flags += "-shared -Xcompiler -fPIC"
+      val args = flags.toList
+      val output = List("-o", "%s")
+    }
+
+    case "mac" => new ExternalLibraryCompiler {
+      val path = "nvcc"
+      val flags = scala.collection.mutable.ListBuffer[String]()
+      flags += """-w"""
+      flags += """-O3"""
+      flags += """-I"/System/Library/Frameworks/JavaVM.framework/Headers""""
+      flags += "-dynamiclib -fPIC"
+      val args = flags.toList
+      val output = List("-o", "%s")
+    }
+
+    case _ => {
+      sys.error("operating system %s is not supported".format(System.getProperty("os.name")))
+    }
+  }
 }

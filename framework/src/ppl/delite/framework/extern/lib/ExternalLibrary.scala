@@ -1,75 +1,72 @@
 package ppl.delite.framework.extern.lib
 
 import ppl.delite.framework._
+import ppl.delite.framework.extern._
 import java.io._
 import scala.xml._
 
-trait ExternalLibConfiguration {
-  val compiler: String
-  val include: List[String]
+trait ExternalLibraryCompiler {
+  val path: String // machine-dependent path to compiler executable, sourced or calculated from XML configuration by trait implementors
+  val init: String = "" // machine-dependent environment initializer, sourced or calculated from XML configuration by trait implementors
+  val args: List[String] // machine-dependent compilation args, sourced or calculated from XML configuration by trait implementors
+  val output: List[String] // templates of compiler parameters that allows us to specify the destination (e.g. List("-o", "%s") for Unix or List("/Fe:%s") for Windows)
 }
 
-trait ExternalLibrary {
+trait ExternalLibrary extends Crossplatform {
   //val target: Target
   val libName: String
-  val ext: String // native file extension (can this ever be anything besides .c or .cpp??)
-  val configFile: String // name of file, will always be searched for inside extern/src/ppl/delite/extern/lib/config
-  val compileFlags: List[String] // machine-independent flags that are always passed to the compiler for this lib
-  val outputSwitch: String // compiler parameter that allows us to specify destination dir (e.g. -o)
-  val header: String = "" // an optional header to be included at the top of every generated call for this lib
-  
   lazy val name = "lib" + libName // generated scala interface for this library will use this as its object name 
+  val ext: String // native file extension (can this ever be anything besides .c or .cpp??)
+  val header: String = "" // an optional header to be included at the top of every generated call for this lib
+  val compiler: ExternalLibraryCompiler 
 
-  /**
-   * machine dependent, sourced from XML configuration 
-   */  
   lazy val config = loadConfig(configFile)
-  lazy val compiler: String = config.compiler
-  lazy val includeFlags: List[String] = config.include
+  val configFile: String = this.getClass.getSimpleName + ".xml" // name of file, will always be searched for inside extern/src/ppl/delite/extern/lib/config
+  def loadConfig(f: String) = {
+    // parse XML, return configuration
+    val configFile = new File(Config.homeDir, "/framework/src/ppl/delite/framework/extern/lib/config/" + f)
+    if (!configFile.exists) throw new FileNotFoundException("could not load library configuration: " + configFile)    
+    XML.loadFile(configFile)
+  }
   
   def compile(src: String, destDir: String) {
     val srcFile = new File(src)
     if (!srcFile.exists) throw new FileNotFoundException("source file does not exist: " + src)
-    
-    // invoke the compiler using Runtime.exec
-    val javaHome = System.getProperty("java.home")
-    val buildPath = new File(Config.buildDir, "scala/kernels")
-    val destPath = new File(destDir, "/" + name + ".so")    
-    val outputFlags = List(outputSwitch, destPath.toString)
 
-    // this call is based on the gcc/icc invocation signature.. do we need to generalize it?
-    val args = Array(compiler) ++ compileFlags ++ includeFlags ++ outputFlags ++ Array(srcFile.toString)
-    //println("--external compile args: " + (args mkString ","))
-    val process = Runtime.getRuntime.exec(args, null, buildPath)
+    val script = File.createTempFile(name + "-compiler", extShellScript)
+    val stream = new PrintWriter(script)
+    stream.println(shellScriptHeader)
+
+    val buildPath = new File(Config.buildDir + File.separator + "scala" + File.separator + "kernels" + File.separator)
+    stream.println(new ShellCommand("cd", buildPath.getAbsolutePath))
+
+    val outputFile = new File(destDir + File.separator + name + extSharedLib)
+    val outputArgs = compiler.output.map({s => s.format(outputFile.getAbsolutePath)})
+    val compilerArgs: List[String] = compiler.args ++ outputArgs :+ srcFile.getAbsolutePath
+    //println("--external compiler args: " + ((compiler.path +: compilerArgs) mkString ","))
+    stream.println(compiler.init)
+    stream.println(new ShellCommand(compiler.path, compilerArgs))
+
+    stream.close
+    script.setExecutable(true)
+    val process = Runtime.getRuntime().exec(script.getAbsolutePath, null, buildPath)
     process.waitFor
-	  checkError(process)
+    checkError(process)
   }
 
   private def checkError(process: Process) {
-    val errorStream = process.getErrorStream
-    var err = errorStream.read()
-    if (err != -1) {
-      while (err != -1) {
-        print(err.asInstanceOf[Char])
-        err = errorStream.read()
-      }
+    var errors = io.Source.fromInputStream(process.getErrorStream).getLines.toList
+
+    // unfortunately Mac linker produces warnings even if we provide "-w" option to the compiler
+    // i guess, that's because icc calls libtool and libtool calls whatever it wishes, including ld
+    // however, libtool doesn't seem to expose an option to disable warnings, so it just swallows our "-w"
+    // that's why here we're manually filtering linker warnings
+    if (mac) errors = errors filter { line => !line.startsWith("ld: warning:") }
+
+    if (errors.length != 0) {
+      println(errors mkString System.getProperty("line.separator"))
       println()
-      sys.error("external library compilation failed")
-    }
-  }
-
-  def loadConfig(f: String): ExternalLibConfiguration = {
-    // parse XML, return configuration
-    val configFile = new File(Config.homeDir, "/framework/src/ppl/delite/framework/extern/lib/config/" + f)
-    if (!configFile.exists) throw new FileNotFoundException("could not load library configuration: " + configFile)    
-    
-    val body = XML.loadFile(configFile)
-    val compilerVal = body \\ "compiler" text
-    val includeVal = body \\ "include" flatMap { e => val prefix = e \ "prefix"; e \\ "path" map { prefix.text.trim + _.text.trim } } toList
-
-    new ExternalLibConfiguration {
-      val compiler = compilerVal
-      val include = includeVal
+      sys.error("%s compilation failed".format(name))
     }
   }
 }
