@@ -24,7 +24,7 @@ trait ExternalLibrary extends Crossplatform {
   val configFile: String // name of file, will always be searched for inside extern/src/ppl/delite/extern/lib/config
   def loadConfig(f: String) = {
     // parse XML, return configuration
-    val configFile = new File(Config.homeDir, "/framework/src/ppl/delite/framework/extern/lib/config/" + f)
+    val configFile = new File(Config.homeDir, "/framework/src/ppl/delite/framework/extern/lib/config/".replace("/", File.separator) + f)
     if (!configFile.exists) throw new FileNotFoundException("could not load library configuration: " + configFile)    
     XML.loadFile(configFile)
   }
@@ -43,7 +43,7 @@ trait ExternalLibrary extends Crossplatform {
     val outputFile = new File(destDir + File.separator + name + extSharedLib)
     val outputArgs = compiler.output.map({s => s.format(outputFile.getAbsolutePath)})
     val compilerArgs: List[String] = compiler.args ++ outputArgs :+ srcFile.getAbsolutePath
-    //println("--external compiler args: " + ((compiler.path +: compilerArgs) mkString ","))
+    // println("--external compiler args: " + ((compiler.path +: compilerArgs) mkString ","))
     stream.println(compiler.init)
     stream.println(new ShellCommand(compiler.path, compilerArgs))
 

@@ -21,15 +21,33 @@ echo '}' >> "$synthetic"
 exec scala "$synthetic" "$@"
 !#*/
 
+args = javaopt("delite.code.cache.home", "generatedCache") +: args
+args = javaopt("delite.home", config.delite_home) +: args
+var (java_opts, other_opts, deg, deg_args) = parse_args_with_deg(args, verbose = false)
+var runtime: Arg = "ppl.delite.runtime.Delite"
+if (windows) java_opts = java_opts map { arg => wrap(arg) }
+
 // unfortunately, intel mkl libs cannot be linked statically, since the distribution provides neither libmkl_mc3.a nor libmkl_def.a
 // that's why, unlike on Windows, we've got to either hardcode libpaths or provide them every time when running delite
 // this code presents a shortcut that hopefully simplifies the latter scenario
 if (unix) {
-  for (javaopt("blas.init", v) <- args) {
+  val degDir = new File(new File(deg).getAbsolutePath).getParent + File.separator
+  var libscalaBLAS = degDir + "generated" + File.separator + "libraries" + File.separator + "libscalaBLAS"
+  if (linux) libscalaBLAS += ".so"
+  if (mac) libscalaBLAS += ".dylib"
+  println(libscalaBLAS)
+
+  if (libscalaBLAS.exist) {
+    val blasConfigFile: String = config.delite_home + "/framework/src/ppl/delite/framework/extern/lib/config/".replace("/", File.separator) + "BLAS.xml"
+    if (!blasConfigFile.exist) throw new FileNotFoundException("could not load library configuration: " + blasConfigFile)    
+    val blasConfig = XML.loadFile(blasConfigFile)
+    val blasHome = (blasConfig \\ "home" text).expandEnvironmentVars
+    val arch = blasConfig \\ "arch" text
+
     val script = File.createTempFile("blas.init.", ".script")
     val stream = new PrintWriter(script)
     stream.println("#!/usr/bin/env bash")
-    stream.println(v)
+    stream.println("source %s/bin/compilervars.sh %s".format(blasHome, arch))
     val output_file = File.createTempFile("blas.init.", ".output")
     stream.println("echo PATH=$PATH >> %s".format(output_file.getAbsolutePath))
     stream.println("echo DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
@@ -46,12 +64,6 @@ if (unix) {
     for (keyvalue(k, v) <- output) env(k) = v
   }
 }
-
-args = javaopt("delite.code.cache.home", "generatedCache") +: args
-args = javaopt("delite.home", config.delite_home) +: args
-var (java_opts, other_opts, deg, deg_args) = parse_args_with_deg(args, verbose = false)
-var runtime: Arg = "ppl.delite.runtime.Delite"
-if (windows) java_opts = java_opts map { arg => wrap(arg) }
 
 args = java_opts ++ other_opts + runtime + deg ++ deg_args
 classpath = env_classpath + config.runtime_classes + config.scala_vanilla_library_jar + config.scala_vanilla_compiler_jar

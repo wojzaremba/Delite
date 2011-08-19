@@ -26,7 +26,7 @@ object BLAS extends ExternalLibrary {
   val compiler = os match {
     case "windows" => new ExternalLibraryCompiler {
       val path = "icl"
-      override val init = """call "%ICPP_COMPILER12%\bin\ipsxe-comp-vars.bat" %s""".format(arch)
+      override val init = """call "%s\bin\ipsxe-comp-vars.bat" %s""".format(blasHome, arch)
       val flags = scala.collection.mutable.ListBuffer[String]()
       flags += """/nologo"""
       flags += """/w"""
@@ -35,11 +35,9 @@ object BLAS extends ExternalLibrary {
       flags += """/I%s\..\include\win32""".format(javaHome)
       flags += """/I%s\mkl\include""".format(blasHome)
       flags += """/LIBPATH:%s\mkl\lib""".format(blasHome)
-      flags += """/LIBPATH:%s\mkl\lib\em64t""".format(blasHome)
-      flags += """/LIBPATH:%s\mkl\lib\intel64""".format(blasHome)
+      flags += """/LIBPATH:%s\mkl\lib\%s""".format(blasHome, arch)
       flags += """/LIBPATH:%s\compiler\lib""".format(blasHome)
-      flags += """/LIBPATH:%s\compiler\lib\em64t""".format(blasHome)
-      flags += """/LIBPATH:%s\compiler\lib\intel64""".format(blasHome)
+      flags += """/LIBPATH:%s\compiler\lib\%s""".format(blasHome, arch)
       flags ++= List("mkl_intel_lp64.lib", "mkl_intel_thread.lib", "mkl_core.lib", "libiomp5mt.lib")
       flags += "/LD"
       val args = flags.toList
@@ -48,7 +46,7 @@ object BLAS extends ExternalLibrary {
 
     case "linux" => new ExternalLibraryCompiler {
       val path = "icc"
-      override val init = "source /opt/intel/bin/compilervars.sh %s".format(arch)
+      override val init = "source %s/bin/compilervars.sh %s".format(blasHome, arch)
       val flags = scala.collection.mutable.ListBuffer[String]()
       flags += """-w"""
       flags += """-O3"""
@@ -59,11 +57,9 @@ object BLAS extends ExternalLibrary {
       // that's why, unlike on Windows, we've got to either hardcode the libpath in LD_LIBRARY_PATH or provide it every time when running delite
       // flags ++= List("-Bstatic", "-static-intel")
       flags += """-L%s/mkl/lib""".format(blasHome)
-      flags += """-L%s/mkl/lib/em64t""".format(blasHome)
-      flags += """-L%s/mkl/lib/intel64""".format(blasHome)
+      flags += """-L%s/mkl/lib/%s""".format(blasHome, arch)
       flags += """-L%s/lib""".format(blasHome)
-      flags += """-L%s/lib/em64t""".format(blasHome)
-      flags += """-L%s/lib/intel64""".format(blasHome)
+      flags += """-L%s/lib/%s""".format(blasHome, arch)
       flags ++= List("-lmkl_intel_lp64", "-lmkl_intel_thread", "-lmkl_core", "-liomp5", "-lmkl_mc3", "-lmkl_def", "-lgfortran")
       flags ++= List("-shared", "-fPIC")
       val args = flags.toList
@@ -72,7 +68,7 @@ object BLAS extends ExternalLibrary {
 
     case "mac" => new ExternalLibraryCompiler {
       val path = "icc"
-      override val init = "source /opt/intel/bin/compilervars.sh %s".format(arch)
+      override val init = "source %s/bin/compilervars.sh %s".format(blasHome, arch)
       val flags = scala.collection.mutable.ListBuffer[String]()
       flags += """-w"""
       flags += """-O3"""
@@ -82,11 +78,9 @@ object BLAS extends ExternalLibrary {
       // that's why, unlike on Windows, we've got to either hardcode the libpath in DYLD_LIBRARY_PATH or provide it every time when running delite
       // flags ++= List("-static-intel")
       flags += """-L%s/mkl/lib""".format(blasHome)
-      flags += """-L%s/mkl/lib/em64t""".format(blasHome)
-      flags += """-L%s/mkl/lib/intel64""".format(blasHome)
+      flags += """-L%s/mkl/lib/%s""".format(blasHome, arch)
       flags += """-L%s/lib""".format(blasHome)
-      flags += """-L%s/lib/em64t""".format(blasHome)
-      flags += """-L%s/lib/intel64""".format(blasHome)
+      flags += """-L%s/lib/%s""".format(blasHome, arch)
       flags ++= List("-lmkl_intel_lp64", "-lmkl_intel_thread", "-lmkl_core", "-liomp5", "-lmkl_mc3")
       flags ++= List("-dynamiclib", "-fPIC")
       val args = flags.toList
