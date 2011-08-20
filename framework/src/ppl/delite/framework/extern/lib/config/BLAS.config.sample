@@ -17,4 +17,4 @@ icc -w -O3 "-I${JAVA_HOME}/../include" "-I${JAVA_HOME}/../include/linux" "-L${IC
 # that's why, unlike on Windows, we've got to either hardcode the libpath in DYLD_LIBRARY_PATH or provide it every time when running delite
 export ARCH="intel64"
 source "$ICC_HOME/bin/compilervars.sh" $ARCH
-icc -w -O3 "-I/System/Library/Frameworks/JavaVM.framework/Headers" "-L${ICC_HOME}/mkl/lib" "-L${ICC_HOME}/mkl/lib/${ARCH}" "-L${ICC_HOME}/lib" "-L${ICC_HOME}/mkl/${ARCH}" -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lmkl_mc3 -lmkl_def -dynamiclib -fPIC -o "$OUTPUT" "$INPUT"
+icc -w -O3 "-I/System/Library/Frameworks/JavaVM.framework/Headers" "-L${ICC_HOME}/mkl/lib" "-L${ICC_HOME}/mkl/lib/${ARCH}" "-L${ICC_HOME}/lib" "-L${ICC_HOME}/mkl/${ARCH}" -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lmkl_mc3 -dynamiclib -fPIC -o "$OUTPUT" "$INPUT"
