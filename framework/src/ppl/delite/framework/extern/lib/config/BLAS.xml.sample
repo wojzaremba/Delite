@@ -1,4 +1,0 @@
-<BLAS>
-  <home>$ICC_HOME</home>
-  <arch>intel64</arch>
-</BLAS>

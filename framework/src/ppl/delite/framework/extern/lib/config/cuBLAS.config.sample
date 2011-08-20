@@ -1,0 +1,17 @@
+# windows
+set BITNESS=x64
+set ARCH=compute_20
+set CODE=sm_20
+nvcc /nologo /w /O3 "/I%JAVA_HOME%\..\include" "/I%JAVA_HOME%\..\include\win32" "/I%CUDA_HOME%/include" "/LIBPATH:%CUDA_HOME%/lib/%BITNESS%" cublas.lib -arch %ARCH% -code %CODE% /LD "/Fe:%OUTPUT%" "%INPUT%"
+
+# linux
+export BITNESS=64
+export ARCH=compute_20
+export CODE=sm_20
+nvcc -w -O3 "-I${JAVA_HOME}/../include" "-I${JAVA_HOME}/../include/linux" "-I${CUDA_HOME}/include" "-L${CUDA_HOME}/lib${BITNESS}" -lcublas -arch $ARCH -code $CODE -shared -Xcompiler -fPIC -o "$OUTPUT" "$INPUT"
+
+# mac
+export BITNESS=64
+export ARCH=compute_20
+export CODE=sm_20
+nvcc -w -O3 "-I/System/Library/Frameworks/JavaVM.framework/Headers" "-I${CUDA_HOME}/include" "-L${CUDA_HOME}/lib${BITNESS}" -lcublas -arch $ARCH -code $CODE -dynamiclib -Xcompiler -fPIC -o "$OUTPUT" "$INPUT"

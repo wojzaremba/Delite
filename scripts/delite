@@ -37,30 +37,33 @@ if (unix) {
   if (mac) libscalaBLAS += ".dylib"
 
   if (libscalaBLAS.exist) {
-    val blasConfigFile: String = config.delite_home + "/framework/src/ppl/delite/framework/extern/lib/config/".replace("/", File.separator) + "BLAS.xml"
+    val blasConfigFile: String = config.delite_home + "/framework/src/ppl/delite/framework/extern/lib/config/".replace("/", File.separator) + "BLAS.config"
     if (!blasConfigFile.exist) throw new FileNotFoundException("could not load library configuration: " + blasConfigFile)    
-    val blasConfig = XML.loadFile(blasConfigFile)
-    val blasHome = (blasConfig \\ "home" text).expandEnvironmentVars
-    val arch = blasConfig \\ "arch" text
+    val blasConfig = io.Source.fromFile(blasConfigFile).getLines.toList
 
-    val script = File.createTempFile("blas.init.", ".script")
-    val stream = new PrintWriter(script)
-    stream.println("#!/usr/bin/env bash")
-    stream.println("source %s/bin/compilervars.sh %s".format(blasHome, arch))
-    val output_file = File.createTempFile("blas.init.", ".output")
-    stream.println("echo PATH=$PATH >> %s".format(output_file.getAbsolutePath))
-    stream.println("echo DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
-    stream.println("echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
-    stream.println("echo LIBRARY_PATH=$LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
-    stream.println("echo NLS_PATH=$NLS_PATH >> %s".format(output_file.getAbsolutePath))
-    stream.close
+    val source = blasConfig.filter({line => line != null && line.startsWith("source")}).headOption.getOrElse(null)
+    if (source != null) {
+      val script = File.createTempFile("blas.init.", ".script")
+      val stream = new PrintWriter(script)
+      stream.println("#!/usr/bin/env bash")
+      // omg, an awful hardcode, but we've got nothing better to do!
+      blasConfig takeWhile {line => line != source} foreach stream.println
+      stream.println(source)
+      val output_file = File.createTempFile("blas.init.", ".output")
+      stream.println("echo PATH=$PATH >> %s".format(output_file.getAbsolutePath))
+      stream.println("echo DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
+      stream.println("echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
+      stream.println("echo LIBRARY_PATH=$LIBRARY_PATH >> %s".format(output_file.getAbsolutePath))
+      stream.println("echo NLS_PATH=$NLS_PATH >> %s".format(output_file.getAbsolutePath))
+      stream.close
 
-    script.setExecutable(true)
-    Runtime.getRuntime().exec(script.getAbsolutePath).waitFor
+      script.setExecutable(true)
+      Runtime.getRuntime().exec(script.getAbsolutePath).waitFor
 
-    val output = Source.fromFile(output_file).getLines.toList
-    val keyvalue = """^(.*?)=(.*)$""".r
-    for (keyvalue(k, v) <- output) env(k) = v
+      val output = Source.fromFile(output_file).getLines.toList
+      val keyvalue = """^(.*?)=(.*)$""".r
+      for (keyvalue(k, v) <- output) env(k) = v
+    }
   }
 }
 

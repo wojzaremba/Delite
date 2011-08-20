@@ -1,5 +1,0 @@
-<cuBLAS>
-  <home>$CUDA_HOME</home>
-  <arch>compute_20</arch>
-  <code>sm_20</code>
-</cuBLAS>

@@ -1,0 +1,20 @@
+# windows
+set ARCH=intel64
+call "%ICC_HOME%\bin\ipsxe-comp-vars.bat" %ARCH%
+icl /nologo /w /O3 "/I%JAVA_HOME%\..\include" "/I%JAVA_HOME%\..\include\win32" "/I%ICC_HOME%\mkl\include" "/LIBPATH:%ICC_HOME%\mkl\lib" "/LIBPATH:%ICC_HOME%\mkl\lib\%ARCH%" "/LIBPATH:%ICC_HOME%\compiler\lib" "/LIBPATH:%ICC_HOME%\compiler\lib\%ARCH%" mkl_intel_lp64.lib mkl_intel_thread.lib mkl_core.lib libiomp5mt.lib /LD "/Fe:%OUTPUT%" "%INPUT%"
+
+# linux
+# it'd be great if the -static-intel option worked
+# but, unfortunately, intel libs cannot be linked statically on Linux, since the distribution does not provide libmkl_mc3.a
+# that's why, unlike on Windows, we've got to either hardcode the libpath in LD_LIBRARY_PATH or provide it every time when running delite
+export ARCH="intel64"
+source "$ICC_HOME/bin/compilervars.sh" $ARCH
+icc -w -O3 "-I${JAVA_HOME}/../include" "-I${JAVA_HOME}/../include/linux" "-L${ICC_HOME}/mkl/lib" "-L${ICC_HOME}/mkl/lib/${ARCH}" "-L${ICC_HOME}/lib" "-L${ICC_HOME}/mkl/${ARCH}" -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lmkl_mc3 -lmkl_def -shared -fPIC -o "$OUTPUT" "$INPUT"
+
+# mac
+# it'd be great if the -static-intel option worked
+# but, unfortunately, intel libs cannot be linked statically on Mac OS X, since the distribution does not provide libmkl_mc3.a
+# that's why, unlike on Windows, we've got to either hardcode the libpath in DYLD_LIBRARY_PATH or provide it every time when running delite
+export ARCH="intel64"
+source "$ICC_HOME/bin/compilervars.sh" $ARCH
+icc -w -O3 "-I/System/Library/Frameworks/JavaVM.framework/Headers" "-L${ICC_HOME}/mkl/lib" "-L${ICC_HOME}/mkl/lib/${ARCH}" "-L${ICC_HOME}/lib" "-L${ICC_HOME}/mkl/${ARCH}" -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lmkl_mc3 -lmkl_def -dynamiclib -fPIC -o "$OUTPUT" "$INPUT"
