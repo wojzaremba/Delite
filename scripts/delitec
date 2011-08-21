@@ -31,7 +31,7 @@ if (other_args.length == 0) { println("Please, provide at least one input Scala 
 args = java_opts ++ other_opts ++ other_args
 classpath = env_classpath + config.optiml_classes + config.framework_classes + config.lms_classes
 val (_, lines1) = run(config.scala_virtualized_compiler)
-if (lines1.length > 0) sys.exit(1)
+if (lines1.count({line => line != null && line.contains("error:")}) > 0) sys.exit(1)
 println("%s%n".format("Successfully compiled"))
 
 println("(Phase two) DSL compilation...")
