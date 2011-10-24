@@ -84,6 +84,9 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   //these are hacked up for now untill we have proper Delite support
   case class HackQueryableGroupBy[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v:Sym[TSource], key: Exp[TKey]) extends Def[DataTable[Grouping[TKey, TSource]]]    
   case class HackQueryableSum[TSource:Manifest](in:Exp[DataTable[TSource]], sym: Sym[TSource], value: Exp[Double]) extends Def[Double]
+  case class HackQueryableMin[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[TSource]
+  case class HackQueryableJoin2[TFirst:Manifest, TSecond:Manifest, TKey2:Manifest, TResult:Manifest](first: Exp[DataTable[TFirst]], second: Exp[DataTable[TSecond]], 
+    firstV: Sym[TFirst], secondV: Sym[TSecond], firstKey: Exp[TKey2], secondKey: Exp[TKey2], rfv: Sym[TFirst], rsv: Sym[TSecond], result:Exp[TResult]) extends Def[DataTable[TResult]]
   case class HackQueryableOrderBy[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[DataTable[TSource]]
   case class HackQueryableOrderByDescending[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[DataTable[TSource]]
   case class HackQueryableThenBy[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[DataTable[TSource]]
@@ -128,7 +131,12 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
     HackQueryableSum(s,sym,value)
   }
   def queryable_average[TSource:Manifest](s: Rep[DataTable[TSource]], avgSelector: Rep[TSource] => Rep[Double]) = s.Sum(avgSelector)/s.size()
-  def queryable_min[TSource:Manifest](s: Rep[DataTable[TSource]], minSelector: Rep[TSource] => Rep[Double]): Rep[TSource] = sys.error("Min Not Implemented Yet")
+  def queryable_min[TSource:Manifest](s: Rep[DataTable[TSource]], minSelector: Rep[TSource] => Rep[Double]): Rep[TSource] = {
+    val v = fresh[TSource]
+    val key = minSelector(v)
+    HackQueryableMin(s,v,key)
+  }
+  
   def queryable_count[TSource:Manifest](s: Rep[DataTable[TSource]]) = s.size()
   
   def queryable_orderby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]] = {
@@ -146,8 +154,18 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
     val key = keySelector(v)
     HackQueryableThenBy(s,v,key)
   }  
+  
   def queryable_join2[TFirst:Manifest, TSecond:Manifest, TKey2:Manifest, TResult:Manifest](first: Rep[DataTable[TFirst]], firstKeySelector: Rep[TFirst] => Rep[TKey2], 
-    second: Rep[DataTable[TSecond]], secondKeySelector: Rep[TSecond] => Rep[TKey2], resultSelector: (Rep[TFirst], Rep[TSecond]) => Rep[TResult]):Rep[DataTable[TResult]] = sys.error("Join2 not Implemented Yet")
+    second: Rep[DataTable[TSecond]], secondKeySelector: Rep[TSecond] => Rep[TKey2], resultSelector: (Rep[TFirst], Rep[TSecond]) => Rep[TResult]):Rep[DataTable[TResult]] = {
+    val fv = fresh[TFirst]
+    val sv = fresh[TSecond]
+    val fkey = firstKeySelector(fv)
+    val skey = secondKeySelector(sv)
+    val rfv = fresh[TFirst]
+    val rsv = fresh[TSecond]
+    val result = resultSelector(rfv,rsv)
+    HackQueryableJoin2(first, second, fv,sv,fkey,skey, rfv, rsv, result)    
+  }
   
   def queryable_grouping_toDatatable[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]) = QueryableGroupingToDataTable(g)
   def queryable_grouping_key[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]): Rep[TKey] = QueryableGroupingKey(g)
@@ -166,6 +184,8 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
     case HackQueryableGroupBy(s,v,k) => v::syms(k)
     case HackQueryableSum(in,v,value) => v::syms(value)
     case HackQueryableOrderBy(in,v,key) => v::syms(key)
+    case HackQueryableMin(in,v,key) => v::syms(key)
+    case HackQueryableJoin2(frst,scnd,fv,sv, fkey,skey,rfv, rsv, res) => fv::sv::rfv::rsv::syms(fkey):::syms(skey):::syms(res)
     case HackQueryableOrderByDescending(in,v,key) => v::syms(key)
     case HackQueryableThenBy(in,v,key) => v::syms(key)
 	case _ => super.boundSyms(e)
@@ -188,6 +208,11 @@ trait ScalaGenQueryableOps extends ScalaGenFat {
       emitBlock(value)
       stream.println(quote(getBlockResult(value)) + "})")    
     }
+    case HackQueryableMin(s,sym2,value) => {
+      stream.println("val " + quote(sym) + " = " + quote(s) + ".Min( " + quote(sym2) + " => {")
+      emitBlock(value)
+      stream.println(quote(getBlockResult(value)) + "})")    
+    }
     case HackQueryableOrderBy(s, v, k) =>  {
 	  stream.println("val " + quote(sym) + " =  " + quote(s) + ".OrderBy( " + quote(v) + " => {")	  
 	  emitBlock(k)	 
@@ -203,7 +228,15 @@ trait ScalaGenQueryableOps extends ScalaGenFat {
 	  emitBlock(k)	 
 	  stream.println(quote(getBlockResult(k)) + "})")
 	}
-		
+    case HackQueryableJoin2(frst,scnd,fv,sv, fkey,skey,rfv, rsv, res) => {
+      stream.println("val " + quote(sym) + " =  " + quote(frst) + ".Join( " + quote(scnd) + " ).WhereEq( \n" + quote(fv) + " => { ")	  
+	  emitBlock(fkey)	 
+	  stream.println(quote(getBlockResult(fkey)) + "}, \n" +  quote(sv) + " => { ")
+      emitBlock(skey)
+      stream.println(quote(getBlockResult(skey)) + " }).Select( (" + quote(rfv) + "," + quote(rsv) + ") => { ")
+      emitBlock(res)
+      stream.println(quote(getBlockResult(res)) + "})")
+    }    	
 	case QueryableGroupingToDataTable(g) => emitValDef(sym, "generated.scala.container.DataTable.convertIterableToDataTable(" + quote(g) + ")")
 	case QueryableGroupingKey(g) => emitValDef(sym, quote(g) + ".key")
     case _ => super.emitNode(sym,rhs)

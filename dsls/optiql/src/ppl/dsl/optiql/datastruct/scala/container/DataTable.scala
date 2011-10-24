@@ -280,6 +280,18 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
     sum
   }
   
+  def Min[@specialized T:Numeric, TS](selector: TSource => T): TSource = {
+    val n = implicitly[Numeric[T]]
+    import n._
+    if(_data.size == 0) return null.asInstanceOf[TSource]
+    var min = _data(0)
+    for(e <- _data) {
+      if(selector(min) > selector(e))
+        min = e
+    }
+    min
+  }
+  
   def OrderBy[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {
     sortHelper(new ProjectionComparer(keySelector))        
   }
@@ -303,6 +315,51 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
   
   def OrderByDescending[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {
     sortHelper(new ReverseComparer(new ProjectionComparer(keySelector)))
+  }
+  
+  def Join[TSecond](second: DataTable[TSecond]) = new JoinableOps(this, second)
+
+  class JoinableOps[TFirst, TSecond](first: DataTable[TFirst], second: DataTable[TSecond]) {
+    def WhereEq[TKey2](firstKeySelector: TFirst => TKey2,secondKeySelector: TSecond => TKey2) = new Joinable2(first, second, firstKeySelector, secondKeySelector)
+  }
+
+  class Joinable2[TFirst, TSecond, TKey2](val first: DataTable[TFirst],
+                                          val second: DataTable[TSecond],
+                                          val firstKeySelector: TFirst => TKey2,
+                                          val secondKeySelector: TSecond => TKey2) {
+    
+    def preJoin():(ArrayBuffer[TFirst], ArrayBuffer[TSecond]) = {
+      //join first two
+      val (hashTable, _) = buildHash(first, firstKeySelector)
+      val firsts = new ArrayBuffer[TFirst]
+      val seconds = new ArrayBuffer[TSecond]
+      
+      //PerformanceTimer.start("match", false)
+      for(row <- second) {
+        val tryjoin = hashTable.getOrElse(secondKeySelector(row), null)
+        if(tryjoin != null)
+          for(e <- tryjoin) {
+            firsts.append(e)
+            seconds.append(row)
+          }
+      }
+      //PerformanceTimer.stop("match", false)
+      (firsts, seconds)
+    }
+    def Select[TResult](resultSelector: (TFirst, TSecond) => TResult) = {
+      val (firsts, seconds) = preJoin()
+      val result = new DataTable[TResult] {
+        override def addRecord(fields: Array[String]) = throw new RuntimeException("Cannot add records to joined table")
+      }
+      //PerformanceTimer.start("construct", false)
+      var idx = 0
+      while(idx < firsts.size) {
+        result._data.append(resultSelector(firsts(idx), seconds(idx)))
+        idx += 1
+      }
+      //PerformanceTimer.stop("construct", false)
+      result
+    }
   }
   
 
