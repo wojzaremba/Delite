@@ -63,6 +63,11 @@ trait ScalaGenHackOps extends ScalaGenEffect {
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
     case HackOpsObjLoadCustomers(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadCustomers(" + quote(path) + ")")
     case HackOpsObjLoadLineItems(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadLineItems(" + quote(path) + ")")
+    case HackOpsObjLoadParts(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadParts(" + quote(path) + ")")
+    case HackOpsObjLoadPartSuppliers(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadPartSuppliers(" + quote(path) + ")")
+    case HackOpsObjLoadSuppliers(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadSuppliers(" + quote(path) + ")")
+    case HackOpsObjLoadNations(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadNations(" + quote(path) + ")")
+    case HackOpsObjLoadRegions(path) => emitValDef(sym, "generated.scala.tpch.TPCHData.loadRegions(" + quote(path) + ")")
     case _ => super.emitNode(sym, rhs)
   }
 }
