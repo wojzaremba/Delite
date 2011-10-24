@@ -133,7 +133,7 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
 
   //todo clean this up
   //for example, I can use reflection to generate the metadata that I need to print the table
-  def printAsTable() {
+  def printAsTable(max_rows: Int = 100) {
 
     // Check if Table is empty
     if(_data.size == 0) {
@@ -148,7 +148,7 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
     if(grouped) {
       handleGroupedTable
     } else {
-      handleNormalTable
+      handleNormalTable(max_rows)
     }
 
   }
@@ -158,12 +158,12 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
       val group = key.asInstanceOf[Grouping[_,_]]
       println("Key = " + group.key)
       val table = convertIterableToDataTable(group.elems)
-      table.printAsTable
+      table.printAsTable(100)
     }
 
   }
 
-  private def handleNormalTable() {
+  private def handleNormalTable(rows: Int = 0) {
     implicit val tableStr = new StringBuilder
     val columnSizes = getTableColSizes()
 
@@ -190,11 +190,13 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
     print(tableStr.toString)
     tableStr.clear
 
-    for(r <- 0 until _data.size) {
+    val size = if(rows != 0 && rows < data.size) rows else data.size
+    for(r <- 0 until size) {
       emitRecordAsRow(r, columnSizes)
     }
     print(tableStr.toString)
     tableStr.clear
+
 
     horizontalRule
     println(tableStr.toString)

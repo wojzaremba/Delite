@@ -125,6 +125,6 @@ trait TPCHQ2Trait extends TPCHBaseTrait {
        }).Where(_.r_name == "EUROPE").Min(_.ps_supplycost); if(pssc != null) pssc.ps_supplycost else -10}
     ) OrderByDescending(_.s_acctbal) ThenBy(_.n_name) ThenBy(_.s_name) ThenBy(_.p_partkey) 
     toc(q)
-    q.printAsTable()
+    q.printAsTable(10)
   }    
 } 
