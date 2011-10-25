@@ -1,6 +1,7 @@
 package ppl.dsl.optiql.ops
 
 import ppl.dsl.optiql.datastruct.scala.container.{DataTable, Grouping}
+import ppl.dsl.optiql.datastruct.scala.ordering.OrderedQueryable
 import java.io.PrintWriter
 import scala.virtualization.lms.common.{Base, ScalaGenFat, BaseFatExp}
 import scala.virtualization.lms.internal.GenericFatCodegen
@@ -11,7 +12,8 @@ trait QueryableOps extends Base {
 
   //type TransparentProxy[+T] = Rep[T]
 
-  implicit def repToQueryableOps[TSource:Manifest](r: Rep[DataTable[TSource]]) = new QOpsCls(r) 
+  implicit def repToQueryableOps[TSource:Manifest](r: Rep[DataTable[TSource]]) = new QOpsCls(r)
+  implicit def repOQtoOQOps[TSource:Manifest](r: Rep[OrderedQueryable[TSource]]) = new OQOpsCls(r)  
   implicit def repGroupingToQueryableOps[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]) = new QOpsCls(queryable_grouping_toDatatable(g))
 
   //override def __forward[A,B,C](self: TransparentProxy[A], method: String, x: TransparentProxy[B]*): TransparentProxy[C] = throw new RuntimeException("forwarding to " + method)
@@ -20,14 +22,18 @@ trait QueryableOps extends Base {
     def Where(predicate: Rep[TSource] => Rep[Boolean]) = queryable_where(s, predicate)
 	def GroupBy[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_groupby(s,keySelector)
     def OrderBy[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_orderby(s, keySelector)
-    def OrderByDescending[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_orderbydescending(s, keySelector)
-    def ThenBy[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_thenby(s, keySelector)
+    def OrderByDescending[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_orderbydescending(s, keySelector)        
 	def Select[TResult:Manifest](resultSelector: Rep[TSource] => Rep[TResult]) = queryable_select(s, resultSelector)
 	def Sum(sumSelector: Rep[TSource] => Rep[Double]) = queryable_sum(s, sumSelector)
 	def Average(avgSelector: Rep[TSource] => Rep[Double]) = queryable_average(s, avgSelector)
     def Min(minSelector: Rep[TSource] => Rep[Double]) = queryable_min(s, minSelector)
     def Join[TSecond:Manifest](second: Rep[DataTable[TSecond]]) = new JoinableOps(s, second)
 	def Count() = queryable_count(s)
+  }
+  
+  class OQOpsCls[TSource:Manifest](oq: Rep[OrderedQueryable[TSource]]) {
+    def ThenBy[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_thenby(oq, keySelector) 
+    def End(): Rep[DataTable[TSource]] = queryable_end(oq)    
   }
   
   class JoinableOps[TFirst:Manifest, TSecond:Manifest](first: Rep[DataTable[TFirst]], second: Rep[DataTable[TSecond]]) {
@@ -49,9 +55,10 @@ trait QueryableOps extends Base {
 
   def queryable_where[TSource:Manifest](s: Rep[DataTable[TSource]], predicate: Rep[TSource] => Rep[Boolean]): Rep[DataTable[TSource]]
   def queryable_groupby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[Grouping[TKey, TSource]]]
-  def queryable_orderby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]]
-  def queryable_orderbydescending[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]]
-  def queryable_thenby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]]
+  def queryable_orderby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]]
+  def queryable_orderbydescending[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]]
+  def queryable_thenby[TSource:Manifest, TKey:Manifest](oq: Rep[OrderedQueryable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]]
+  def queryable_end[TSource:Manifest](oq: Rep[OrderedQueryable[TSource]]): Rep[DataTable[TSource]]
   def queryable_select[TSource:Manifest, TResult:Manifest](s: Rep[DataTable[TSource]], resultSelector: Rep[TSource] => Rep[TResult]): Rep[DataTable[TResult]]
   def queryable_sum[TSource:Manifest](s: Rep[DataTable[TSource]], sumSelector: Rep[TSource] => Rep[Double]): Rep[Double]
   def queryable_average[TSource:Manifest](s: Rep[DataTable[TSource]], avgSelector: Rep[TSource] => Rep[Double]): Rep[Double]
@@ -87,9 +94,10 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   case class HackQueryableMin[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[TSource]
   case class HackQueryableJoin2[TFirst:Manifest, TSecond:Manifest, TKey2:Manifest, TResult:Manifest](first: Exp[DataTable[TFirst]], second: Exp[DataTable[TSecond]], 
     firstV: Sym[TFirst], secondV: Sym[TSecond], firstKey: Exp[TKey2], secondKey: Exp[TKey2], rfv: Sym[TFirst], rsv: Sym[TSecond], result:Exp[TResult]) extends Def[DataTable[TResult]]
-  case class HackQueryableOrderBy[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[DataTable[TSource]]
-  case class HackQueryableOrderByDescending[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[DataTable[TSource]]
-  case class HackQueryableThenBy[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[DataTable[TSource]]
+  case class HackQueryableOrderBy[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[OrderedQueryable[TSource]]
+  case class HackQueryableOrderByDescending[TSource:Manifest, TKey:Manifest](in: Exp[DataTable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[OrderedQueryable[TSource]]
+  case class HackQueryableThenBy[TSource:Manifest, TKey:Manifest](in: Exp[OrderedQueryable[TSource]], v: Sym[TSource], key: Exp[TKey]) extends Def[OrderedQueryable[TSource]]
+  case class HackQueryableEnd[TSource:Manifest](in:Exp[OrderedQueryable[TSource]]) extends Def[DataTable[TSource]]
   
   /*
   case class QueryableSum[TSource:Manifest](s: Exp[DataTable[TSource]], sumSelector: Rep[TSource] => Rep[Double]) extends DeliteOpReduce[Double] {
@@ -139,21 +147,22 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   
   def queryable_count[TSource:Manifest](s: Rep[DataTable[TSource]]) = s.size()
   
-  def queryable_orderby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]] = {
+  def queryable_orderby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]] = {
     val v = fresh[TSource]
     val key = keySelector(v)
     HackQueryableOrderBy(s,v,key)
   }
-  def queryable_orderbydescending[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]] = {
+  def queryable_orderbydescending[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]] = {
     val v = fresh[TSource]
     val key = keySelector(v)
     HackQueryableOrderByDescending(s,v,key)
   }
-  def queryable_thenby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[TSource]] = {
+  def queryable_thenby[TSource:Manifest, TKey:Manifest](s: Rep[OrderedQueryable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]] = {
     val v = fresh[TSource]
     val key = keySelector(v)
     HackQueryableThenBy(s,v,key)
   }  
+  def queryable_end[TSource:Manifest](in: Rep[OrderedQueryable[TSource]]): Rep[DataTable[TSource]] = HackQueryableEnd(in)
   
   def queryable_join2[TFirst:Manifest, TSecond:Manifest, TKey2:Manifest, TResult:Manifest](first: Rep[DataTable[TFirst]], firstKeySelector: Rep[TFirst] => Rep[TKey2], 
     second: Rep[DataTable[TSecond]], secondKeySelector: Rep[TSecond] => Rep[TKey2], resultSelector: (Rep[TFirst], Rep[TSecond]) => Rep[TResult]):Rep[DataTable[TResult]] = {
@@ -228,6 +237,7 @@ trait ScalaGenQueryableOps extends ScalaGenFat {
 	  emitBlock(k)	 
 	  stream.println(quote(getBlockResult(k)) + "})")
 	}
+    case HackQueryableEnd(s) => emitValDef(sym, quote(s) + ".End")
     case HackQueryableJoin2(frst,scnd,fv,sv, fkey,skey,rfv, rsv, res) => {
       stream.println("val " + quote(sym) + " =  " + quote(frst) + ".Join( " + quote(scnd) + " ).WhereEq( \n" + quote(fv) + " => { ")	  
 	  emitBlock(fkey)	 

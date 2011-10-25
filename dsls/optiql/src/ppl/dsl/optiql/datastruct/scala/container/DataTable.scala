@@ -294,29 +294,13 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
     min
   }
   
+  
   def OrderBy[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {
-    sortHelper(new ProjectionComparer(keySelector))        
+    new OrderedQueryable(this, new ProjectionComparer(keySelector))       
   }
-  
-  def sortHelper(comparer: Ordering[TSource]) = {
-    val toBeSorted = new Array(size).asInstanceOf[Array[TSource]]
-    Array.copy(_data.getArray, 0, toBeSorted, 0, size)    
-    scala.util.Sorting.quickSort(toBeSorted)(comparer)
-    val res = new DataTable[TSource] {
-      override def addRecord(arr: Array[String]) {
-        throw new RuntimeException("Cannot add Record into a projected DataTable")
-      }
-    }
-    res.unsafeSetData(toBeSorted, size)
-    res   
-  }
-  
-  def ThenBy[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {
-    OrderBy(keySelector) 
-  }
-  
+      
   def OrderByDescending[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {
-    sortHelper(new ReverseComparer(new ProjectionComparer(keySelector)))
+    new OrderedQueryable(this, new ReverseComparer(new ProjectionComparer(keySelector)))       
   }
   
   def Join[TSecond](second: DataTable[TSecond]) = new JoinableOps(this, second)

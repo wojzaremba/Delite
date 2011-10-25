@@ -115,6 +115,7 @@ trait OptiQLCodeGenScala extends OptiQLCodeGenBase with OptiQLScalaCodeGenPkg wi
   override def remap[A](m: Manifest[A]): String = {    
     m match {
       case m if m.toString.startsWith("ppl.dsl.optiql.datastruct.scala.container.DataTable") => "generated.scala.container.DataTable[" + remap(m.typeArguments(0)) + "]"
+      case m if m.toString.startsWith("ppl.dsl.optiql.datastruct.scala.ordering.OrderedQueryable") => "generated.scala.ordering.OrderedQueryable[" + remap(m.typeArguments(0)) + "]"
       case rm: RefinedManifest[A] =>  "AnyRef{" + rm.fields.foldLeft(""){(acc, f) => {val (n,mnf) = f; acc + "val " + n + ": " + remap(mnf) + ";"}} + "}"
       case _ => dsmap(super.remap(m))
     }

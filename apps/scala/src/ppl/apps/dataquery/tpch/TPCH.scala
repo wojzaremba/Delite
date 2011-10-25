@@ -2,6 +2,7 @@ package ppl.apps.dataquery.tpch
 
 import ppl.dsl.optiql.{OptiQLApplication, OptiQLApplicationRunner}
 import ppl.dsl.optiql.datastruct.scala.tpch._
+import ppl.dsl.optiql.datastruct.scala.container.DataTable
 import java.io.File
 
 object TPCHQ1 extends OptiQLApplicationRunner with TPCHQ1Trait
@@ -41,8 +42,8 @@ trait TPCHBaseTrait extends OptiQLApplication {
     partSuppliers = TPCH.loadPartSuppliers(tpchDataPath)
     regions = TPCH.loadRegions(tpchDataPath)
     suppliers = TPCH.loadSuppliers(tpchDataPath)
-    tic(lineItems,parts) 
     println("Loading Complete")	
+    tic(lineItems,nations, parts, partSuppliers, regions, suppliers)     
     query()
   }
 
@@ -63,7 +64,7 @@ trait TPCHQ1Trait extends TPCHBaseTrait {
       val avgPrice = g.Average(_.l_extendedprice)
       val avgDiscount = g.Average(_.l_discount)
       val countOrder = g.Count            
-    }) OrderBy(_.returnFlag) ThenBy(_.lineStatus) 
+    }) OrderBy(_.returnFlag) ThenBy(_.lineStatus) End() 
     toc(q)
     q.printAsTable()
   }    
@@ -123,7 +124,7 @@ trait TPCHQ2Trait extends TPCHBaseTrait {
          val ps_supplycost = jj2.ps_supplycost
          val r_name = r.r_name
        }).Where(_.r_name == "EUROPE").Min(_.ps_supplycost); if(pssc != null) pssc.ps_supplycost else -10}
-    ) OrderByDescending(_.s_acctbal) ThenBy(_.n_name) ThenBy(_.s_name) ThenBy(_.p_partkey) 
+    ) OrderByDescending(_.s_acctbal) ThenBy(_.n_name) ThenBy(_.s_name) ThenBy(_.p_partkey) End()
     toc(q)
     q.printAsTable(10)
   }    
