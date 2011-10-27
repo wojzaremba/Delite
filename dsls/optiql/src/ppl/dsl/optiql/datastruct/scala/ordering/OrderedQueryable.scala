@@ -1,22 +1,25 @@
 package ppl.dsl.optiql.datastruct.scala.ordering
 
-class OrderedQueryable[TElement](source: Iterable[TElement], currentComparer: Ordering[TElement]) extends Iterable[TElement] {
+import collection.mutable.ArrayBuffer
+import ppl.dsl.optiql.datastruct.scala.container.DataTable
 
-  def createOrderedQueryable[TKey](keySelector: TElement => TKey, comparer: Ordering[TKey], descending: Boolean = false): OrderedQueryable[TElement] = {
-    if(keySelector == null) throw new IllegalArgumentException("keySelector is null")
-    val secondaryComparer = new ProjectionComparer(keySelector)(comparer)
-    return new OrderedQueryable(source,new CompoundComparer(currentComparer, secondaryComparer))
+class OrderedQueryable[TSource](source: DataTable[TSource], currentComparer: Ordering[TSource]) {
+  
+  def End = {
+    val toBeSorted = new Array(source.size).asInstanceOf[Array[TSource]]
+    Array.copy(source._data.getArray, 0, toBeSorted, 0, source.size)    
+    scala.util.Sorting.quickSort(toBeSorted)(currentComparer)
+    val res = new DataTable[TSource] {
+      override def addRecord(arr: Array[String]) {
+        throw new RuntimeException("Cannot add Record into a projected DataTable")
+      }
+    }
+    res.unsafeSetData(toBeSorted, source.size)
+    res    
   }
-
-  //TODO, should be able to create an Array using manifests, once the manifest bug is fixed.
-  def iterator = {
-    val toBeSorted  = source.asInstanceOf[Seq[TElement]]
-    val sorted = toBeSorted.sorted(currentComparer)
-    //Sorting.quickSort(toBeSorted)(currentComparer)
-    sorted.iterator
+ 
+ def ThenBy[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {
+  new OrderedQueryable(source, new CompoundComparer(currentComparer, new ProjectionComparer(keySelector)))
   }
-
-  def ThenBy[TKey](keySelector: TElement => TKey)(implicit comparer: Ordering[TKey]) = {
-    createOrderedQueryable(keySelector, comparer)
-  }
+    
 }
