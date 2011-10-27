@@ -4,13 +4,13 @@ import java.io.{FileWriter, File, PrintWriter}
 
 import scala.virtualization.lms.common._
 import scala.virtualization.lms.internal.{GenericCodegen, GenericFatCodegen, GenerationFailedException}
-import ppl.delite.framework.datastruct.scala.DeliteCollection
+import ppl.delite.framework.datastructures.DeliteArrayOpsExp
 import ppl.delite.framework.Config
 import ppl.delite.framework.extern.lib._
 
 //trait DeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp with LoopsFatExp {
 trait DeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp with LoopsFatExp with IfThenElseFatExp
-    with VariantsOpsExp with DeliteCollectionOpsExp
+    with VariantsOpsExp with DeliteCollectionOpsExp with DeliteArrayOpsExp
     with OrderingOpsExp with CastingOpsExp with ImplicitOpsExp with WhileExp  {
   
   
@@ -106,13 +106,15 @@ trait DeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp with Loop
   //case class DeliteCollectElem[A, CA <: DeliteCollection[A]]( 
   // functions on CA currently happen at generation-time, and are not type-checked
   case class DeliteCollectElem[A, CA]( 
-    aV: Sym[Array[A]],
+    aV: Sym[DeliteArray[A]],
     alloc: Exp[CA],
     func: Exp[A],
     cond: List[Exp[Boolean]] = Nil
     // TODO: note that the alloc block right now directly references the size
     // which is not part of DeliteCollectElem instance. we might want to fix that 
   ) extends Def[CA]
+
+  def elemType(elem: DeliteCollectElem[_,_]) = elem.aV.Type.typeArguments(0)
 
   
   case class DeliteReduceElem[A](
@@ -212,10 +214,10 @@ trait DeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp with Loop
      type OpType <: DeliteOpMapLike[A,CA]
 
      def alloc: Exp[CA]
-     def allocWithArray: Exp[Array[A]] => Exp[CA] = { data => val res = alloc; dc_unsafeSetData(res.asInstanceOf[Exp[DeliteCollection[A]]], data); res }
+     def allocWithArray: Exp[DeliteArray[A]] => Exp[CA] = { data => val res = alloc; dc_unsafeSetData(res.asInstanceOf[Exp[DeliteCollection[A]]], data); res }
      
      //final lazy val allocVal: Exp[CA] = copyTransformedOrElse(_.allocVal)(reifyEffects(alloc))
-     final lazy val aV: Sym[Array[A]] = copyTransformedOrElse(_.aV)(fresh[Array[A]]).asInstanceOf[Sym[Array[A]]]
+     final lazy val aV: Sym[DeliteArray[A]] = copyTransformedOrElse(_.aV)(fresh[DeliteArray[A]]).asInstanceOf[Sym[DeliteArray[A]]]
    }
 
   /**
@@ -685,7 +687,7 @@ trait DeliteOpsExp extends BaseFatExp with EffectExp with VariablesExp with Loop
     d match {
       case e: DeliteCollectElem[a,ca] => 
         DeliteCollectElem[a,ca]( // need to be a case class for equality (do we rely on equality?)
-          aV = f(e.aV).asInstanceOf[Sym[Array[a]]],
+          aV = f(e.aV).asInstanceOf[Sym[DeliteArray[a]]],
           alloc = f(e.alloc),
           func = f(e.func),
           cond = f(e.cond)
@@ -914,6 +916,7 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with BaseGenDeliteOps {
    */
   def emitCollectElem(op: AbstractFatLoop, sym: Sym[Any], elem: DeliteCollectElem[_,_], prefixSym: String = "")(implicit stream: PrintWriter) {
     if (elem.cond.nonEmpty) {
+      if (structType(elemType(elem)).isDefined) stream.println("throw new RuntimeException(\"FIXME: struct types with condition buffers\")")
       stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
       if (deliteKernel)
         stream.println(prefixSym + quote(sym) + "_buf_append(" + quote(getBlockResult(elem.func)) + ")")
@@ -921,7 +924,11 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with BaseGenDeliteOps {
         stream.println("throw new RuntimeException(\"FIXME: buffer growing\")")
         //stream.println(prefixSym + quote(sym) + ".insert(" + prefixSym + quote(sym) + ".length, " + quote(getBlockResult(elem.func)) + ") // FIXME: buffer growing")
     } else {
-      stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
+      def arrayUpdate(field: String) = stream.println(prefixSym + quote(sym) + "_data" + field + "(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)) + field)
+      structType(elemType(elem)) match {
+        case Some(elems) => elems.foreach(f => arrayUpdate("."+f._1))
+        case None => arrayUpdate("")
+      }
     }
   }
   
@@ -1121,7 +1128,7 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with BaseGenDeliteOps {
     (symList zip op.body) foreach {
       case (sym, elem: DeliteCollectElem[_,_]) => 
         stream.println("var " + quote(sym) + ": " + remap(sym.Type) + " = _")
-        stream.println("var " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = _")
+        stream.println("var " + quote(sym) + "_data: " + remap(elem.aV.Type) + " = _")
         if (elem.cond.nonEmpty) {
           stream.println("var " + quote(sym) + "_buf: Array[" + remap(getBlockResult(elem.func).Type) + "] = _")
           stream.println("var " + quote(sym) + "_size = 0")
@@ -1186,9 +1193,19 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with BaseGenDeliteOps {
         //stream.println("__act." + quote(sym) + " = " + quote(getBlockResult(elem.alloc))) //FIXME: do in post-process
         if (elem.cond.nonEmpty)
           stream.println("// __act." + quote(sym) + "_data stays null for now")
-        else
-          stream.println("__act." + quote(sym) + "_data = new Array(" + quote(op.size) + ")")
-      case (sym, elem: DeliteForeachElem[_]) => 
+        else {
+          structType(elemType(elem)) match {
+            case Some(elems) => {
+              for ((name,tp) <- elems) {
+                assert(structType(tp).isEmpty, "FIXME: nested structs in MultiLoop output array alloc")
+                stream.println("val " + quote(sym) + "_" + name + " = new Array[" + remap(tp) + "](" + quote(op.size) + ")")
+              }
+              stream.println("__act." + quote(sym) + "_data = new " + remap(elem.aV.Type) + elems.map(e => quote(sym) + "_" + e._1).mkString("(",",",")"))
+            }
+            case  None => stream.println("__act." + quote(sym) + "_data = new Array(" + quote(op.size) + ")")
+          }
+        }
+      case (sym, elem: DeliteForeachElem[_]) =>
         stream.println("__act." + quote(sym) + " = ()") // must be type Unit, initialized in init below
       case (sym, elem: DeliteReduceElem[_]) => 
         stream.println("__act." + quote(sym) + "_zero = {"/*}*/)

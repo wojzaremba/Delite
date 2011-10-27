@@ -24,7 +24,7 @@ trait SimpleVectorScalaOpsPkg extends Base
   with ImplicitOps with NumericOps with OrderingOps with StringOps
   with BooleanOps with PrimitiveOps with MiscOps with TupleOps
   with MathOps with CastingOps with ObjectOps with ArrayOps
-  with DeliteArrayOps
+  with DeliteArrayOps with DeliteCollectionOps with StructOps
 
 //Exps version
 trait SimpleVectorScalaOpsPkgExp extends SimpleVectorScalaOpsPkg with DSLOpsExp
@@ -124,18 +124,6 @@ trait SimpleVectorCodegenScala extends SimpleVectorCodegenBase with SimpleVector
   with ScalaGenDeliteOps with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps with DeliteScalaGenAllOverrides {
 
   val IR: DeliteApplication with SimpleVectorExp
-  
-  //these methods translates types in the compiler to types in the generated code
-  override def dsmap(line: String) : String = {
-    var res = line.replaceAll("ppl.dsl.assignment2.datastructures", "generated")
-    res = res.replaceAll("ppl.delite.framework.datastruct", "generated")
-    res
-  }
-
-  override def remap[A](m: Manifest[A]): String = m.erasure.getSimpleName match {
-    case "Vector" => "Map[String,Any]"
-    case _ => super.remap(m)
-  }
 }
 
 trait SimpleVectorCodegenCuda extends SimpleVectorCodegenBase with SimpleVectorCudaCodeGenPkg
