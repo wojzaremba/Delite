@@ -1,5 +1,6 @@
 package ppl.dsl.optiml.io
 
+import scala.reflect.SourceContext
 import java.io.{PrintWriter}
 import scala.virtualization.lms.common.{TupleOpsExp, Base, BaseFatExp}
 import ppl.delite.framework.DeliteApplication
@@ -22,7 +23,8 @@ trait MLInputReaderOps extends Base {
 
   def obj_mlinput_read_grayscale_image(filename: Rep[String]) : Rep[GrayscaleImage]
   
-  def obj_mlinput_read_tokenmatrix(filename: Rep[String]): Rep[TrainingSet[Double,Double]]
+  //def obj_mlinput_read_tokenmatrix(filename: Rep[String]): Rep[TrainingSet[Double,Double]]
+  def obj_mlinput_read_tokenmatrix(filename: Rep[String]): (Rep[Matrix[Double]],Rep[DenseVector[Double]])
   def obj_mlinput_read_template_models(directory: Rep[String]): Rep[DenseVector[(String, DenseVector[BinarizedGradientTemplate])]]
 }
 

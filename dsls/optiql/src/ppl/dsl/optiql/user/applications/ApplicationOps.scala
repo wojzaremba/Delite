@@ -10,6 +10,7 @@ import ppl.delite.framework.datastructures._
 import scala.virtualization.lms.common.ScalaGenFat
 import scala.virtualization.lms.util.OverloadHack
 import scala.virtualization.lms.common.{EffectExp, BaseFatExp, Variables}
+import scala.reflect.SourceContext
 
 //OptiQL Specific Header
 import ppl.dsl.optiql.datastruct.scala.util.Date

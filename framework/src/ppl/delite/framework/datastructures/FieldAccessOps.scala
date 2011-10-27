@@ -3,6 +3,7 @@ package ppl.delite.framework.datastructures
 import scala.virtualization.lms.common.{ScalaGenFat, BaseFatExp}
 import scala.virtualization.lms.internal.{Effects}
 import java.io.PrintWriter
+import scala.reflect.SourceContext
 
 trait FieldAccessOpsExp extends BaseFatExp {
 

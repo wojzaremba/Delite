@@ -43,6 +43,9 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
                                                val generators = DeliteApplication.this.generators }
                                                
   var args: Rep[Array[String]] = _
+
+  var staticDataMap: Map[String,_] = _
+
   
   final def main(args: Array[String]) {
     println("Delite Application Being Staged:[" + this.getClass.getSimpleName + "]")
@@ -75,7 +78,7 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
       reset
     }
     deliteGenerator.initializeGenerator(Config.buildDir)
-    deliteGenerator.emitSource(liftedMain, "Application", stream)
+    val sd = deliteGenerator.emitSource(liftedMain, "Application", stream)    
 
     deliteGenerator.emitDataStructures(Config.buildDir + File.separator)
     for (g <- generators) {
@@ -87,6 +90,8 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
 
     deliteGenerator.finalizeGenerator()
     generators foreach { _.finalizeGenerator()}
+    
+    staticDataMap = Map() ++ sd map { case (s,d) => (deliteGenerator.quote(s), d) }
   }
 
   final def generateScalaSource(name: String, stream: PrintWriter) = {

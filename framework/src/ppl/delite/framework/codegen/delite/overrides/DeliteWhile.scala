@@ -5,6 +5,7 @@ import scala.virtualization.lms.common.{WhileExp}
 import scala.virtualization.lms.common.{ScalaGenEffect, CudaGenEffect, OpenCLGenEffect, CGenEffect}
 import scala.virtualization.lms.internal.{GenericNestedCodegen}
 import java.io.PrintWriter
+import scala.reflect.SourceContext
 
 trait DeliteWhileExp extends WhileExp with DeliteOpsExp {
 
@@ -14,7 +15,7 @@ trait DeliteWhileExp extends WhileExp with DeliteOpsExp {
 
   case class DeliteWhile(cond: Exp[Boolean], body: Exp[Unit]) extends DeliteOpWhileLoop
 
-  override def __whileDo(cond: => Exp[Boolean], body: => Rep[Unit]) {
+  override def __whileDo(cond: => Exp[Boolean], body: => Rep[Unit])(implicit ctx: SourceContext) {
     //val c = reifyEffects(cond)
     //val a = reifyEffects(body)
     // TODO: reflectEffect(new While(c, a) with DeliteOpWhile))

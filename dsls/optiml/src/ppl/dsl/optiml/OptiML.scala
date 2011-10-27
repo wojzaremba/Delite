@@ -23,6 +23,7 @@ import ppl.dsl.optiml.graph._
 import ppl.dsl.optiml.stream._
 import ppl.dsl.optiml.library.cluster._
 import ppl.dsl.optiml.application._
+import ppl.dsl.optiml.capabilities._
 
 
 /**
@@ -70,6 +71,7 @@ trait OptiMLCCodeGenPkg extends OptiLACCodeGenPkg
  */
 trait OptiML extends OptiLA with OptiMLScalaOpsPkg with LanguageOps with ApplicationOps with LBPOps // TODO: LBPOpsshould be auto-generated with ApplicationOps
   with MLInputReaderOps with MLOutputWriterOps
+  with CanSumOps
   with VectorOps with OptiMLDenseVectorOps with OptiMLVectorViewOps with OptiMLRangeVectorOps
   with MatrixOps with IndexVectorOps with IndexVectorDenseOps with IndexVectorRangeOps with IndexVector2Ops 
   with StreamOps with StreamRowOps
@@ -125,7 +127,8 @@ trait OptiMLCodeGenBase extends OptiLACodeGenBase {
   val IR: DeliteApplication with OptiMLExp
   override def initialDefs = IR.deliteGenerator.availableDefs
 
-
+  val mlspecialize = Set[String]()
+  val mlspecialize2 = Set[String]()  
   def genSpec2(f: File, outPath: String) = {}
     
   override def emitDataStructures(path: String) {
@@ -145,10 +148,10 @@ trait OptiMLCodeGenBase extends OptiLACodeGenBase {
         emitDataStructures(f.getPath())
       }
       else {
-        if (specialize contains (f.getName.substring(0, f.getName.indexOf(".")))) {
+        if (mlspecialize contains (f.getName.substring(0, f.getName.indexOf(".")))) {
           genSpec(f, path)
         }
-        if (specialize2 contains (f.getName.substring(0, f.getName.indexOf(".")))) {
+        if (mlspecialize2 contains (f.getName.substring(0, f.getName.indexOf(".")))) {
           genSpec2(f, path)
         }
         val outFile = path + s + f.getName
@@ -173,8 +176,8 @@ trait OptiMLCodeGenScala extends OptiLACodeGenScala with OptiMLCodeGenBase with 
   
   val IR: DeliteApplication with OptiMLExp
 
-  override val specialize = Set("LabelsImpl", "ImageImpl", "StreamImpl", "StreamRowImpl")
-  override val specialize2 = Set("TrainingSetImpl")
+  override val mlspecialize = Set(/*"LabelsImpl", "ImageImpl",*/ "StreamImpl", "StreamRowImpl")
+  //override val mlspecialize2 = Set(/*"TrainingSetImpl"*/)
 
   override def genSpec2(f: File, dsOut: String) {
     for (s1 <- List("Double","Int","Float","Long","Boolean")) {
@@ -210,18 +213,18 @@ trait OptiMLCodeGenScala extends OptiLACodeGenScala with OptiMLCodeGenBase with 
   override def parmap(line: String): String = {
     var res = line
     for(tpe1 <- List("Int","Long","Double","Float","Boolean")) {
-      for (s <- specialize) {
+      for (s <- mlspecialize) {
         res = res.replaceAll(s+"\\["+tpe1+"\\]", tpe1+s)
       }
       for(tpe2 <- List("Int","Long","Double","Float","Boolean")) {
-        for (s <- specialize2) {
+        for (s <- mlspecialize2) {
           // should probably parse and trim whitespace, this is fragile
           res = res.replaceAll(s+"\\["+tpe1+","+tpe2+"\\]", tpe1+tpe2+s)
           res = res.replaceAll(s+"\\["+tpe1+", "+tpe2+"\\]", tpe1+tpe2+s)
         }
       }
     }
-    dsmap(res)
+    dsmap(super.parmap(res))
   }
 
   override def dsmap(line: String) : String = {

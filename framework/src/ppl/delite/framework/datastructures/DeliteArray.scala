@@ -3,7 +3,7 @@ package ppl.delite.framework.datastructures
 import ppl.delite.framework.ops.DeliteOpsExp
 import scala.virtualization.lms.common.{Base, EffectExp, StructExp, StructExpOptCommon, StructFatExpOptCommon, ScalaGenEffect}
 import java.io.PrintWriter
-import scala.reflect.RefinedManifest
+import scala.reflect.SourceContext
 
 trait DeliteArrayOps extends Base {
 
