@@ -87,6 +87,8 @@ final class DeliteProject(info: ProjectInfo) extends DefaultProject(info) with M
     lazy val simple = project("simple", "Simple", new FlatProject(_){
       override def mainClass = Some("ppl.apps.assignment2.SimpleVectorAppRunner")
     }, framework)
+    //lazy val profiling = project("profiling", "Profiling", new FlatProject(_), framework)
+    lazy val collections = project("collections", "Collections", new FlatProject(_), framework)
   }
 
   lazy val dsls = project("dsls", "DSLs", new DSLs(_), framework)
@@ -94,7 +96,6 @@ final class DeliteProject(info: ProjectInfo) extends DefaultProject(info) with M
   lazy val apps = project("apps", "Applications", new APPs(_), framework, dsls)
   class APPs(info: ProjectInfo) extends DefaultProject(info) {
 	  lazy val scala = project("scala", "Scala Apps", new FlatProject(_), framework, dsls)
-    override def compileOptions = CompileOption("-Xprint:typer -Ydebug -Ylog:typer") :: super.compileOptions.toList    
   }
   
   //TR is anybody using this? conflict with defining 'tests' as test source path above...

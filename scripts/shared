@@ -173,6 +173,26 @@ object config {
     save()
   }
 
+  def profiling_classes = { val value = props.getProperty("profiling_classes"); validate_profiling_classes(value); new Path(value); }
+  def profiling_classes_=(value: String) = { validate_profiling_classes(value); props.setProperty("profiling_classes", value); save(); }
+  def validate_profiling_classes(_value: String = null) = {
+    val value = if (_value != null) _value else props.getProperty("profiling_classes");
+    if (value == null) throw new Exception("Profiling configuration entry is not found.")
+    if (!value.exist) throw new Exception("Profiling (configured as \"%s\") cannot be found or is inaccessible. Have you compiled Delite?".format(value))
+    props.setProperty("profiling_classes", value)
+    save()
+  }
+
+  def collections_classes = { val value = props.getProperty("collections_classes"); validate_collections_classes(value); new Path(value); }
+  def collections_classes_=(value: String) = { validate_collections_classes(value); props.setProperty("collections_classes", value); save(); }
+  def validate_collections_classes(_value: String = null) = {
+    val value = if (_value != null) _value else props.getProperty("collections_classes");
+    if (value == null) throw new Exception("Collections configuration entry is not found.")
+    if (!value.exist) throw new Exception("Collections (configured as \"%s\") cannot be found or is inaccessible. Have you compiled Delite?".format(value))
+    props.setProperty("collections_classes", value)
+    save()
+  }
+
   def runtime_classes = { val value = props.getProperty("runtime_classes"); validate_runtime_classes(value); new Path(value); }
   def runtime_classes_=(value: String) = { validate_runtime_classes(value); props.setProperty("runtime_classes", value); save(); }
   def validate_runtime_classes(_value: String = null) = {

@@ -274,7 +274,9 @@ trait StreamOpsExpOpt extends StreamOpsExp {
         val body: Def[StreamRow[A]] = new DeliteCollectElem[A,StreamRow[A]](
           aV = fresh[Array[A]],
           alloc = reifyEffects(stream_chunk_row(st,row,offset)), // <--- will ignore the actual data array. stream rows do not have unsafeSetData
-          func = reifyEffects(stfunc(offset*chunkSize+row,v))
+          allocDataStructure = reifyEffects(stream_chunk_row(st,row,offset)),
+          func = reifyEffects(stfunc(offset*chunkSize+row,v)),
+          emitterFactory = None
         )
       }
       r
