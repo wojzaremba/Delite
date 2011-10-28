@@ -4,7 +4,7 @@ import ppl.dsl.optiml.{CudaGenDataStruct, OpenCLGenDataStruct}
 import java.io.{PrintWriter}
 
 import ppl.delite.framework.DeliteApplication
-import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollectionOpsExp}
+import ppl.delite.framework.ops.{DeliteCollection, DeliteOpsExp, DeliteCollectionOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 import reflect.Manifest
 import scala.virtualization.lms.common._

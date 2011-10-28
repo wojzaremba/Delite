@@ -6,8 +6,7 @@ import scala.virtualization.lms.common._
 import scala.virtualization.lms.internal.{GenerationFailedException, GenericFatCodegen}
 
 import ppl.delite.framework.DeliteApplication
-import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollectionOpsExp}
-import ppl.delite.framework.datastruct.scala.DeliteCollection
+import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollection, DeliteCollectionOpsExp}
 import ppl.dsl.optila._
 
 trait VectorOps extends Variables {

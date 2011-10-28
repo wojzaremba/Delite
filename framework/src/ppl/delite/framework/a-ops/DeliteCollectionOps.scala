@@ -5,9 +5,9 @@ import scala.virtualization.lms.common.{EffectExp, BaseFatExp, Base, ScalaGenFat
 import scala.virtualization.lms.internal.{GenericFatCodegen}
 import scala.reflect.SourceContext
 
-trait DeliteCollectionOps extends Base {
+trait DeliteCollection[A]
 
-  trait DeliteCollection[A]
+trait DeliteCollectionOps extends Base {
 
   trait DCInterfaceOps[+T,A] extends InterfaceOps[T] {
     def dcSize: Rep[Int] 
