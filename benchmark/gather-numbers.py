@@ -160,13 +160,15 @@ def launchApps(options):
         build_dir = props["delite.home"] + "/generated/"
         opts = " -Ddelite.home.dir=" + props["delite.home"] + " -Ddelite.build.dir=" + build_dir + " -Ddelite.deg.filename=" + app + ".deg"
         if options['blas'] == True:
-            opts = opts + " -Dblas.enabled"
+            opts = opts + " -Ddelite.extern.blas"
+        if options['run']['gpu'] == True:
+            opts = opts + " -Ddelite.generate.cuda"
         if options['variants'] == False:
             opts = opts + " -Dnested.variants.level=0"
-        if options['fusion'] == True:
-            opts = opts + " -Ddelite.opfusion.enabled=true"
         if options['hprof'] == True:
             opts += " -agentlib:hprof=cpu=samples,depth=10,file=" + app + ".hprof"
+        if options['fusion'] == False:
+            opts = opts + " -Ddelite.enable.fusion=false"
         opts = opts + " " + java_opts
         os.putenv("JAVA_OPTS", opts)
         os.putenv("GEN_OPTS", opts)

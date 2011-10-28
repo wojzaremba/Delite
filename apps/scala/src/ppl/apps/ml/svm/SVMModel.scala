@@ -11,9 +11,8 @@ package ppl.apps.ml.svm
  * Stanford University
  */
 
-import ppl.dsl.optiml.datastruct.scala.{Vector,Matrix,TrainingSet}
 import ppl.delite.framework.DeliteApplication
-import ppl.dsl.optiml.{OptiMLApplication, OptiML}
+import ppl.dsl.optiml._
 
 trait SVMModel { this: OptiMLApplication =>
 
@@ -24,7 +23,7 @@ trait SVMModel { this: OptiMLApplication =>
 
   // construct directly from model
   def load(modelFilename: Rep[String]) = {
-    val in = MLInputReader.readVector(modelFilename)
+    val in = readVector(modelFilename)
     val b = in(in.length-1)
     val weights = in.take(in.length-1)
     (weights, b)
@@ -33,11 +32,12 @@ trait SVMModel { this: OptiMLApplication =>
   /////////////
   // training
 
-  def train(X: Rep[TrainingSet[Double,Double]], C: Rep[Double], tol: Rep[Double], max_passes: Rep[Int]) = {
+  //def train(X: Rep[TrainingSet[Double,Double]], C: Rep[Double], tol: Rep[Double], max_passes: Rep[Int]) = {
+  def train(X: Rep[Matrix[Double]], labels: Rep[DenseVector[Double]], C: Rep[Double], tol: Rep[Double], max_passes: Rep[Int]) = {
     println("Training SVM using the SMO algorithm")
 
     // adjust the classification labels to -1 and +1 for SMO
-    val Y = X.labels map { e => if (e == 0) -1. else 1. }
+    val Y = /*X.*/labels map { e => if (e == 0) -1. else 1. }
 
     // internal model storage
     //val weights = Vector.zeros(X.numCols).mutable
@@ -167,7 +167,7 @@ trait SVMModel { this: OptiMLApplication =>
   ////////////
   // testing
 
-  def classify(weights: Rep[Vector[Double]], b: Rep[Double], test_pt: Rep[Vector[Double]]): Rep[Int] = {
+  def classify(weights: Rep[DenseVector[Double]], b: Rep[Double], test_pt: Interface[Vector[Double]]): Rep[Int] = {
     // SVM prediction is W'*X + b
     if ((weights*:*test_pt + b) < 0){
       -1
@@ -178,9 +178,9 @@ trait SVMModel { this: OptiMLApplication =>
   ////////////
   // utility
 
-  def saveModel(weights: Rep[Vector[Double]], b: Rep[Double], filename: Rep[String]) = {
+  def saveModel(weights: Rep[DenseVector[Double]], b: Rep[Double], filename: Rep[String]) = {
     val out = weights.cloneL
     out += b
-    MLOutputWriter.writeVector(out, filename)
+    writeVector(out, filename)
   }
 }

@@ -3,14 +3,15 @@ package ppl.dsl.optiml.matrix
 import java.io.{PrintWriter}
 import scala.virtualization.lms.common.{VariablesExp, Variables, CGenBase, CudaGenBase, ScalaGenBase}
 import scala.virtualization.lms.internal.{GenerationFailedException}
-import ppl.delite.framework.{DeliteApplication, DSLType}
+import scala.reflect.SourceContext
+import ppl.delite.framework.DeliteApplication
 import ppl.delite.framework.ops.DeliteOpsExp
 import ppl.delite.framework.Config
-import ppl.dsl.optiml.datastruct.CudaGenDataStruct
-import ppl.dsl.optiml.datastruct.scala.{MatrixImpl, VectorImpl, Vector, Matrix, GrayscaleImage, GrayscaleImageImpl}
+import ppl.dsl.optiml.CudaGenDataStruct
+import ppl.dsl.optiml.{Vector, Matrix, GrayscaleImage}
 import ppl.dsl.optiml.{OptiML, OptiMLExp}
 
-trait GrayscaleImageOps extends DSLType with Variables {
+trait GrayscaleImageOps extends Variables {
   this: OptiML =>
 
   object GrayscaleImage {
@@ -90,7 +91,7 @@ trait GrayscaleImageOpsExp extends GrayscaleImageOps with VariablesExp {
   //////////////
   // mirroring
 
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
     case GrayscaleImageObjectCartToPolarPhase(a,b) => reflectPure(new { override val original = Some(f,e) } with GrayscaleImageObjectCartToPolarPhase(f(a),f(b)))(mtype(manifest[A]))
     case Reflect(GrayscaleImageObjectFromMat(x), u, es) => reflectMirrored(Reflect(GrayscaleImageObjectFromMat(f(x)), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case _ => super.mirror(e, f)
@@ -103,8 +104,8 @@ trait ScalaGenGrayscaleImageOps extends ScalaGenBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
-    case GrayscaleImageObjectNew(numRows, numCols) => emitValDef(sym, "new " + remap(manifest[GrayscaleImageImpl]) + "(" + quote(numRows) + "," + quote(numCols) + ")")
-    case GrayscaleImageObjectFromMat(m) => emitValDef(sym, "new " + remap(manifest[GrayscaleImageImpl]) + "(" + quote(m) + ")")
+    case GrayscaleImageObjectNew(numRows, numCols) => emitValDef(sym, "new generated.scala.GrayscaleImageImpl(" + quote(numRows) + "," + quote(numCols) + ")")
+    case GrayscaleImageObjectFromMat(m) => emitValDef(sym, "new generated.scala.GrayscaleImageImpl(" + quote(m) + ")")
     case _ => super.emitNode(sym, rhs)
   }
 }

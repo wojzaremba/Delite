@@ -4,6 +4,7 @@ import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.DeliteOpsExp
 import java.io.PrintWriter
 import scala.virtualization.lms.internal.{GenericNestedCodegen,GenerationFailedException}
+import scala.reflect.SourceContext
 
 trait DeliteIfThenElseExp extends IfThenElseExp with BooleanOpsExp with EqualExpBridge with DeliteOpsExp {
 
@@ -13,13 +14,13 @@ trait DeliteIfThenElseExp extends IfThenElseExp with BooleanOpsExp with EqualExp
 
   case class DeliteIfThenElse[T:Manifest](cond: Exp[Boolean], thenp: Exp[T], elsep: Exp[T], flat: Boolean) extends DeliteOpCondition[T]
 
-  override def __ifThenElse[T:Manifest](cond: Rep[Boolean], thenp: => Rep[T], elsep: => Rep[T]) = ifThenElse(cond, thenp, elsep, false)
+  override def __ifThenElse[T:Manifest](cond: Rep[Boolean], thenp: => Rep[T], elsep: => Rep[T])(implicit ctx: SourceContext) = ifThenElse(cond, thenp, elsep, false)
 
   // a 'flat' if is treated like any other statement in code motion, i.e. code will not be pushed explicitly into the branches
   def flatIf[T:Manifest](cond: Rep[Boolean])(thenp: => Rep[T])(elsep: => Rep[T]) = ifThenElse(cond, thenp, elsep, true)
 
   def ifThenElse[T:Manifest](cond: Rep[Boolean], thenp: => Rep[T], elsep: => Rep[T], flat: Boolean): Rep[T] = cond match {
-      // TODO: need to handle vars differently, this could be unsound
+      // TODO: need to handle vars differently, this could be unsound  <--- don't understand ...
     case Const(true) => thenp
     case Const(false) => elsep
     case Def(BooleanNegate(a)) => ifThenElse(a, elsep, thenp, flat)
@@ -33,7 +34,7 @@ trait DeliteIfThenElseExp extends IfThenElseExp with BooleanOpsExp with EqualExp
   }  
   
 
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
     case DeliteIfThenElse(c,a,b,h) => reflectPure(DeliteIfThenElse(f(c),f(a),f(b),h))(mtype(manifest[A]))
     case Reflect(DeliteIfThenElse(c,a,b,h), u, es) => reflectMirrored(Reflect(DeliteIfThenElse(f(c),f(a),f(b),h), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case _ => super.mirror(e, f)
