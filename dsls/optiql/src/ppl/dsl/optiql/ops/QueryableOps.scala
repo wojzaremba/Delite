@@ -1,14 +1,11 @@
 package ppl.dsl.optiql.ops
 
-import ppl.dsl.optiql.datastruct.scala.container.{DataTable, Grouping}
-import ppl.dsl.optiql.datastruct.scala.ordering.OrderedQueryable
 import java.io.PrintWriter
 import scala.virtualization.lms.common.{Base, ScalaGenFat, BaseFatExp}
 import scala.virtualization.lms.internal.GenericFatCodegen
-import ppl.dsl.optiql.OptiQLExp
-import ppl.delite.framework.datastructures.FieldAccessOpsExp
+import ppl.dsl.optiql._
 
-trait QueryableOps extends Base {
+trait QueryableOps extends Base { this: OptiQL =>
 
   //type TransparentProxy[+T] = Rep[T]
 
@@ -74,7 +71,7 @@ trait QueryableOps extends Base {
 }
 
 trait QueryableOpsExp extends QueryableOps with BaseFatExp {
-  this: QueryableOps with OptiQLExp =>
+  this: OptiQLExp =>
 
   case class QueryableWhere[TSource:Manifest](in: Exp[DataTable[TSource]], cond: Exp[TSource] => Exp[Boolean]) extends DeliteOpFilter[TSource, TSource,DataTable[TSource]] {
     def alloc = DataTable[TSource]()

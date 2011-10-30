@@ -29,11 +29,12 @@ trait SimpleVectorApp extends SimpleVectorApplication {
 
     val v1 = Vector[Complex](10).map(c => Complex(0, 0))
     val v2 = v1.map(c => Complex(c.re + 1, c.imag - 1))
-    v2.pprint
+    val v3 = v2.filter
+    v3.pprint
 
 
-    //val x = Vector[Int](100) + 1
-    //val y = Vector[Int](100) + 2
+    //val x = Vector[Int](10) + 1
+    //val y = Vector[Int](10) + 2
 
     //val z = x + y
     //z.pprint

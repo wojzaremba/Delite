@@ -4,17 +4,18 @@ import ppl.dsl.optiql.datastruct.scala.container.DataTable
 import scala.virtualization.lms.common.{ScalaGenFat, BaseFatExp, Base}
 import ppl.dsl.optiql.OptiQLExp
 import java.io.PrintWriter
+import ppl.delite.framework.ops.DeliteCollection
 
 trait DataTableOps extends Base {
 
-
+  trait DataTable[TSource] extends DeliteCollection[TSource]
 
   // Lifting and Interface Injection
   implicit def dataTableRepToDataTableRepOps[T:Manifest](d: Rep[DataTable[T]]) = new DataTableRepOps(d)
 
   object DataTable {
     def apply[T:Manifest](): Rep[DataTable[T]] = dataTableObjectApply()
-	def apply[T:Manifest](initSize: Rep[Int]): Rep[DataTable[T]] = dataTableObjectApply(initSize)
+	  def apply[T:Manifest](initSize: Rep[Int]): Rep[DataTable[T]] = dataTableObjectApply(initSize)
   }
 
   class DataTableRepOps[T:Manifest](t:Rep[DataTable[T]]) {

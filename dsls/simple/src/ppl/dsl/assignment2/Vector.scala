@@ -18,40 +18,36 @@ trait VectorOps extends Variables {
   def infix_+[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[Vector[A]]) = vectorPlus(x,y)
   def infix_+[A](x: Rep[Vector[A]], y: Rep[A])(implicit m: Manifest[A], n: Numeric[A], o: Overloaded1) = vectorPlusScalar(x,y)
   
-  def infix_*[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]) = scalarTimes(x,y)
+  def infix_*[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]) = vectorScalarTimes(x,y)
   def infix_sum[A:Manifest:Numeric](x: Rep[Vector[A]]) = vectorSum(x)
   def infix_filter[A:Manifest](x: Rep[Vector[A]]) = vectorFilter(x)
-  //def infix_map[A:Manifest,B:Manifest](x: Rep[Vector[A]], f: Rep[A] => Rep[B]) = vectorMap(x,f)
 
   implicit def repToVecOps[A:Manifest](x: Rep[Vector[A]]) = new VecOpsCls(x)
   class VecOpsCls[A:Manifest](x: Rep[Vector[A]]) {
     def map[B:Manifest](f: Rep[A] => Rep[B]): Rep[Vector[B]] = vectorMap(x,f)
+    def apply(idx: Rep[Int]) = vectorApply(x, idx)
+    def update(idx: Rep[Int], value: Rep[A]) = vectorUpdate(x, idx, value)
   }
 
-  def infix_length[A:Manifest](x: Rep[Vector[A]]) = length(x)
-  def infix_apply[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int]) = apply(x, idx)
-  def infix_update[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int], value: Rep[A]) = update(x, idx, value)
-  def infix_isRow[A:Manifest](x: Rep[Vector[A]]) = isRow(x)
-  
+  def infix_length[A:Manifest](x: Rep[Vector[A]]) = vectorLength(x)
+  def infix_isRow[A:Manifest](x: Rep[Vector[A]]) = vectorIsRow(x)
   def infix_pprint[A:Manifest](x: Rep[Vector[A]]) = vectorPrint(x)
   def infix_mtrans[A:Manifest](x: Rep[Vector[A]]) = vectorMTrans(x)
-  
+
   //operations
   def vectorNew[A:Manifest](length: Rep[Int]): Rep[Vector[A]]
-  
   def vectorPlus[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[Vector[A]]): Rep[Vector[A]]
   def vectorPlusScalar[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]): Rep[Vector[A]]
-  def scalarTimes[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]): Rep[Vector[A]]
+  def vectorScalarTimes[A:Manifest:Numeric](x: Rep[Vector[A]], y: Rep[A]): Rep[Vector[A]]
   def vectorSum[A:Manifest:Numeric](x: Rep[Vector[A]]): Rep[A]
   def vectorFilter[A:Manifest](x: Rep[Vector[A]]): Rep[Vector[A]]
   def vectorMap[A:Manifest,B:Manifest](x: Rep[Vector[A]], f: Rep[A] => Rep[B]): Rep[Vector[B]]
+  
+  def vectorLength[A:Manifest](x: Rep[Vector[A]]): Rep[Int]
+  def vectorApply[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int]): Rep[A]
+  def vectorUpdate[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int], value: Rep[A]): Rep[Unit]
+  def vectorIsRow[A:Manifest](x: Rep[Vector[A]]): Rep[Boolean]
 
-  
-  def length[A:Manifest](x: Rep[Vector[A]]): Rep[Int]
-  def apply[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int]): Rep[A]
-  def update[A:Manifest](x: Rep[Vector[A]], idx: Rep[Int], value: Rep[A]): Rep[Unit]
-  def isRow[A:Manifest](x: Rep[Vector[A]]): Rep[Boolean]
-  
   def vectorPrint[A:Manifest](x: Rep[Vector[A]]): Rep[Unit]
   def vectorMTrans[A:Manifest](x: Rep[Vector[A]]): Rep[Unit]
 }
@@ -109,7 +105,7 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
     override def allocWithArray = data => vectorWithArray(data)
     
     def func = a => a
-    def cond = a => v > 50
+    def cond = a => v > 4
   }
 
   /**
@@ -121,17 +117,17 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
   private def infix_data[A:Manifest](x: Exp[Vector[A]]) = field[DeliteArray[A]](x, "data")
 
   //def length[A:Manifest](x: Exp[Vector[A]]) = x.data.length
-  def length[A:Manifest](x: Exp[Vector[A]]) = darray_length(x.data)
-  def apply[A:Manifest](x: Exp[Vector[A]], idx: Exp[Int]) = darray_apply(x.data, idx)
-  def update[A:Manifest](x: Exp[Vector[A]], idx: Exp[Int], value: Exp[A]) = darray_update(x.data, idx, value)
-  def isRow[A:Manifest](x: Exp[Vector[A]]) = sys.error("isRow removed") /*readVar(vfield[Boolean](x, "isRow"))*/
+  def vectorLength[A:Manifest](x: Exp[Vector[A]]) = darray_length(x.data)
+  def vectorApply[A:Manifest](x: Exp[Vector[A]], idx: Exp[Int]) = darray_apply(x.data, idx)
+  def vectorUpdate[A:Manifest](x: Exp[Vector[A]], idx: Exp[Int], value: Exp[A]) = darray_update(x.data, idx, value)
+  def vectorIsRow[A:Manifest](x: Exp[Vector[A]]) = sys.error("isRow removed") /*readVar(vfield[Boolean](x, "isRow"))*/
 
   /**
    * Vector Ops
    */
   def vectorPlus[A:Manifest:Numeric](x: Exp[Vector[A]], y: Exp[Vector[A]]) = VectorPlus(x,y)
   def vectorPlusScalar[A:Manifest:Numeric](x: Exp[Vector[A]], y: Exp[A]) = VectorPlusScalar(x,y)
-  def scalarTimes[A:Manifest:Numeric](x: Exp[Vector[A]], y: Exp[A]) = VectorTimesScalar(x, y)
+  def vectorScalarTimes[A:Manifest:Numeric](x: Exp[Vector[A]], y: Exp[A]) = VectorTimesScalar(x, y)
   def vectorSum[A:Manifest:Numeric](x: Exp[Vector[A]]) = VectorSum(x)
   def vectorFilter[A:Manifest](x: Exp[Vector[A]]) = VectorFilter(x)
   def vectorMap[A:Manifest,B:Manifest](x: Exp[Vector[A]], f: Exp[A] => Exp[B]) = VectorGenericMap(x, f)
@@ -152,8 +148,8 @@ trait VectorOpsExp extends VectorOps with VariablesExp with BaseFatExp with Deli
     if (isSubType(x.Type.erasure, classOf[Vector[A]])) then(x.asInstanceOf[Exp[Vector[A]]]) else orElse
   }
 
-  override def dc_size[A:Manifest](x: Exp[DeliteCollection[A]]): Exp[Int] = ifVector(x)(length(_))(super.dc_size(x))
-  override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], idx: Exp[Int]): Exp[A] = ifVector(x)(apply(_, idx))(super.dc_apply(x, idx))
+  override def dc_size[A:Manifest](x: Exp[DeliteCollection[A]]): Exp[Int] = ifVector(x)(vectorLength(_))(super.dc_size(x))
+  override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], idx: Exp[Int]): Exp[A] = ifVector(x)(vectorApply(_, idx))(super.dc_apply(x, idx))
   override def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], idx: Exp[Int], value: Exp[A]): Exp[Unit] = ifVector(x)(v => reifyEffectsHere(darray_update(v.data, idx, value)))(super.dc_update(x,idx,value))
   
 }
@@ -170,8 +166,8 @@ trait VectorImplOpsStandard extends VectorImplOps {
 
   def pprint_impl[A:Manifest](x: Rep[Vector[A]]) = {
     print("[ ")
-    for (i <- 0 until length(x)) {
-      print(x.apply(i)); print(" ")
+    for (i <- 0 until x.length) {
+      print(x(i)); print(" ")
     }
     print("]\\n")
   }

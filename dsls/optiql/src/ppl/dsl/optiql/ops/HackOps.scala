@@ -2,9 +2,7 @@ package ppl.dsl.optiql.ops
 
 import scala.virtualization.lms.common.{ScalaGenEffect, Base, EffectExp}
 import java.io.PrintWriter
-import ppl.delite.framework.datastructures._
 import ppl.dsl.optiql.datastruct.scala.tpch._
-import ppl.dsl.optiql.datastruct.scala.container.DataTable
 
 trait HackOps extends Base {
 
@@ -31,7 +29,7 @@ trait HackOps extends Base {
   
 }
 
-trait HackOpsExp extends HackOps with FieldAccessOpsExp with EffectExp {
+trait HackOpsExp extends HackOps with EffectExp {
 
   case class HackOpsObjLoadCustomers(path: Rep[String]) extends Def[CustomerTable]
   case class HackOpsObjLoadLineItems(path: Rep[String]) extends Def[LineItemTable]
