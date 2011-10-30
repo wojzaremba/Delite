@@ -72,12 +72,13 @@ final class DeliteProject(info: ProjectInfo) extends DefaultProject(info) with M
   }
   
   // Define projects
-  lazy val framework = project("framework", "Delite Framework", new FlatProject(_))  
 
   // TR: interop requires runtime being built and run using the same scala version as everything else.
   lazy val runtime = project("runtime", "Delite Runtime", new FlatProject(_) {
     override def mainClass = Some("ppl.delite.runtime.Delite")
   })
+
+  lazy val framework = project("framework", "Delite Framework", new FlatProject(_), runtime)
 
   class DSLs(info: ProjectInfo) extends DefaultProject(info) {
     lazy val optiml = project("optiml", "OptiML", new FlatProject(_){
