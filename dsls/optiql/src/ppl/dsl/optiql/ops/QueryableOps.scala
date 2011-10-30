@@ -84,7 +84,7 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   }
      
   case class QueryableSelect[TSource:Manifest, TResult:Manifest](in: Exp[DataTable[TSource]], func: Exp[TSource] => Exp[TResult]) extends DeliteOpMap[TSource, TResult, DataTable[TResult]] {
-	def alloc = DataTable[TResult](in.size)
+	  def alloc = DataTable[TResult](in.size)
     val size = in.size
   }
   
