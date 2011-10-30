@@ -5,7 +5,7 @@ import java.io.{PrintWriter}
 
 import ppl.delite.framework.DeliteApplication
 import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollection, DeliteCollectionOpsExp}
-import reflect.Manifest
+import scala.reflect.{Manifest, SourceContext}
 import scala.virtualization.lms.common._
 import scala.virtualization.lms.internal.{GenerationFailedException, GenericFatCodegen}
 import ppl.dsl.optila._
@@ -228,7 +228,7 @@ trait DenseVectorOpsExp extends DenseVectorOps with VariablesExp with BaseFatExp
   //////////////
   // mirroring
 
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
     case DenseVectorApply(x, n) => densevector_apply(f(x), f(n))
     case DenseVectorLength(x) => densevector_length(f(x))
     case DenseVectorIsRow(x) => densevector_isrow(f(x))

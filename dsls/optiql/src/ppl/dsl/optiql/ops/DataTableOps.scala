@@ -2,6 +2,8 @@ package ppl.dsl.optiql.ops
 
 import ppl.dsl.optiql.datastruct.scala.container.DataTable
 import scala.virtualization.lms.common.{ScalaGenFat, BaseFatExp, Base}
+import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollectionOpsExp}
+import scala.reflect.SourceContext
 import ppl.dsl.optiql.OptiQLExp
 import java.io.PrintWriter
 import ppl.delite.framework.ops.DeliteCollection
@@ -40,7 +42,7 @@ trait DataTableOps extends Base {
 
 }
 
-trait DataTableOpsExp extends DataTableOps with BaseFatExp { this: DataTableOpsExp with OptiQLExp =>
+trait DataTableOpsExp extends DataTableOps with DeliteCollectionOpsExp with BaseFatExp { this: DataTableOpsExp with OptiQLExp =>
 
   case class DataTableApply[T:Manifest](t: Rep[DataTable[T]], i: Rep[Int]) extends Def[T]
   case class DataTableObjectApply[T:Manifest](mnfst: Manifest[DataTable[T]], initSize: Rep[Int]) extends Def[DataTable[T]]
@@ -48,12 +50,17 @@ trait DataTableOpsExp extends DataTableOps with BaseFatExp { this: DataTableOpsE
   case class DataTablePrintAsTable[T](t: Rep[DataTable[T]], max_rows: Rep[Int]) extends Def[Unit]
 
   def dataTableApply[T:Manifest](t: Exp[DataTable[T]], i: Exp[Int]): Exp[T] = DataTableApply(t, i)
-  def dataTableObjectApply[T:Manifest](): Exp[DataTable[T]] = reflectEffect(DataTableObjectApply[T](manifest[DataTable[T]], unit(0)))
-  def dataTableObjectApply[T:Manifest](initSize: Exp[Int]): Exp[DataTable[T]] = reflectEffect(DataTableObjectApply[T](manifest[DataTable[T]], initSize))
+  def dataTableObjectApply[T:Manifest](): Exp[DataTable[T]] = reflectMutable(DataTableObjectApply[T](manifest[DataTable[T]], unit(0)))
+  def dataTableObjectApply[T:Manifest](initSize: Exp[Int]): Exp[DataTable[T]] = reflectMutable(DataTableObjectApply[T](manifest[DataTable[T]], initSize))
   def dataTableSize[T:Manifest](t: Exp[DataTable[T]]): Exp[Int] = DataTableSize(t)
   def dataTablePrintAsTable[T:Manifest](t: Exp[DataTable[T]], max_rows: Rep[Int]): Exp[Unit] = reflectEffect(DataTablePrintAsTable(t, max_rows))
   
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = e match {
+  //undoing Arvind's error messages, but this is all a big hack until DeliteStruct
+  override def dc_size[A:Manifest](x: Exp[DeliteCollection[A]]) = reflectPure(DeliteCollectionSize(x))  
+  override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]) = reflectPure(DeliteCollectionApply(x,n))  
+  override def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]) = reflectWrite(x)(DeliteCollectionUpdate(x,n,y))
+  
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = e match {
     case DataTableApply(t,i) => dataTableApply(f(t), f(i))
     case _ => super.mirror(e,f)
   }

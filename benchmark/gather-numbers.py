@@ -45,6 +45,7 @@ def main():
     parser.add_option("--stats-dir", dest="stats_dir", default=None, help="allows you to specify a different statistics output directory. environment variables are interpolated")
     parser.add_option("--timestamp", dest="stats_time", action="store_true", help="store statistics under a timestamped directory")
     parser.add_option("-d", "--datasets", dest="datasets", default=None, help="allows you to specify a different datasets file to use. otherwise defaults to benchmark/config/datasets.HOSTNAME.INPUT_SIZE")
+    parser.add_option("--hprof", dest="hprof", action="store_true", help="enables hprof")
 
     (opts, args) = parser.parse_args()
     if len(args) != 0:
@@ -90,7 +91,9 @@ def loadOptions(opts):
     
     if opts.datasets:
       options['datasets'] = opts.datasets
-      
+
+    options['hprof'] = opts.hprof
+  
     #set delite home
     if(opts.delite_home != "_env"):
         props["delite.home"] = opts.delite_home
@@ -162,6 +165,8 @@ def launchApps(options):
             opts = opts + " -Ddelite.generate.cuda"
         if options['variants'] == False:
             opts = opts + " -Dnested.variants.level=0"
+        if options['hprof'] == True:
+            opts += " -agentlib:hprof=cpu=samples,depth=10,file=" + app + ".hprof"
         if options['fusion'] == False:
             opts = opts + " -Ddelite.enable.fusion=false"
         opts = opts + " " + java_opts

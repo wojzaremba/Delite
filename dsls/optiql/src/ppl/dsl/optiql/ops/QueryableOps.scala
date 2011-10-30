@@ -4,6 +4,7 @@ import java.io.PrintWriter
 import scala.virtualization.lms.common.{Base, ScalaGenFat, BaseFatExp}
 import scala.virtualization.lms.internal.GenericFatCodegen
 import ppl.dsl.optiql._
+import scala.reflect.SourceContext
 
 trait QueryableOps extends Base { this: OptiQL =>
 
@@ -176,7 +177,7 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   def queryable_grouping_toDatatable[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]) = QueryableGroupingToDataTable(g)
   def queryable_grouping_key[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]): Rep[TKey] = QueryableGroupingKey(g)
   
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {    
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {    
     case QueryableWhere(s,p) => queryable_where(f(s), p)
     case _ => super.mirror(e,f)
   }).asInstanceOf[Exp[A]] //todo fix asInstanceOf
