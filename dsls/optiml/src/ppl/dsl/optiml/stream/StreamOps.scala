@@ -252,6 +252,7 @@ trait StreamOpsExpOpt extends StreamOpsExp {
         val body: Def[StreamRow[A]] = new DeliteCollectElem[A,StreamRow[A]](
           aV = this.aV,
           alloc = reifyEffects(updateViewWithArray(aV,stream_chunk_row_mutable(st,row,offset))),
+          allocDataStructure = reifyEffects(updateViewWithArray(aV,stream_chunk_row_mutable(st,row,offset))),
           func = reifyEffects(stfunc(offset*chunkSize+row,v))
         )
       }

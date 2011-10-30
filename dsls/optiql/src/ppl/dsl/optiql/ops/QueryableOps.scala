@@ -8,8 +8,11 @@ import scala.virtualization.lms.internal.GenericFatCodegen
 import scala.reflect.SourceContext
 import ppl.dsl.optiql.OptiQLExp
 import ppl.delite.framework.datastructures.FieldAccessOpsExp
+import ppl.delite.framework.datastruct.scala._
+import ppl.delite.framework.collections._
+import ppl.delite.framework.ops.DeliteCollectionOps
 
-trait QueryableOps extends Base {
+trait QueryableOps extends GenericCollectionOps with DeliteCollectionOps {
 
   //type TransparentProxy[+T] = Rep[T]
 
@@ -22,6 +25,7 @@ trait QueryableOps extends Base {
   class QOpsCls[TSource:Manifest](s: Rep[DataTable[TSource]]) {
     def Where(predicate: Rep[TSource] => Rep[Boolean]) = queryable_where(s, predicate)
 	def GroupBy[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_groupby(s,keySelector)
+    def GroupByHash[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_groupby_hash(s,keySelector)
     def OrderBy[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_orderby(s, keySelector)
     def OrderByDescending[TKey:Manifest](keySelector: Rep[TSource] => Rep[TKey]) = queryable_orderbydescending(s, keySelector)        
 	def Select[TResult:Manifest](resultSelector: Rep[TSource] => Rep[TResult]) = queryable_select(s, resultSelector)
@@ -56,6 +60,7 @@ trait QueryableOps extends Base {
 
   def queryable_where[TSource:Manifest](s: Rep[DataTable[TSource]], predicate: Rep[TSource] => Rep[Boolean]): Rep[DataTable[TSource]]
   def queryable_groupby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[DataTable[Grouping[TKey, TSource]]]
+  def queryable_groupby_hash[TSource:Manifest, TKey:Manifest, Coll <: DataTable[TSource]: Manifest](s: Rep[Coll], keySelector: Rep[TSource] => Rep[TKey]): Rep[HashMap[TKey, Bucket[TSource]]]
   def queryable_orderby[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]]
   def queryable_orderbydescending[TSource:Manifest, TKey:Manifest](s: Rep[DataTable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]]
   def queryable_thenby[TSource:Manifest, TKey:Manifest](oq: Rep[OrderedQueryable[TSource]], keySelector: Rep[TSource] => Rep[TKey]): Rep[OrderedQueryable[TSource]]
@@ -75,7 +80,7 @@ trait QueryableOps extends Base {
 }
 
 trait QueryableOpsExp extends QueryableOps with BaseFatExp {
-  this: QueryableOps with OptiQLExp =>
+  this: QueryableOps with TraversableOpsExp with OptiQLExp =>
 
   case class QueryableWhere[TSource:Manifest](in: Exp[DataTable[TSource]], cond: Exp[TSource] => Exp[Boolean]) extends DeliteOpFilter[TSource, TSource,DataTable[TSource]] {
     def alloc = DataTable[TSource]()
@@ -129,6 +134,8 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   }
   
   def queryable_where[TSource:Manifest](s: Exp[DataTable[TSource]], predicate: Exp[TSource] => Exp[Boolean]) = QueryableWhere(s,predicate)
+  //def traversable_groupby[T: Manifest, Coll <: DeliteCollection[T]: Manifest, K: Manifest](in: Exp[Coll], f: Exp[T] => Exp[K]): Exp[HashMap[K, Bucket[T]]] = reflectEffect(TraversableGroupBy[T, K, Coll](in, f))
+  def queryable_groupby_hash[TSource:Manifest, TKey:Manifest, Coll <: DataTable[TSource]: Manifest](s: Exp[Coll], keySelector: Exp[TSource] => Exp[TKey]) = TraversableGroupBy[TSource, TKey, Coll](s, keySelector)
   def queryable_groupby[TSource:Manifest, TKey:Manifest](s: Exp[DataTable[TSource]], keySelector: Exp[TSource] => Exp[TKey]) = {
     val v = fresh[TSource]
     val key = keySelector(v)

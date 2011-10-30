@@ -54,10 +54,11 @@ trait DeliteCollectionOpsExp extends DeliteCollectionOps with BaseFatExp with Ef
     case Def(e: DeliteOpZipWith[_,_,_,_]) => e.size
     //case Def(Reflect(e: DeliteOpMap[_,_,_], _,_)) => e.size // reasonable?
     //case Def(Reflect(e: DeliteOpZipWith[_,_,_,_], _,_)) => e.size // reasonable?
-    case _ => throw new RuntimeException("no static implementation found for dc_size on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get)//reflectPure(DeliteCollectionSize(x))
+    case _ => reflectPure(DeliteCollectionSize(x))
+    // TODO case _ => throw new RuntimeException("no static implementation found for dc_size on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get)
   }
-  def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]): Exp[A] = throw new RuntimeException("no static implementation found for dc_apply on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get + " --- x.Type is " + x.Type)//reflectPure(DeliteCollectionApply(x,n))
-  def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]): Exp[Unit] = throw new RuntimeException("no static implementation found for dc_update on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get) //reflectWrite(x)(DeliteCollectionUpdate(x,n,y))
+  def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]): Exp[A] = reflectPure(DeliteCollectionApply(x,n))//throw new RuntimeException("no static implementation found for dc_apply on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get + " --- x.Type is " + x.Type)
+  def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]): Exp[Unit] = reflectWrite(x)(DeliteCollectionUpdate(x,n,y))//throw new RuntimeException("no static implementation found for dc_update on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get) 
 
   def dc_unsafeSetData[A:Manifest](x: Exp[DeliteCollection[A]], d: Exp[Array[A]]) = reflectWrite(x)(DeliteCollectionUnsafeSetData(x,d)) // legacy...
 

@@ -8,13 +8,16 @@ package ppl.delite.framework.datastruct.scala
 abstract class DeliteOpMultiLoop[A] {
   def size: Int
   def alloc: A
-  def processRange(__act: A, start: Int, end: Int): A //init+process
-  def init(__act: A, idx: Int): A
+  def processRange(__act: A, start: Int, end: Int, chunkIdx: Int, numChunks: Int): A //init+process
+  def init(__act: A, idx: Int, chunkIdx: Int, numChunks: Int): A
   def process(__act: A, idx: Int): Unit
   def combine(__act: A, rhs: A): Unit
-  def postCombine(__act: A, rhs: A): Unit
+  def postCombine(__act: A, lhs: A): Unit
   def postProcInit(__act: A): Unit
   def postProcess(__act: A): Unit
+  def postCombine2(__act: A, lhs: A): Unit
+  def postProcInit2(__act: A): Unit
+  def postProcess2(__act: A): Unit
   def finalize(__act: A): Unit
 }
 

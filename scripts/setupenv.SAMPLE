@@ -1,0 +1,11 @@
+DEVDIR=~/workspaces/scala
+DELITE=$DEVDIR/delite
+LMS=$DEVDIR/virtualization-lms-core 
+
+PROFILINGPATH=$DELITE/dsls/profiling/target/scala_2.9.x-virtualized-SNAPSHOT/classes
+COLLECTIONSPATH=$DELITE/dsls/collections/target/scala_2.9.x-virtualized-SNAPSHOT/classes
+CLASSPATH=$PROFILINGPATH:$COLLECTIONSPATH
+
+alias delitec='$DELITE/scripts/delitec'
+alias delite='$DELITE/scripts/delite'
+alias scalav='$DEVDIR/scala-virtualized/dists/latest/bin/scala'

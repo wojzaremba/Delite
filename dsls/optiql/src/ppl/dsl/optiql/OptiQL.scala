@@ -6,6 +6,7 @@ import ops._
 import scala.virtualization.lms.common._
 import ppl.delite.framework.ops._
 import ppl.delite.framework.codegen.delite.overrides.DeliteAllOverridesExp
+import ppl.delite.framework.collections
 import scala.virtualization.lms.internal.GenericFatCodegen
 import ppl.delite.framework.codegen.scala.TargetScala
 import ppl.delite.framework.{Config, DeliteApplication}
@@ -15,9 +16,32 @@ import ppl.delite.framework.codegen.{Utils, Target}
 
 
 /**
+ * Hacked up Collections trait, need to clean up the hiearchy 
+ */
+trait OptiQlCollectionsOps
+extends collections.TraversableOps
+with collections.SeqOps
+with collections.ArraySeqOps
+with collections.MapOps
+with collections.HashMapOps
+with collections.ArraySeqEmitting
+with collections.HashMapEmitting
+with collections.HashMultiMapEmitting 
+
+trait OptiQLCollectionsOpsExp
+extends collections.TraversableOpsExp
+with collections.SeqOpsExp
+with collections.ArraySeqOpsExp
+with collections.ArraySeqEmitting
+with collections.MapOpsExp
+with collections.HashMapOpsExp
+with collections.HashMapEmitting
+with collections.HashMultiMapEmitting
+
+/**
  * These are the lifted scala constructs that only operate on the Rep world. These are usually safe to mix in
  */
-trait OptiQLScalaOpsPkg extends Base with MiscOps with OrderingOps with PrimitiveOps with TupleOps with NumericOps with ArrayOps with IfThenElse with StringOps with Equal 
+trait OptiQLScalaOpsPkg extends Base with MiscOps with OrderingOps with PrimitiveOps with TupleOps with NumericOps with ArrayOps with IfThenElse with StringOps with Equal with OptiQlCollectionsOps
 
 /**
  * This trait adds the Ops that are specific to OptiQL
@@ -38,7 +62,7 @@ trait OptiQLLift extends LiftString {
  * Scala IR nodes
  */
 trait OptiQLScalaOpsPkgExp extends OptiQLScalaOpsPkg with MiscOpsExp with IOOpsExp with SeqOpsExp with OrderingOpsExp
-  with PrimitiveOpsExp with TupleOpsExp with NumericOpsExp with ArrayOpsExp with IfThenElseExp with EqualExp with StringOpsExp with ResultOps
+  with PrimitiveOpsExp with TupleOpsExp with NumericOpsExp with ArrayOpsExp with IfThenElseExp with EqualExp with StringOpsExp with OptiQLCollectionsOpsExp
 
 /**
  * Ops available only to the compiler, and not our applications
