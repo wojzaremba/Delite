@@ -28,10 +28,13 @@ trait HashMapEmittingBase {
       def valueStoreType(valtype: String): String
       
       def emitBufferDefs(kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter) {
+        //println("Hacked up types Need to support: " + elemtype)
         // a temporary hack
-        val innertypes = elemtype.substring(elemtype.indexOf("Tuple2") + 7, elemtype.length - 1).split(", ")
-        val keytype = innertypes(0)
-        val valtype = innertypes(1)
+        var innertypes = elemtype.substring(elemtype.indexOf("Tuple2") + 7, elemtype.length - 1).split(", ").toList
+        //check in case we missed one of the possiple types
+        val keytype = innertypes.dropRight(1).mkString(", ")
+        val valtype = innertypes.last
+        //println("end up with key: " + keytype + " | valtype: " + valtype)
         
         stream.println("// emitting hash map")
         stream.println("var " + basename + "_buf_ind: Array[Int] = _")

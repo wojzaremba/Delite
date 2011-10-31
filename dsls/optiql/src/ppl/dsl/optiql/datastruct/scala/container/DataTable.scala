@@ -4,8 +4,29 @@ import collection.mutable.ArrayBuffer
 import collection.mutable.{ArrayBuffer, HashMap, Buffer}
 import ppl.dsl.optiql.datastruct.scala.util.{ReflectionHelper, Date}
 import ppl.dsl.optiql.datastruct.scala.ordering._
+import ppl.delite.framework.datastruct.scala._
 
 object DataTable {
+
+  def convertHashMapToDataTable[T:Manifest,K](hm: ppl.delite.framework.datastruct.scala.HashMap[K,Bucket[T]]): DataTable[Grouping[K,T]] = {     
+    val result = new DataTable[Grouping[K,T]] {
+      override def addRecord(fields: Array[String]) = throw new RuntimeException("Cannot add records to a grouping table")
+      override val grouped = true
+    }
+    val hmSize = hm.unsafeSize
+    val keys = hm.unsafeKeys
+    val values = hm.unsafeValues
+    var idx = 0
+    while(idx < hmSize) {
+      println("key: " + keys(idx) + " | bucket: " + values(idx))    
+      val nArraySz = values(idx).size
+      val nArrayBuf = new UnsafeArrayBuffer[T]()
+      nArrayBuf.unsafeSetData(values(idx).array, nArraySz)
+      result._data += new Grouping(keys(idx), nArrayBuf)    
+      idx +=1
+    }
+    result
+  }
 
   implicit def convertIterableToDataTable[T](i: Iterable[T]) : DataTable[T] = {
     if(i.isInstanceOf[DataTable[T]]) {
@@ -26,10 +47,11 @@ object DataTable {
 	else if(i.isInstanceOf[Grouping[_,T]]) {
 	  println("converting grouping to DataTable")
 	  val g = i.asInstanceOf[Grouping[_,T]]
-	  assert(g.elems.isInstanceOf[UnsafeArrayBuffer[T]])
 	  return new DataTable[T] {
 
-        _data = g.elems.asInstanceOf[UnsafeArrayBuffer[T]]
+        _data = if(g.elems.isInstanceOf[UnsafeArrayBuffer[T]]) 
+                  g.elems.asInstanceOf[UnsafeArrayBuffer[T]] 
+                else sys.error("Grouping elems not supported " + g.elems)
 
         override def addRecord(arr: Array[String]) {
           throw new RuntimeException("Cannot add Record into a projected DataTable")
@@ -38,6 +60,7 @@ object DataTable {
 	  
 	}
     else {
+      println("WARNING: no appropriate type found for initial data, going the slow route of appedning one item at a time")
       val arrbuf = new UnsafeArrayBuffer[T]
       
       for (e <- i) {
@@ -293,6 +316,9 @@ class DataTable[TSource](initialSize: Int) extends Iterable[TSource] with ppl.de
     }
     min
   }
+  
+  
+  
   
   
   def OrderBy[TKey](keySelector: TSource => TKey)(implicit comparer: Ordering[TKey]) = {

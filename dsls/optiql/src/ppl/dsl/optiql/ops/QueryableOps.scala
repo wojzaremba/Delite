@@ -17,7 +17,8 @@ trait QueryableOps extends GenericCollectionOps with DeliteCollectionOps {
   //type TransparentProxy[+T] = Rep[T]
 
   implicit def repToQueryableOps[TSource:Manifest](r: Rep[DataTable[TSource]]) = new QOpsCls(r)
-  implicit def repOQtoOQOps[TSource:Manifest](r: Rep[OrderedQueryable[TSource]]) = new OQOpsCls(r)  
+  implicit def repOQtoOQOps[TSource:Manifest](r: Rep[OrderedQueryable[TSource]]) = new OQOpsCls(r)
+  implicit def HashMapToQueryableOps[TSource: Manifest, TKey: Manifest](hm: Rep[HashMap[TKey,Bucket[TSource]]]) = new QOpsCls(queryable_hashmap_toDatatable(hm))
   implicit def repGroupingToQueryableOps[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]) = new QOpsCls(queryable_grouping_toDatatable(g))
 
   //override def __forward[A,B,C](self: TransparentProxy[A], method: String, x: TransparentProxy[B]*): TransparentProxy[C] = throw new RuntimeException("forwarding to " + method)
@@ -73,6 +74,7 @@ trait QueryableOps extends GenericCollectionOps with DeliteCollectionOps {
   def queryable_join2[TFirst:Manifest, TSecond:Manifest, TKey2:Manifest, TResult:Manifest](first: Rep[DataTable[TFirst]], firstKeySelector: Rep[TFirst] => Rep[TKey2], 
     second: Rep[DataTable[TSecond]], secondKeySelector: Rep[TSecond] => Rep[TKey2], resultSelector: (Rep[TFirst], Rep[TSecond]) => Rep[TResult]):Rep[DataTable[TResult]]
   
+  def queryable_hashmap_toDatatable[TKey:Manifest, TSource:Manifest](hm: Rep[HashMap[TKey, Bucket[TSource]]]): Rep[DataTable[Grouping[TKey, TSource]]]
   def queryable_grouping_toDatatable[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]): Rep[DataTable[TSource]]
   def queryable_grouping_key[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]): Rep[TKey]
   
@@ -124,6 +126,7 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
   
   //case class QueryableCount[TSource:Manifest](s: Exp[DataTable[TSource]]) extends Def[Int]
 
+  case class QueryableHashMapToDataTable[TSource:Manifest, TKey:Manifest](hm: Rep[HashMap[TKey, Bucket[TSource]]]) extends Def[DataTable[Grouping[TKey,TSource]]]
   case class QueryableGroupingToDataTable[TSource:Manifest, TKey:Manifest](g: Rep[Grouping[TKey, TSource]]) extends Def[DataTable[TSource]]
   case class QueryableGroupingKey[TSource:Manifest, TKey:Manifest](g: Rep[Grouping[TKey, TSource]]) extends Def[TKey]
 
@@ -184,6 +187,7 @@ trait QueryableOpsExp extends QueryableOps with BaseFatExp {
     HackQueryableJoin2(first, second, fv,sv,fkey,skey, rfv, rsv, result)    
   }
   
+  def queryable_hashmap_toDatatable[TKey:Manifest, TSource:Manifest](hm: Rep[HashMap[TKey, Bucket[TSource]]]) = QueryableHashMapToDataTable(hm)
   def queryable_grouping_toDatatable[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]) = QueryableGroupingToDataTable(g)
   def queryable_grouping_key[TKey:Manifest, TSource:Manifest](g: Rep[Grouping[TKey, TSource]]): Rep[TKey] = QueryableGroupingKey(g)
   
@@ -255,6 +259,7 @@ trait ScalaGenQueryableOps extends ScalaGenFat {
       emitBlock(res)
       stream.println(quote(getBlockResult(res)) + "})")
     }    	
+    case QueryableHashMapToDataTable(hm) => emitValDef(sym, "generated.scala.container.DataTable.convertHashMapToDataTable(" + quote(hm) + ")")
 	case QueryableGroupingToDataTable(g) => emitValDef(sym, "generated.scala.container.DataTable.convertIterableToDataTable(" + quote(g) + ")")
 	case QueryableGroupingKey(g) => emitValDef(sym, quote(g) + ".key")
     case _ => super.emitNode(sym,rhs)

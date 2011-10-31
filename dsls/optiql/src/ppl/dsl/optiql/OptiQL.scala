@@ -12,7 +12,7 @@ import ppl.delite.framework.codegen.scala.TargetScala
 import ppl.delite.framework.{Config, DeliteApplication}
 import ppl.dsl.optiql.user.applications._
 import java.io.{FileWriter, BufferedWriter, File}
-import ppl.delite.framework.codegen.{Utils, Target}
+import ppl.delite.framework.codegen.{Target}
 
 
 /**
@@ -105,7 +105,9 @@ trait OptiQLCodeGenBase extends GenericFatCodegen {
   //TODO HC: This is copied and pasted from OptiML, need to be refactored
   override def emitDataStructures(path: String) {
     val s = File.separator
-    val dsRoot = Config.homeDir + s+"dsls"+s+"optiql"+s+"src"+s+"ppl"+s+"dsl"+s+"optiql"+s+"datastruct"+s + this.toString
+    var dsRoot = Config.homeDir + s+"dsls"+s+"optiql"+s+"src"+s+"ppl"+s+"dsl"+s+"optiql"+s+"datastruct"+s + this.toString
+    emitDSHelper(path, dsRoot)
+    dsRoot = Config.homeDir + s+"dsls"+s+"collections"+s+"src"+s+"ppl"+s+"delite"+s+"framework"+s+"collections"+s+"datastruct"+ this.toString
     emitDSHelper(path, dsRoot)
   }
 
@@ -133,7 +135,8 @@ trait OptiQLCodeGenBase extends GenericFatCodegen {
 }
 
 trait OptiQLCodeGenScala extends OptiQLCodeGenBase with OptiQLScalaCodeGenPkg with ScalaGenHackOps
-  with ScalaGenDataTableOps with ScalaGenDateOps with ScalaGenQueryableOps with ScalaGenOptiQLMiscOps with ScalaGenResultOps with ScalaGenApplicationOps with ScalaGenDeliteCollectionOps with ScalaGenDeliteOps {
+  with ScalaGenDataTableOps with ScalaGenDateOps with ScalaGenQueryableOps with ScalaGenOptiQLMiscOps with ScalaGenResultOps with ScalaGenApplicationOps with ScalaGenDeliteCollectionOps 
+  with collections.ScalaGenTraversableOps with collections.ScalaGenSeqOps with collections.ScalaGenArraySeqOps with collections.ScalaGenMapOps with collections.ScalaGenHashMapOps  with ScalaGenDeliteOps {
   val IR: DeliteApplication with OptiQLExp
 
   override def remap[A](m: Manifest[A]): String = {    
