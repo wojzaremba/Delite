@@ -1267,9 +1267,11 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
         elem.emitterFactory.get.scala.emitInitializeDataStructure(quote(sym), "", quote(getBlockResult(elem.alloc)), quote(sym) + "_data")
         stream.println("}")
       case (sym, elem: DeliteCollectElem[_,_]) =>
-        stream.println("val " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(" + quote(sym) + "_size)")
-        stream.println("System.arraycopy(" + quote(sym) + "_buf, 0, " + quote(sym) + "_data, 0, " + quote(sym) + "_size)")
-        stream.println(quote(sym) + "_buf = null")
+        if (elem.cond.nonEmpty) {
+          stream.println("val " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(" + quote(sym) + "_size)")
+          stream.println("System.arraycopy(" + quote(sym) + "_buf, 0, " + quote(sym) + "_data, 0, " + quote(sym) + "_size)")
+          stream.println(quote(sym) + "_buf = null")
+        }
         if (elem.emitterFactory.isEmpty) {
           emitValDef(elem.aV, quote(sym) + "_data")
         } else {
