@@ -1038,14 +1038,14 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
   def emitCollectElem(op: AbstractFatLoop, sym: Sym[Any], elem: DeliteCollectElem[_,_], prefixSym: String = "")(implicit stream: PrintWriter) {
     val emitter = elem.emitterScala.getOrElse(standardScalaEmitter)
     if (elem.needsSpecialCollect) {
-      if (elem.cond.nonEmpty) {
+      if (elem.cond.nonEmpty) 
         stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
-        emitter.emitAddToBuffer(prefixSym, quote(sym), quote(getBlockResult(elem.func)))
-      } else {
-        stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
-      }
+      emitter.emitAddToBuffer(prefixSym, quote(sym), quote(getBlockResult(elem.func)))
+    } else {
+      stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
     }      
   }
+
   
   /**
    * MultiLoop components
@@ -1346,21 +1346,21 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
       stream.println("%s.%s_activations(%s.%s_chunkIdx) = %s".format(activname, basename, activname, basename, activname))
     }
     def emitPostProcInit(basename: String, activname: String)(implicit stream: PrintWriter) {
-      stream.println("if (" + activname + "." + basename + "_offset > 0) {"/*}*/) // set data array for result object
+      //stream.println("if (" + activname + "." + basename + "_offset > 0) {"/*}*/) // set data array for result object
       stream.println("val len = " + activname + "." + basename + "_offset + " + activname + "." + basename + "_size")
       //stream.println("" + activname + "." + basename + ".unsafeSetData(new Array(len), len)")
       stream.println(activname + "." + basename + "_data = new Array(len)")
-      stream.println(/*{*/"} else {"/*}*/)
+      //stream.println(/*{*/"} else {"/*}*/)
       //stream.println("" + activname + "." + basename + ".unsafeSetData(" + activname + "." +basename + "_buf, " + activname + "." + basename + "_size)")
-      stream.println(activname + "." + basename + "_data = " + activname + "." + basename + "_buf")
-      stream.println(/*{*/"}")
+      //stream.println(activname + "." + basename + "_data = " + activname + "." + basename + "_buf")
+      //stream.println(/*{*/"}")
     }
     def emitPostProcess(basename: String, activname: String)(implicit stream: PrintWriter) {
       stream.println("if (%s.%s_numChunks > 1) {".format(activname, basename))
       stream.println("%s.%s_data = %s.%s_activations(%s.%s_numChunks - 1).%s_data".format(activname, basename, activname, basename, activname, basename, basename))
       stream.println("}")
       
-      stream.println("if (" + activname + "." + basename + "_data ne " + activname + "." + basename + "_buf)")
+      //stream.println("if (" + activname + "." + basename + "_data ne " + activname + "." + basename + "_buf)")
       stream.println("System.arraycopy(" + activname + "." + basename + "_buf, 0, " + activname + "." + basename + "_data, " + activname + "." + basename + "_offset, " + activname + "." + basename + "_size)")
       stream.println("" + activname + "." + basename + "_buf = null")
     }
