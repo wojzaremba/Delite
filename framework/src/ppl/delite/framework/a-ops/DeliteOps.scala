@@ -960,11 +960,7 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
       }
       def bufferAppend(fields: Seq[String]) {
         val dot = if (fields(0) == "") "" else "."
-        if (deliteKernel)
-          stream.println(prefixSym + quote(sym) + "_buf_append(" + fields.map(f => quote(getBlockResult(elem.func)) + dot + f).mkString(",") + ")")
-        else
-          stream.println("throw new RuntimeException(\"FIXME: buffer growing\")")
-          //stream.println(prefixSym + quote(sym) + ".insert(" + prefixSym + quote(sym) + ".length, " + quote(getBlockResult(elem.func)) + ") // FIXME: buffer growing")
+        stream.println(prefixSym + quote(sym) + "_buf_append(" + fields.map(f => quote(getBlockResult(elem.func)) + dot + f).mkString(",") + ")")
       }
     } else {
       def arrayUpdate(field: String) {
@@ -1079,9 +1075,32 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
     (symList zip op.body) foreach {
       case (sym, elem: DeliteCollectElem[_,_]) =>
         if (elem.cond.nonEmpty) {
-          stream.println("var " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = _ // FIXME: buffer handling")
+          structType(elemType(elem)) match {
+            case Some(elems) => buf_block(elems)
+            case None => buf_block(Map(""->getBlockResult(elem.func).Type.asInstanceOf[Manifest[Any]]))
+          }
+          def buf_block(elems: Map[String,Manifest[Any]]) {
+            elems.foreach {e => stream.println("var " + quote(sym) + "_buf" + e._1 + ": Array[" + remap(e._2) + "] = new Array(128)") }
+            stream.println("var " + quote(sym) + "_size = 0")
+            stream.println("def " + quote(sym) + "_buf_append(" + elems.map(e => "x" + e._1 + ": " + remap(e._2)).mkString(",") + "): Unit = {"/*}*/)
+            stream.println("if (" + quote(sym) + "_size >= " + quote(sym) + "_buf" + elems.head._1 + ".length) {"/*}*/)
+            elems.foreach { e => stream.println("val old" + e._1 + " = " + quote(sym) + "_buf" + e._1)
+              stream.println(quote(sym) + "_buf" + e._1 + " = new Array(2*old" + e._1 + ".length)")
+              stream.println("System.arraycopy(old" + e._1 + ", 0, " + quote(sym) + "_buf" + e._1 + ", 0, old" + e._1 + ".length)")
+            }
+            stream.println(/*{*/"}")
+            elems.foreach { e => stream.println(quote(sym) + "_buf" + e._1 + "(" + quote(sym) + "_size) = x" + e._1) }
+            stream.println(quote(sym) + "_size += 1")
+            stream.println(/*{*/"}")
+          }
         } else {
-          stream.println("val " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(" + quote(op.size) + ")")
+          structType(elemType(elem)) match {
+            case Some(elems) => data_block(elems)
+            case None => data_block(Map(""->getBlockResult(elem.func).Type.asInstanceOf[Manifest[Any]]))
+          }
+          def data_block(elems: Map[String, Manifest[Any]]) = elems.foreach { e =>
+            stream.println("val " + quote(sym) + "_data" + e._1 + ": Array[" + remap(e._2) + "] = new Array(" + quote(op.size) + ")")
+          }
         }
 /*
         stream.println("val " + quote(sym) + " = {"/*}*/)
@@ -1157,11 +1176,27 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
     // finalize
     (symList zip op.body) foreach {
       case (sym, elem: DeliteCollectElem[_,_]) =>
-        emitValDef(elem.aV, quote(sym) + "_data")
-        stream.println("val " + quote(sym) + " = {"/*}*/)
-        emitBlock(elem.alloc)
-        stream.println(quote(getBlockResult(elem.alloc)))
-        stream.println(/*{*/"}")
+        structType(elemType(elem)) match {
+          case Some(elems) => final_block(elems)
+          case None => final_block(Map(""->getBlockResult(elem.func).Type.asInstanceOf[Manifest[Any]]))
+        }
+        def final_block(elems: Map[String, Manifest[Any]]) {
+          if (elem.cond.nonEmpty) {
+            elems.foreach { e =>
+              stream.println("val " + quote(sym) + "_data" + e._1 + ": Array[" + remap(e._2) + "] = new Array(" + quote(sym) + "_size)")
+              stream.println("System.arraycopy(" + quote(sym) + "_buf" + e._1 + ", 0, " + quote(sym) + "_data" + e._1 + ", 0, " + quote(sym) + "_size)")
+              stream.println(quote(sym) + "_buf" + e._1 + " = null")
+            }
+          }
+          if (elems.head._1 == "")
+            emitValDef(elem.aV, quote(sym) + "_data")
+          else
+            emitValDef(elem.aV, " = new " + remap(elem.aV.Type) + elems.map(e => quote(sym) + "_data" + e._1).mkString("(",",",")"))
+          stream.println("val " + quote(sym) + " = {"/*}*/)
+          emitBlock(elem.alloc)
+          stream.println(quote(getBlockResult(elem.alloc)))
+          stream.println(/*{*/"}")
+        }
       case (sym, elem: DeliteForeachElem[_]) => 
       case (sym, elem: DeliteReduceElem[_]) =>
       case (sym, elem: DeliteReduceTupleElem[_,_]) =>

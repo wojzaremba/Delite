@@ -1,9 +1,6 @@
 package ppl.apps.dataquery.tpch
 
 import ppl.dsl.optiql.{OptiQLApplication, OptiQLApplicationRunner}
-import ppl.dsl.optiql.datastruct.scala.tpch._
-import ppl.dsl.optiql.datastruct.scala.container.DataTable
-import java.io.File
 
 object TPCHQ1 extends OptiQLApplicationRunner with TPCHQ1Trait
 object TPCHQ2 extends OptiQLApplicationRunner with TPCHQ2Trait
@@ -11,7 +8,42 @@ object TPCHQ2 extends OptiQLApplicationRunner with TPCHQ2Trait
 trait TPCHBaseTrait extends OptiQLApplication {
 
   val queryName: String
-  
+
+  //TODO: unfortunately the compiler magic only works with anonymous classes, but we want a name for these...
+  // creating a named class with a single anonymous subclass (as below) can confuse the struct logic
+  // (manifest for both types passed at different places)
+  /*abstract class Region extends Result {
+    val r_regionkey: Rep[Int]
+    val r_name: Rep[String]
+    val r_comment: Rep[String]
+  }
+
+  def Region(key: Rep[Int], name: Rep[String], comment: Rep[String]) = new Region {
+    val r_regionkey = key
+    val r_name = name
+    val r_comment = comment
+  } */
+
+  //the verbose version
+  abstract class Region extends Result
+  def Region(key: Rep[Int], name: Rep[String], comment: Rep[String]) = struct[Region]("r_regionkey"->key,"r_name"->name,"r_comment"->comment)
+  def infix_r_regionkey(r: Rep[Region]) = field[Int](r, "r_regionkey")
+  def infix_r_name(r: Rep[Region]) = field[String](r, "r_name")
+  def infix_r_comment(r: Rep[Region]) = field[String](r, "r_comment")
+
+  type LineItem = Result
+  type Nation = Result
+  type Part = Result
+  type PartSupplier = Result
+  type Supplier = Result
+
+  type LineItemTable = DataTable[LineItem]
+  type NationTable = DataTable[Nation]
+  type PartTable = DataTable[Part]
+  type PartSupplierTable = DataTable[PartSupplier]
+  type RegionTable = DataTable[Region]
+  type SupplierTable = DataTable[Supplier]
+
   //var customers: Rep[CustomerTable] = _
   var lineItems: Rep[LineItemTable] = _
   //var orders: Rep[OrderTable] = _

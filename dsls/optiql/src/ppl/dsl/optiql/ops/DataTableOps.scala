@@ -1,16 +1,15 @@
 package ppl.dsl.optiql.ops
 
-import ppl.dsl.optiql.datastruct.scala.container.DataTable
-import scala.virtualization.lms.common.{ScalaGenFat, BaseFatExp, Base}
+import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollectionOpsExp}
 import scala.reflect.SourceContext
-import ppl.dsl.optiql.OptiQLExp
+import ppl.dsl.optiql._
 import java.io.PrintWriter
 import ppl.delite.framework.ops.DeliteCollection
 
-trait DataTableOps extends Base {
+trait DataTableOps extends Base { this: OptiQL =>
 
-  trait DataTable[TSource] extends DeliteCollection[TSource]
+  abstract class DataTable[TSource] extends Struct with DeliteCollection[TSource]
 
   // Lifting and Interface Injection
   implicit def dataTableRepToDataTableRepOps[T:Manifest](d: Rep[DataTable[T]]) = new DataTableRepOps(d)
@@ -44,26 +43,22 @@ trait DataTableOps extends Base {
 
 trait DataTableOpsExp extends DataTableOps with DeliteCollectionOpsExp with BaseFatExp { this: DataTableOpsExp with OptiQLExp =>
 
-  case class DataTableApply[T:Manifest](t: Rep[DataTable[T]], i: Rep[Int]) extends Def[T]
-  case class DataTableObjectApply[T:Manifest](mnfst: Manifest[DataTable[T]], initSize: Rep[Int]) extends Def[DataTable[T]]
-  case class DataTableSize[T](t: Rep[DataTable[T]]) extends Def[Int]
   case class DataTablePrintAsTable[T](t: Rep[DataTable[T]], max_rows: Rep[Int]) extends Def[Unit]
 
-  def dataTableApply[T:Manifest](t: Exp[DataTable[T]], i: Exp[Int]): Exp[T] = DataTableApply(t, i)
-  def dataTableObjectApply[T:Manifest](): Exp[DataTable[T]] = reflectMutable(DataTableObjectApply[T](manifest[DataTable[T]], unit(0)))
-  def dataTableObjectApply[T:Manifest](initSize: Exp[Int]): Exp[DataTable[T]] = reflectMutable(DataTableObjectApply[T](manifest[DataTable[T]], initSize))
-  def dataTableSize[T:Manifest](t: Exp[DataTable[T]]): Exp[Int] = DataTableSize(t)
+  private def infix_data[T:Manifest](t: Exp[DataTable[T]]) = field[DeliteArray[T]](t, "data")  
+  def dataTableApply[T:Manifest](t: Exp[DataTable[T]], i: Exp[Int]): Exp[T] = darray_apply(t.data, i)
+  def dataTableObjectApply[T:Manifest](): Exp[DataTable[T]] = struct[DataTable[T]]("data" -> DeliteArray(unit(0)))
+  def dataTableObjectApply[T:Manifest](initSize: Exp[Int]): Exp[DataTable[T]] = struct[DataTable[T]]("data" -> DeliteArray(initSize))
+  def dataTableSize[T:Manifest](t: Exp[DataTable[T]]): Exp[Int] = darray_length(t.data)
   def dataTablePrintAsTable[T:Manifest](t: Exp[DataTable[T]], max_rows: Rep[Int]): Exp[Unit] = reflectEffect(DataTablePrintAsTable(t, max_rows))
-  
-  //undoing Arvind's error messages, but this is all a big hack until DeliteStruct
-  override def dc_size[A:Manifest](x: Exp[DeliteCollection[A]]) = reflectPure(DeliteCollectionSize(x))  
-  override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]) = reflectPure(DeliteCollectionApply(x,n))  
-  override def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]) = reflectWrite(x)(DeliteCollectionUpdate(x,n,y))
-  
-  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = e match {
-    case DataTableApply(t,i) => dataTableApply(f(t), f(i))
-    case _ => super.mirror(e,f)
+
+  private def ifDataTable[T:Manifest, R](x: Exp[DeliteCollection[T]])(then: Exp[DataTable[T]] => R)(orElse: => R): R = {
+    if (x.Type.erasure == classOf[DataTable[T]]) then(x.asInstanceOf[Exp[DataTable[T]]]) else orElse
   }
+
+  override def dc_size[A:Manifest](x: Exp[DeliteCollection[A]]) = ifDataTable(x)(dataTableSize(_))(super.dc_size(x))
+  override def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]) = ifDataTable(x)(dataTableApply(_,n))(super.dc_apply(x,n))
+  override def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]) = ifDataTable(x)(t => darray_update(t.data,n,y))(super.dc_update(x,n,y))
 
 }
 
@@ -72,9 +67,6 @@ trait ScalaGenDataTableOps extends ScalaGenFat {
   import IR._
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
-    case DataTableApply(t, i) => emitValDef(sym, quote(t) + "(" + quote(i) + ")")
-    case DataTableObjectApply(mnfst, initSize) => emitValDef(sym, "new " + remap(mnfst) + "(" + quote(initSize) + ")")
-    case DataTableSize(t) => emitValDef(sym, quote(t) + ".size")
     case DataTablePrintAsTable(t,max_rows) => emitValDef(sym, quote(t) + ".printAsTable(" +  quote(max_rows) + ")")
     case _ => super.emitNode(sym, rhs)
   }
