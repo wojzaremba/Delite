@@ -1038,15 +1038,13 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
   def emitCollectElem(op: AbstractFatLoop, sym: Sym[Any], elem: DeliteCollectElem[_,_], prefixSym: String = "")(implicit stream: PrintWriter) {
     val emitter = elem.emitterScala.getOrElse(standardScalaEmitter)
     if (elem.needsSpecialCollect) {
-      if (elem.cond.nonEmpty) stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
-      if (deliteKernel)
+      if (elem.cond.nonEmpty) {
+        stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
         emitter.emitAddToBuffer(prefixSym, quote(sym), quote(getBlockResult(elem.func)))
-      else
-        stream.println("throw new RuntimeException(\"FIXME: buffer growing\")")
-        //stream.println(prefixSym + quote(sym) + ".insert(" + prefixSym + quote(sym) + ".length, " + quote(getBlockResult(elem.func)) + ") // FIXME: buffer growing")
-    } else {
-      stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
-    }
+      } else {
+        stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
+      }
+    }      
   }
   
   /**
@@ -1173,7 +1171,17 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
         stream.println(/*{*/"}")              
       case (sym, elem: DeliteCollectElem[_,_]) =>
         if (elem.cond.nonEmpty) {
-          stream.println("var " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = _ // FIXME: buffer handling")
+          stream.println("var " + quote(sym) + "_buf: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(128)")
+          stream.println("var " + quote(sym) + "_size = 0")
+          stream.println("def " + quote(sym) + "_buf_append(x: " + remap(getBlockResult(elem.func).Type) + "): Unit = {"/*}*/)
+          stream.println("if (" + quote(sym) + "_size >= " + quote(sym) + "_buf.length) {"/*}*/)
+          stream.println("val old = " + quote(sym) + "_buf")
+          stream.println(quote(sym) + "_buf = new Array(2*old.length)")
+          stream.println("System.arraycopy(old, 0, " + quote(sym) + "_buf, 0, old.length)")
+          stream.println(/*{*/"}")
+          stream.println(quote(sym) + "_buf(" + quote(sym) + "_size) = x")
+          stream.println(quote(sym) + "_size += 1")
+          stream.println(/*{*/"}")
         } else {
           stream.println("val " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(" + quote(op.size) + ")")
         }
@@ -1259,6 +1267,9 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
         elem.emitterFactory.get.scala.emitInitializeDataStructure(quote(sym), "", quote(getBlockResult(elem.alloc)), quote(sym) + "_data")
         stream.println("}")
       case (sym, elem: DeliteCollectElem[_,_]) =>
+        stream.println("val " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(" + quote(sym) + "_size)")
+        stream.println("System.arraycopy(" + quote(sym) + "_buf, 0, " + quote(sym) + "_data, 0, " + quote(sym) + "_size)")
+        stream.println(quote(sym) + "_buf = null")
         if (elem.emitterFactory.isEmpty) {
           emitValDef(elem.aV, quote(sym) + "_data")
         } else {
