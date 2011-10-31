@@ -18,7 +18,7 @@ object DataTable {
     val values = hm.unsafeValues
     var idx = 0
     while(idx < hmSize) {
-      println("key: " + keys(idx) + " | bucket: " + values(idx))    
+      //println("key: " + keys(idx) + " | bucket: " + values(idx))    
       val nArraySz = values(idx).size
       val nArrayBuf = new UnsafeArrayBuffer[T]()
       nArrayBuf.unsafeSetData(values(idx).array, nArraySz)
