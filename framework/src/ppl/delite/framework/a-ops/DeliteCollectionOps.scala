@@ -1,13 +1,14 @@
 package ppl.delite.framework.ops
 
-import ppl.delite.framework.datastruct.scala.DeliteCollection
 import java.io.PrintWriter
 import scala.virtualization.lms.common.{EffectExp, BaseFatExp, Base, ScalaGenFat, CudaGenEffect, OpenCLGenEffect}
 import scala.virtualization.lms.internal.{GenericFatCodegen}
 import scala.reflect.SourceContext
 
+trait DeliteCollection[A]
+
 trait DeliteCollectionOps extends Base {
-    
+
   trait DCInterfaceOps[+T,A] extends InterfaceOps[T] {
     def dcSize: Rep[Int] 
     def dcApply(n: Rep[Int]): Rep[A] 
@@ -45,7 +46,7 @@ trait DeliteCollectionOpsExp extends DeliteCollectionOps with BaseFatExp with Ef
   case class DeliteCollectionSize[A:Manifest](x: Exp[DeliteCollection[A]]) extends Def[Int]
   case class DeliteCollectionApply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]) extends Def[A]
   case class DeliteCollectionUpdate[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]) extends Def[Unit]
-  case class DeliteCollectionUnsafeSetData[A:Manifest](x: Exp[DeliteCollection[A]], d: Exp[Array[A]]) extends Def[Unit] { // legacy...
+  case class DeliteCollectionUnsafeSetData[A:Manifest](x: Exp[DeliteCollection[A]], d: Exp[DeliteArray[A]]) extends Def[Unit] { // legacy...
     def m = manifest[A]
   }
 
@@ -60,7 +61,7 @@ trait DeliteCollectionOpsExp extends DeliteCollectionOps with BaseFatExp with Ef
   def dc_apply[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int]): Exp[A] = reflectPure(DeliteCollectionApply(x,n))//throw new RuntimeException("no static implementation found for dc_apply on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get + " --- x.Type is " + x.Type)
   def dc_update[A:Manifest](x: Exp[DeliteCollection[A]], n: Exp[Int], y: Exp[A]): Exp[Unit] = reflectWrite(x)(DeliteCollectionUpdate(x,n,y))//throw new RuntimeException("no static implementation found for dc_update on " + findDefinition(x.asInstanceOf[Sym[DeliteCollection[A]]]).get) 
 
-  def dc_unsafeSetData[A:Manifest](x: Exp[DeliteCollection[A]], d: Exp[Array[A]]) = reflectWrite(x)(DeliteCollectionUnsafeSetData(x,d)) // legacy...
+  def dc_unsafeSetData[A:Manifest](x: Exp[DeliteCollection[A]], d: Exp[DeliteArray[A]]) = reflectWrite(x)(DeliteCollectionUnsafeSetData(x,d)) // legacy...
 
 
   //////////////

@@ -27,7 +27,7 @@ trait HashMapEmittingBase {
       def emitCollisionResolutionOnCopyIndex(indexArrayName: String, indexArrayPos: String, olddatapos: String, newdatapos: String, newChunkIndex: String, basename: String, existingKeyActivationRead: String, collidingValue: String)(implicit stream: PrintWriter)
       def valueStoreType(valtype: String): String
       
-      def emitBufferDefs(kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter) {
+      def emitBufferDefs(elemType: Manifest[_], kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter) {
         //println("Hacked up types Need to support: " + elemtype)
         // a temporary hack
         var innertypes = elemtype.substring(elemtype.indexOf("Tuple2") + 7, elemtype.length - 1).split(", ").toList
@@ -156,7 +156,7 @@ trait HashMapEmittingBase {
       def emitInitSubActivation(basename: String, activname: String, chunkIdxVar: String, numChunksVar: String)(implicit stream: PrintWriter) {
         stream.println(activname + "." + basename + "_buf_init(" + chunkIdxVar + ", " + numChunksVar + ", size)")
       }
-      def emitAddToBuffer(prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter) {
+      def emitAddToBuffer(elemType: Manifest[_], prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter) {
         stream.println(prefixSym + basename + "_buf_append(" + elemname + ")")
       }
       def emitAddToDataStructure(prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter) {
@@ -394,7 +394,7 @@ trait HashMapEmittingBase {
         stream.println("}")
         //stream.println("println(%s.%s)".format(activname, basename))
       }
-      def emitDataDeclaration(basename: String, prefix: String, dataname: String)(implicit stream: PrintWriter) {
+      def emitDataDeclaration(elemType: Manifest[_], basename: String, prefix: String, dataname: String, dataType: String = "")(implicit stream: PrintWriter) {
         //stream.println("val " + basename + "_ = " + prefix + basename + "_data")
       }
       def emitInitializeDataStructure(basename: String, prefix: String, collectionname: String, dataname: String)(implicit stream: PrintWriter) {

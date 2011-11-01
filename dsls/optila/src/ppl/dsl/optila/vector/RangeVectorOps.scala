@@ -3,8 +3,7 @@ package ppl.dsl.optila.vector
 import ppl.dsl.optila.{Vector, DenseVector, RangeVector}
 import ppl.dsl.optila.{OptiLAExp, OptiLA}
 import ppl.delite.framework.DeliteApplication
-import ppl.delite.framework.datastruct.scala.DeliteCollection
-import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollectionOpsExp}
+import ppl.delite.framework.ops.{DeliteOpsExp, DeliteCollection, DeliteCollectionOpsExp}
 import scala.virtualization.lms.common.{EffectExp, BaseExp, Base, ScalaGenBase}
 import scala.virtualization.lms.util.OverloadHack
 import java.io.PrintWriter

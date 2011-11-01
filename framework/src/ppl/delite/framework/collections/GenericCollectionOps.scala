@@ -40,9 +40,9 @@ trait EmitterFactory {
  *  platform, uses the evidence to emit the code.
  */
 trait ScalaEmitter {
-  def emitBufferDefs(kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter)
+  def emitBufferDefs(elemType: Manifest[_], kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter)
   def emitInitSubActivation(basename: String, activname: String, chunkIdxVar: String, numChunksVar: String)(implicit stream: PrintWriter)
-  def emitAddToBuffer(basename: String, activname: String, elemname: String)(implicit stream: PrintWriter)
+  def emitAddToBuffer(elemType: Manifest[_], basename: String, activname: String, elemname: String)(implicit stream: PrintWriter)
   def emitAddToDataStructure(prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter)
   def emitPostCombine(basename: String, activname: String, lhsname: String)(implicit stream: PrintWriter)
   def emitPostProcInit(basename: String, activname: String)(implicit stream: PrintWriter)
@@ -50,7 +50,7 @@ trait ScalaEmitter {
   def emitPostCombine2(basename: String, activname: String, lhsname: String)(implicit stream: PrintWriter)
   def emitPostProcInit2(basename: String, activname: String)(implicit stream: PrintWriter)
   def emitPostProcess2(basename: String, activname: String)(implicit stream: PrintWriter)
-  def emitDataDeclaration(basename: String, activname: String, dataname: String)(implicit stream: PrintWriter)
+  def emitDataDeclaration(elemType: Manifest[_], basename: String, activname: String, dataname: String, dataType: String = "")(implicit stream: PrintWriter)
   def emitInitializeDataStructure(basename: String, activname: String, collectionname: String, dataname: String)(implicit stream: PrintWriter)
 }
 

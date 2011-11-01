@@ -18,7 +18,7 @@ trait ArraySeqEmitting {
     def needsPostProcess2 = false
     
     def scala = new ScalaEmitter {
-      def emitBufferDefs(kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter) {
+      def emitBufferDefs(elemType: Manifest[_], kernelname: String, basename: String, elemtype: String)(implicit stream: PrintWriter) {
         stream.println("var " + basename + "_buf: Array[" + elemtype + "] = _")
         stream.println("var " + basename + "_size = 0")
         stream.println("var " + basename + "_offset = 0")
@@ -44,7 +44,7 @@ trait ArraySeqEmitting {
       def emitInitSubActivation(basename: String, activname: String, chunkIdxVar: String, numChunksVar: String)(implicit stream: PrintWriter) {
         stream.println(activname + "." + basename + "_buf_init(" + chunkIdxVar + ", " + numChunksVar + ")")
       }
-      def emitAddToBuffer(prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter) {
+      def emitAddToBuffer(elemType: Manifest[_], prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter) {
         stream.println(prefixSym + basename + "_buf_append(" + elemname + ")")
       }
       def emitAddToDataStructure(prefixSym: String, basename: String, elemname: String)(implicit stream: PrintWriter) {
@@ -89,7 +89,7 @@ trait ArraySeqEmitting {
       }
       def emitPostProcess2(basename: String, activname: String)(implicit stream: PrintWriter) {
       }
-      def emitDataDeclaration(basename: String, prefix: String, dataname: String)(implicit stream: PrintWriter) {
+      def emitDataDeclaration(elemType: Manifest[_], basename: String, prefix: String, dataname: String, dataType: String = "")(implicit stream: PrintWriter) {
         stream.println("val " + dataname + " = " + prefix + basename + "_data")
       }
       def emitInitializeDataStructure(basename: String, prefix: String, collectionname: String, dataname: String)(implicit stream: PrintWriter) {

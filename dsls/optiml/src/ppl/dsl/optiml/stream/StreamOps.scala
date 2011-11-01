@@ -229,7 +229,7 @@ trait StreamOpsExpOpt extends StreamOpsExp {
   abstract case class StreamChunkRowFusable[A:Manifest](st: Exp[Stream[A]], row: Exp[Int], offset: Exp[Int]) extends DeliteOpLoop[StreamRow[A]]
   
   // no unsafeSetData exists for views... so we have to unfortunately do an extra copy to wrap the array result (i.e. safeSetData)
-  def updateViewWithArray[A:Manifest](a: Exp[Array[A]], v: Exp[StreamRow[A]]): Exp[StreamRow[A]] = { vectorview_update_impl(v, a); v }
+  def updateViewWithArray[A:Manifest](a: Exp[DeliteArray[A]], v: Exp[StreamRow[A]]): Exp[StreamRow[A]] = { vectorview_update_impl(v, a); v }
   
   override def stream_init_and_chunk_row[A:Manifest](st: Exp[Stream[A]], row: Exp[Int], offset: Exp[Int]) = st match {
 
@@ -248,7 +248,7 @@ trait StreamOpsExpOpt extends StreamOpsExp {
 */
       val r: Def[StreamRow[A]] = new StreamChunkRowFusable(st, row, offset) {
         val size = numCols
-        val aV = fresh[Array[A]]
+        val aV = fresh[DeliteArray[A]]
         val body: Def[StreamRow[A]] = new DeliteCollectElem[A,StreamRow[A]](
           aV = this.aV,
           alloc = reifyEffects(updateViewWithArray(aV,stream_chunk_row_mutable(st,row,offset))),
