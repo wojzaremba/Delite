@@ -1388,24 +1388,35 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
       stream.println("%s.%s_activations = %s.%s_activations".format(activname, basename, lhsname, basename))
       stream.println("%s.%s_activations(%s.%s_chunkIdx) = %s".format(activname, basename, activname, basename, activname))
     }
-    def emitPostProcInit(basename: String, activname: String)(implicit stream: PrintWriter) {
+    def emitPostProcInit(elemType: Manifest[_], basename: String, activname: String)(implicit stream: PrintWriter) {
       //stream.println("if (" + activname + "." + basename + "_offset > 0) {"/*}*/) // set data array for result object
       stream.println("val len = " + activname + "." + basename + "_offset + " + activname + "." + basename + "_size")
       //stream.println("" + activname + "." + basename + ".unsafeSetData(new Array(len), len)")
-      stream.println(activname + "." + basename + "_data = new Array(len)")
+      structType(elemType) match {
+        case Some(elems) => postProc_block(elems.keys)
+        case None => postProc_block(List(""))
+      }
+      def postProc_block(elems: Iterable[String]) = elems.foreach(e => stream.println(activname + "." + basename + "_data" + e + " = new Array(len)"))
       //stream.println(/*{*/"} else {"/*}*/)
       //stream.println("" + activname + "." + basename + ".unsafeSetData(" + activname + "." +basename + "_buf, " + activname + "." + basename + "_size)")
       //stream.println(activname + "." + basename + "_data = " + activname + "." + basename + "_buf")
       //stream.println(/*{*/"}")
     }
-    def emitPostProcess(basename: String, activname: String)(implicit stream: PrintWriter) {
-      stream.println("if (%s.%s_numChunks > 1) {".format(activname, basename))
-      stream.println("%s.%s_data = %s.%s_activations(%s.%s_numChunks - 1).%s_data".format(activname, basename, activname, basename, activname, basename, basename))
-      stream.println("}")
-      
+    def emitPostProcess(elemType: Manifest[_], basename: String, activname: String)(implicit stream: PrintWriter) {
+      structType(elemType) match {
+        case Some(elems) => postProcess_block(elems.keys)
+        case None => { //TODO: use activations with struct types?
+          stream.println("if (%s.%s_numChunks > 1) {".format(activname, basename))
+          stream.println("%s.%s_data = %s.%s_activations(%s.%s_numChunks - 1).%s_data".format(activname, basename, activname, basename, activname, basename, basename))
+          stream.println("}")
+          postProcess_block(List(""))
+        }
+      }
       //stream.println("if (" + activname + "." + basename + "_data ne " + activname + "." + basename + "_buf)")
-      stream.println("System.arraycopy(" + activname + "." + basename + "_buf, 0, " + activname + "." + basename + "_data, " + activname + "." + basename + "_offset, " + activname + "." + basename + "_size)")
-      stream.println("" + activname + "." + basename + "_buf = null")
+      def postProcess_block(elems: Iterable[String]) = elems.foreach { e =>
+        stream.println("System.arraycopy(" + activname + "." + basename + "_buf" + e + ", 0, " + activname + "." + basename + "_data" + e + ", " + activname + "." + basename + "_offset, " + activname + "." + basename + "_size)")
+        stream.println("" + activname + "." + basename + "_buf" + e + " = null")
+      }
     }
     def emitPostCombine2(basename: String, activname: String, lhsname: String)(implicit stream: PrintWriter) {
     }
@@ -1414,7 +1425,6 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
     def emitPostProcess2(basename: String, activname: String)(implicit stream: PrintWriter) {
     }
     def emitDataDeclaration(elemType: Manifest[_], basename: String, prefix: String, dataname: String, dataType: String = "")(implicit stream: PrintWriter) {
-      stream.println("val " + dataname + " = " + prefix + basename + "_data")
       structType(elemType) match {
          case Some(elems) =>
            stream.println("val " + dataname + " = new " + dataType + elems.map(e => prefix + basename + "_data" + e._1).mkString("(",",",")"))
@@ -1680,12 +1690,12 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
       case (sym, elem: DeliteHashElem[_,_,_,_]) =>
         val emitter = elem.emitterScala.get
         if (elem.needsPostProcess) {
-          emitter.emitPostProcInit(quote(sym), "__act")
+          emitter.emitPostProcInit(elemType(elem), quote(sym), "__act")
         }
       case (sym, elem: DeliteCollectElem[_,_]) =>
         val emitter = elem.emitterScala.getOrElse(standardScalaEmitter)
         if (elem.needsPostProcess) {
-          emitter.emitPostProcInit(quote(sym), "__act")
+          emitter.emitPostProcInit(elemType(elem), quote(sym), "__act")
         }
         /* TODO ?
         if (elem.cond.nonEmpty) {
@@ -1718,13 +1728,13 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
       case (sym, elem: DeliteHashElem[_,_,_,_]) =>
         val emitter = elem.emitterScala.get
         if (elem.needsPostProcess) {
-          emitter.emitPostProcess(quote(sym), "__act")
+          emitter.emitPostProcess(elemType(elem), quote(sym), "__act")
         }
       case (sym, elem: DeliteCollectElem[_,_]) =>
         val emitter = elem.emitterScala.getOrElse(standardScalaEmitter)
         if (elem.needsPostProcess) {
           //calculate start offset from rhs.offset + rhs.size
-          emitter.emitPostProcess(quote(sym), "__act")
+          emitter.emitPostProcess(elemType(elem), quote(sym), "__act")
         }
       /* TODO ?
       case (sym, elem: DeliteCollectElem[_,_]) => //FIXME: get rid of .data and adapt to new alloc style

@@ -63,7 +63,7 @@ trait ArraySeqEmitting {
         stream.println("%s.%s_activations = %s.%s_activations".format(activname, basename, lhsname, basename))
         stream.println("%s.%s_activations(%s.%s_chunkIdx) = %s".format(activname, basename, activname, basename, activname))
       }
-      def emitPostProcInit(basename: String, activname: String)(implicit stream: PrintWriter) {
+      def emitPostProcInit(elemType: Manifest[_], basename: String, activname: String)(implicit stream: PrintWriter) {
         stream.println("if (" + activname + "." + basename + "_offset > 0) {"/*}*/) // set data array for result object
         stream.println("val len = " + activname + "." + basename + "_offset + " + activname + "." + basename + "_size")
         //stream.println("" + activname + "." + basename + ".unsafeSetData(new Array(len), len)")
@@ -73,7 +73,7 @@ trait ArraySeqEmitting {
         stream.println(activname + "." + basename + "_data = " + activname + "." + basename + "_buf")
         stream.println(/*{*/"}")
       }
-      def emitPostProcess(basename: String, activname: String)(implicit stream: PrintWriter) {
+      def emitPostProcess(elemType: Manifest[_], basename: String, activname: String)(implicit stream: PrintWriter) {
         // initialize the data buffer by setting it to the data buffer of the last chunk
         stream.println("if (%s.%s_numChunks > 1) %s.%s_data = %s.%s_activations(%s.%s_numChunks - 1).%s_data".format(
           activname, basename, activname, basename, activname, basename, activname, basename, basename

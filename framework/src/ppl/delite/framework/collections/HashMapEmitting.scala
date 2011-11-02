@@ -175,7 +175,7 @@ trait HashMapEmittingBase {
         stream.println("%s.%s_activations = %s.%s_activations".format(activname, basename, lhsname, basename))
         stream.println("%s.%s_activations(%s.%s_chunkIdx) = %s".format(activname, basename, activname, basename, activname))
       }
-      def emitPostProcInit(basename: String, activname: String)(implicit stream: PrintWriter) {
+      def emitPostProcInit(elemType: Manifest[_], basename: String, activname: String)(implicit stream: PrintWriter) {
         stream.println("if (" + activname + "." + basename + "_numChunks > 1) {")
         stream.println("val elemest = " + activname + "." + basename + "_offset + " + activname + "." + basename + "_bufsz")
         stream.println("val tablesize = %s.%s_nextPow2((elemest / 0.4f).toInt + 1)".format(activname, basename))
@@ -199,7 +199,7 @@ trait HashMapEmittingBase {
         //stream.println("for (act <- %s.%s_activations) println(act.%s_chunkIdx + \"::\", act.%s_buf_ind.mkString(\", \"))".format(activname, basename, basename, basename))
         //stream.println("println(\"----------------------------------------------\")")
       }
-      def emitPostProcess(basename: String, activname: String)(implicit stream: PrintWriter) {
+      def emitPostProcess(elemType: Manifest[_], basename: String, activname: String)(implicit stream: PrintWriter) {
         // read in indices and blocksizes from the last chunk
         stream.println("if (%s.%s_numChunks > 1) {".format(activname, basename))
         stream.println("%s.%s_indices = %s.%s_activations(%s.%s_numChunks - 1).%s_indices".format(activname, basename, activname, basename, activname, basename, basename))
