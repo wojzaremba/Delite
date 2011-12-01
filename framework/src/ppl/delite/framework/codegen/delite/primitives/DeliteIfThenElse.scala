@@ -1,4 +1,4 @@
-package ppl.delite.framework.codegen.delite.overrides
+package ppl.delite.framework.codegen.delite.primitives
 
 import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.DeliteOpsExp

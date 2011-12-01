@@ -1,7 +1,7 @@
 package epfl.mdarrays.staged
 
 import _root_.scala.virtualization.lms.common._
-import _root_.ppl.delite.framework.codegen.delite.overrides.{DeliteIfThenElseExp,DeliteScalaGenIfThenElse,DeliteWhileExp,DeliteScalaGenWhile,DeliteScalaGenVariables}
+import _root_.ppl.delite.framework.codegen.delite.primitives.{DeliteIfThenElseExp,DeliteScalaGenIfThenElse,DeliteWhileExp,DeliteScalaGenWhile,DeliteScalaGenVariables}
 import epfl.mdarrays.library.scala._
 import epfl.mdarrays.library.scala.Conversions._
 

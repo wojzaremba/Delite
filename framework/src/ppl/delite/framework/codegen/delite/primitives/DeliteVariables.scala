@@ -1,4 +1,4 @@
-package ppl.delite.framework.codegen.delite.overrides
+package ppl.delite.framework.codegen.delite.primitives
 
 import java.io.PrintWriter
 import ppl.delite.framework.ops.DeliteOpsExp

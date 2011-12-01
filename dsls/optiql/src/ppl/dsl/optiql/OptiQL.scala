@@ -5,7 +5,7 @@ import scala.reflect.RefinedManifest
 import ops._
 import scala.virtualization.lms.common._
 import ppl.delite.framework.ops._
-import ppl.delite.framework.codegen.delite.overrides.DeliteAllOverridesExp
+import ppl.delite.framework.codegen.delite.primitives.DeliteAllOverridesExp
 import scala.virtualization.lms.internal.GenericFatCodegen
 import ppl.delite.framework.codegen.scala.TargetScala
 import ppl.delite.framework.{Config, DeliteApplication}

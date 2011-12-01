@@ -5,14 +5,14 @@ import scala.virtualization.lms.common._
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenericCodegen}
 import ppl.delite.framework.codegen.{Utils, Target}
 import ppl.delite.framework.codegen.scala.TargetScala
-import ppl.delite.framework.codegen.delite.overrides.{DeliteCudaGenAllOverrides, DeliteCGenAllOverrides, DeliteScalaGenAllOverrides, DeliteAllOverridesExp}
+import ppl.delite.framework.codegen.delite.primitives.{DeliteCudaGenAllOverrides, DeliteCGenAllOverrides, DeliteScalaGenAllOverrides, DeliteAllOverridesExp}
 import ppl.delite.framework.ops._
 import ppl.delite.framework.codegen.delite.DeliteCodeGenPkg
 import ppl.delite.framework.{DeliteApplication, Config}
 
 // ex. object GDARunner extends OptiMLApplicationRunner with GDA
 trait StagedSACApplicationRunner extends StagedSACApplication with DeliteApplication with StagedSACExp {
-  override lazy val targets = List[DeliteApplicationTarget](scalaTarget)
+  targets = List[DeliteApplicationTarget](scalaTarget)
 }
 
 // ex. trait GDA extends OptiMLApplication

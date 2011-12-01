@@ -7,7 +7,7 @@ import epfl.mdarrays.library.scala.MDArray
 import java.io.PrintWriter
 
 import ppl.delite.framework.ops.{DeliteOpsExp}
-import ppl.delite.framework.codegen.delite.overrides.{DeliteScalaGenAllOverrides, DeliteScalaGenIfThenElse, DeliteScalaGenVariables}
+import ppl.delite.framework.codegen.delite.primitives.{DeliteScalaGenAllOverrides, DeliteScalaGenIfThenElse, DeliteScalaGenVariables}
 
 trait BaseGenMDArray extends GenericNestedCodegen {
 

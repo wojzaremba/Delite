@@ -6,7 +6,7 @@ import ppl.delite.framework.codegen.scala.TargetScala
 import scala.virtualization.lms.internal.{GenericNestedCodegen, GenericFatCodegen, GenericCodegen}
 import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.DeliteOpsExp
-import ppl.delite.framework.codegen.delite.overrides.{DeliteScalaGenAllOverrides, DeliteAllOverridesExp}
+import ppl.delite.framework.codegen.delite.primitives.{DeliteScalaGenAllOverrides, DeliteAllOverridesExp}
 
 /**
  * Imports from the Scala language

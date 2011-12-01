@@ -1,7 +1,7 @@
 package ppl.delite.framework.codegen.delite
 
 import generators.{DeliteGenTaskGraph}
-import overrides.{DeliteScalaGenVariables, DeliteCudaGenVariables, DeliteAllOverridesExp}
+import primitives.{DeliteScalaGenVariables, DeliteCudaGenVariables, DeliteAllOverridesExp}
 import scala.virtualization.lms.internal._
 import ppl.delite.framework.{Config, DeliteApplication}
 import collection.mutable.{ListBuffer}

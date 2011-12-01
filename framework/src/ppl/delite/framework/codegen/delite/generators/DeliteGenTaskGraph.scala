@@ -127,7 +127,7 @@ trait DeliteGenTaskGraph extends DeliteCodegen with LoopFusionOpt {
               hasOutputSlotTypes = true
               "generated.scala.DeliteOpMultiLoop[" + "activation_"+kernelName + "]"
             case foreach: DeliteOpForeach2[_,_] => "generated.scala.DeliteOpForeach[" + gen.remap(foreach.v.Type) + "]"
-            case foreach: DeliteOpForeachBounded[_,_,_] => "generated.scala.DeliteOpForeach[" + gen.remap(foreach.v.Type) + "]"
+            case foreach: DeliteOpForeachBounded[_,_,Any] => "generated.scala.DeliteOpForeach[" + gen.remap(foreach.v.Type) + "]"
             case _ => gen.remap(sym.head.Type)
           }
           case ("cuda", op: AbstractFatLoop) =>
@@ -264,7 +264,7 @@ trait DeliteGenTaskGraph extends DeliteCodegen with LoopFusionOpt {
         case w:DeliteOpWhileLoop => emitWhileLoop(w.cond, w.body, kernelName, outputs, inputs, inMutating, inControlDeps, antiDeps)
         case s:DeliteOpSingleTask[_] => emitSingleTask(kernelName, outputs, inputs, inMutating, inControlDeps, antiDeps)
         case f:DeliteOpForeach2[_,_] => emitForeach(z, kernelName, outputs, inputs, inMutating, inControlDeps, antiDeps)
-        case f:DeliteOpForeachBounded[_,_,_] => emitForeach(z, kernelName, outputs, inputs, inMutating, inControlDeps, antiDeps)
+        case f:DeliteOpForeachBounded[_,_,Any] => emitForeach(z, kernelName, outputs, inputs, inMutating, inControlDeps, antiDeps)
         case _ => emitSingleTask(kernelName, outputs, inputs, inMutating, inControlDeps, antiDeps) // things that are not specified as DeliteOPs, emit as SingleTask nodes
       }
     }
