@@ -98,7 +98,7 @@ trait DeLisztExp extends DeLisztCompiler with DeLisztScalaOpsPkgExp with Languag
   with IntMOpsExp
   with LoopColoringOpsExp
   with DeliteOpsExp with VariantsOpsExp with DeliteAllOverridesExp
-  with FieldOpsExpOpt with FieldImplOpsStandard with MatOpsExp with MatImplOpsStandard with VecOpsExp with VecImplOpsStandard {
+  with FieldOpsExpOpt with FieldImplOpsStandard with MatOpsExpOpt with MatImplOpsStandard with VecOpsExpOpt with VecImplOpsStandard {
 
   this: DeliteApplication with DeLisztApplication with DeLisztExp => // can't be DeLisztApplication right now because code generators depend on stuff inside DeliteApplication (via IR)
 
@@ -132,6 +132,7 @@ trait DeLisztCodeGenBase extends GenericFatCodegen {
   def genSpec2(f: File, outPath: String) = {}
 
   override def emitDataStructures(path: String) {
+    System.out.print("PRINTING DATA STRUCTURES")
     val s = File.separator
     val dsRoot = Config.homeDir + s+"dsls"+s+"deliszt"+s+"src"+s+"ppl"+s+"dsl"+s+"deliszt"+s+"datastruct"+s + this.toString
 
@@ -141,11 +142,13 @@ trait DeLisztCodeGenBase extends GenericFatCodegen {
     outDir.mkdirs()
 
     for (f <- dsDir.listFiles) {
-      if (specialize contains (f.getName.substring(0, f.getName.indexOf(".")))) {
-        genSpec(f, path)
-      }
-      if (specialize2 contains (f.getName.substring(0, f.getName.indexOf(".")))) {
-        genSpec2(f, path)
+      if(f.getName.indexOf(".") > -1) {
+        if (specialize contains (f.getName.substring(0, f.getName.indexOf(".")))) {
+          genSpec(f, path)
+        }
+        if (specialize2 contains (f.getName.substring(0, f.getName.indexOf(".")))) {
+          genSpec2(f, path)
+        }
       }
       val outFile = path + f.getName
       val out = new BufferedWriter(new FileWriter(outFile))
@@ -154,6 +157,8 @@ trait DeLisztCodeGenBase extends GenericFatCodegen {
       }
       out.close()
     }
+    
+    super.emitDataStructures(path)
   }
 }
 
@@ -165,7 +170,7 @@ trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg
   
   val IR: DeliteApplication with DeLisztExp
 
-  override val specialize = Set("VecImpl", "MatImpl", "MatColImpl", "MatRowImpl", "VecViewImpl", "FieldImpl")
+  override val specialize = Set("Vec3Impl", "Mat3x3Impl", "VecImpl", "MatImpl", "MatColImpl", "MatRowImpl", "VecViewImpl", "FieldImpl", "LabelFieldImpl")
 
   override def genSpec(f: File, dsOut: String) {
     for (s <- List("Double","Int","Float","Long","Boolean")) {
@@ -196,6 +201,15 @@ trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg
     res = res.replaceAll("@specialized T: ClassManifest", t)
     res = res.replaceAll("\\bT:Manifest\\b", t)
     res = res.replaceAll("\\bT\\b", t)
+    res = res.replaceAll("\\bT: ClassManifest, V: ClassManifest\\b", "\\b" + t + ",V\\b")
+    val size = t match {
+    	case "Double" => 8
+	case _ => 4
+    }
+    res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.getT\\(this, 16 \\+ n\\*UNSAFE_SIZE\\)\\*\\/ v0", "unsafe.UnsafeAccessor.unsafe.get"+t+"\\(this, 16 \\+ n\\*"+size+"\\)")    
+    res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.putT\\(this, 16 \\+ n\\*UNSAFE_SIZE, v\\)\\*\\/", "unsafe.UnsafeAccessor.unsafe.put"+t+"\\(this, 16 \\+ n\\*"+size+", v\\)")
+    res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.getT\\(this, 16 \\+ idx\\*UNSAFE_SIZE\\)\\*\\/ v00", "unsafe.UnsafeAccessor.unsafe.get"+t+"\\(this, 16 \\+ idx\\*"+size+"\\)")
+    res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.putT\\(this, 16 \\+ idx\\*UNSAFE_SIZE, x\\)\\*\\/","unsafe.UnsafeAccessor.unsafe.put"+t+"\\(this, 16 \\+ idx\\*"+size+", x\\)")
     parmap(res)
   }
 
@@ -253,6 +267,7 @@ trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg
       val expr = ("\\b" + s + "\\[.*,\\s*([^\\s]+)\\s*\\]").r  
       res = expr.replaceAllIn(res, m => s + moSub(m))
     }
+
     
     // MeshSet
     val meshSetExpr = ("MeshSet\\[.+\\]").r  
@@ -266,6 +281,29 @@ trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg
     
     for(tpe1 <- List("Int","Long","Double","Float","Boolean")) {
       val parSub = (m: Regex.Match) => {
+        val rest = (m.group(2) + m.group(4)).replaceAll("""^\s+""", "")
+        val fun = if(m.group(1) != null) m.group(1) else ""
+        if(rest.length > 0) {
+          fun + "[" + rest + "]"
+        }
+        else {
+          fun
+        }
+      }
+
+      for (s <- List("Vec3Impl", "Mat3x3ColImpl", "Mat3x3RowImpl", "Mat3x3Impl")) {
+        // should probably parse and trim whitespace, this is fragile
+        res = res.replaceAll(s+"\\["+tpe1+"\\]", tpe1+s)
+      }
+
+
+      for (s <- specialize) {
+        // Object apply, methods, new
+        val expr = ("\\b" + s + "(\\.\\w+)?\\[(.*?)(,\\s*)?\\b" + tpe1 + "\\b(.*?)\\]\\(").r  
+        res = expr.replaceAllIn(res, m => tpe1 + s + parSub(m) + "(")
+      }
+      
+      val parSub2 = (m: Regex.Match) => {
         val rest = (m.group(1) + m.group(3)).replaceAll("""^\s+""", "")
         if(rest.length > 0) {
           "[" + rest + "]"
@@ -274,15 +312,10 @@ trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg
           ""
         }
       }
-
-      for (s <- specialize) {
-        val expr = ("\\b" + s + "\\[(.*?)(,\\s*)?\\b" + tpe1 + "\\b(.*?)\\]\\(").r  
-        res = expr.replaceAllIn(res, m => tpe1 + s + parSub(m) + "(")
-      }
       
-      // Map methods (like in the companion)
-      val expr = ("\\[(.*?)(,\\s*)?\\b" + tpe1 + "\\s*:\\s*\\w+?\\b(.*?)\\]\\(").r  
-      res = expr.replaceAllIn(res, m => parSub(m) + "(")
+      // Map methods defs (like in the companion)
+      val expr = ("\\[(.*?)(,\\s*)?\\b" + tpe1 + "\\s*:\\s*\\w+?\\b(.*?)\\]\\(").r
+      res = expr.replaceAllIn(res, m => parSub2(m) + "(")
         
       for(tpe2 <- List("Int","Long","Double","Float","Boolean")) {
         for (s <- specialize2) {
@@ -382,9 +415,9 @@ trait DeLisztCodeGenCuda extends DeLisztCodeGenBase with DeLisztCudaCodeGenPkg w
     case "Field<int>" | "Field<long>" | "Field<float>" | "Field<bool>" | "Field<double>" => FieldCopyInputHtoD(sym, sym.Type.typeArguments(1))
     case "Vec<int,3>" | "Vec<long,3>" | "Vec<float,3>" | "Vec<bool,3>" | "Vec<double,3>" => VecCopyInputHtoD(sym, sym.Type.typeArguments(1), 3)
     case "Vec<int,4>" | "Vec<long,4>" | "Vec<float,4>" | "Vec<bool,4>" | "Vec<double,4>" => VecCopyInputHtoD(sym, sym.Type.typeArguments(1), 4)
-    case "Mat<int,3,3>" | "Mat<long,3,3>" | "Mat<float,3,3>" | "Mat<bool,3,3>" | "Mat<double,3,3>" => MatCopyInputHtoD(sym, sym.Type.typeArguments(2), 9)
+    case "Mat<int,3,3>" | "Mat<long,3,3>" | "Mat<float,3,3>" | "Mat<bool,3,3>" | "Mat<double,3,3>" => MatCopyInputHtoD(sym, sym.Type.typeArguments(2), 3, 3)
     case "VecField<int,3>" | "VecField<long,3>" | "VecField<float,3>" | "VecField<bool,3>" | "VecField<double,3>" => VecFieldCopyInputHtoD(sym, sym.Type.typeArguments(1).typeArguments(1), 3)
-    case "MatField<int,3,3>" | "MatField<long,3,3>" | "MatField<float,3,3>" | "MatField<bool,3,3>" | "MatField<double,3,3>" => MatFieldCopyInputHtoD(sym, sym.Type.typeArguments(1).typeArguments(2), 9)
+    case "MatField<int,3,3>" | "MatField<long,3,3>" | "MatField<float,3,3>" | "MatField<bool,3,3>" | "MatField<double,3,3>" => MatFieldCopyInputHtoD(sym, sym.Type.typeArguments(1).typeArguments(2), 3, 3)
     case "Mesh" => MeshCopyInputHtoD(sym)
     case "CudaArrayList<Cell>" | "CudaArrayList<Face>" | "CudaArrayList<Edge>" | "CudaArrayList<Vertex>" => "return new CudaArrayList<int>();\n" //TODO: Remove this
     case _ => super.copyInputHtoD(sym)
@@ -399,7 +432,7 @@ trait DeLisztCodeGenCuda extends DeLisztCodeGenBase with DeLisztCudaCodeGenPkg w
     case "Vec<int,4>" | "Vec<long,4>" | "Vec<float,4>" | "Vec<bool,4>" | "Vec<double,4>" => VecCopyOutputDtoH(sym, sym.Type.typeArguments(1))
     case "Mat<int,3,3>" | "Mat<long,3,3>" | "Mat<float,3,3>" | "Mat<bool,3,3>" | "Mat<double,3,3>" => MatCopyOutputDtoH(sym, sym.Type.typeArguments(2))
     case "VecField<int,3>" | "VecField<long,3>" | "VecField<float,3>" | "VecField<bool,3>" | "VecField<double,3>" => VecFieldCopyOutputDtoH(sym, sym.Type.typeArguments(1).typeArguments(1), 3)
-    case "MatField<int,3>" | "MatField<long,3>" | "MatField<float,3>" | "MatField<bool,3>" | "MatField<double,3>" => MatFieldCopyOutputDtoH(sym, sym.Type.typeArguments(1).typeArguments(2), 9)
+    case "MatField<int,3>" | "MatField<long,3>" | "MatField<float,3>" | "MatField<bool,3>" | "MatField<double,3>" => MatFieldCopyOutputDtoH(sym, sym.Type.typeArguments(1).typeArguments(2), 3, 3)
     case "Mesh" => MeshCopyOutputDtoH(sym)
     case "CudaArrayList<Cell>" | "CudaArrayList<Face>" | "CudaArrayList<Edge>" | "CudaArrayList<Vertex>" => "//copy\n" //TODO: Remove this
     case _ => super.copyOutputDtoH(sym)
@@ -414,7 +447,7 @@ trait DeLisztCodeGenCuda extends DeLisztCodeGenBase with DeLisztCudaCodeGenPkg w
     case "Vec<int,4>" | "Vec<long,4>" | "Vec<float,4>" | "Vec<bool,4>" | "Vec<double,4>" => VecCopyMutableInputDtoH(sym, sym.Type.typeArguments(1))
     case "Mat<int,3,3>" | "Mat<long,3,3>" | "Mat<float,3,3>" | "Mat<bool,3,3>" | "Mat<double,3,3>" => MatCopyMutableInputDtoH(sym, sym.Type.typeArguments(2))
     case "VecField<int,3>" | "VecField<long,3>" | "VecField<float,3>" | "VecField<bool,3>" | "VecField<double,3>" => VecFieldCopyMutableInputDtoH(sym, sym.Type.typeArguments(1).typeArguments(1), 3)
-    case "MatField<int,3,3>" | "MatField<long,3,3>" | "MatField<float,3,3>" | "MatField<bool,3,3>" | "MatField<double,3,3>" => MatFieldCopyMutableInputDtoH(sym, sym.Type.typeArguments(1).typeArguments(2), 9)
+    case "MatField<int,3,3>" | "MatField<long,3,3>" | "MatField<float,3,3>" | "MatField<bool,3,3>" | "MatField<double,3,3>" => MatFieldCopyMutableInputDtoH(sym, sym.Type.typeArguments(1).typeArguments(2), 3, 3)
     case "Mesh" => MeshCopyMutableInputDtoH(sym)
     case "CudaArrayList<Cell>" | "CudaArrayList<Face>" | "CudaArrayList<Edge>" | "CudaArrayList<Vertex>" => "//copy\n" //TODO: Remove this
     case _ => super.copyMutableInputDtoH(sym)

@@ -12,6 +12,10 @@ import ppl.delite.framework.Config
 import ppl.dsl.deliszt.{DeLisztExp,DeLiszt}
 import ppl.dsl.deliszt._
 import ppl.dsl.deliszt.MetaInteger._
+import ppl.dsl.deliszt.vec.VecOpsExp
+
+import ppl.delite.framework.datastruct.scala.DeliteCollection
+import ppl.delite.framework.ops.DeliteCollectionOpsExp
 
 trait MatOps extends DSLType with Variables {
   this: DeLiszt =>
@@ -76,6 +80,7 @@ trait MatOps extends DSLType with Variables {
     def /(y:Rep[Self])(implicit a:Arith[A]) = mat_zip_divide(x,y)
     def /(y:Rep[A])(implicit a:Arith[A],o:Overloaded1) = mat_divide_scalar(x,y)
     
+    def cloneL = mat_clone(x)
     def mutable() = mat_mutable_clone(x)
   }
 
@@ -106,16 +111,25 @@ trait MatOps extends DSLType with Variables {
   def mat_unary_minus[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Rep[Mat[R,C,A]]):Rep[Mat[R,C,A]]
   
   def mat_mutable_clone[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x: Rep[Mat[R,C,A]]): Rep[Mat[R,C,A]]
+  def mat_clone[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x: Rep[Mat[R,C,A]]): Rep[Mat[R,C,A]]
 }
 
 
-trait MatOpsExp extends MatOps with VariablesExp {
+trait MatOpsExp extends MatOps with VariablesExp with DeliteCollectionOpsExp {
   this:MatImplOps with DeLisztExp =>
 
   //////////////////////////////////////////////////
   // implemented via method on real data structure
   
   case class MatObjNew[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](vs: Exp[Vec[C,A]]*) extends Def[Mat[R,C,A]] {
+    def r = manifest[R]
+    def vr = implicitly[MVal[R]]
+    def c = manifest[C]
+    def vc = implicitly[MVal[C]]
+    def a = manifest[A]
+  }
+
+  case class Mat3New[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](vs: Array[Exp[A]]) extends Def[Mat[R,C,A]] {
     def r = manifest[R]
     def vr = implicitly[MVal[R]]
     def c = manifest[C]
@@ -297,6 +311,7 @@ trait MatOpsExp extends MatOps with VariablesExp {
   
   override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = {
     (e match {
+      case e@MatObjNew(xs @ _*) => reflectPure(MatObjNew(f(xs) : _*)(e.r, e.vr, e.c, e.vc, e.a))
       case e@MatApply(x,i,j) => mat_apply(f(x), f(i), f(j))(e.r, e.vr, e.c, e.vc, e.a)
       case e@MatGetRow(x,i) => row(f(x),f(i))(e.r, e.vr, e.c, e.vc, e.a)
       case e@MatGetCol(x,i) => col(f(x),f(i))(e.r, e.vr, e.c, e.vc, e.a)
@@ -311,6 +326,17 @@ trait MatOpsExp extends MatOps with VariablesExp {
       case e@MatMinus(x,y) => reflectPure(new { override val original = Some(f,e) } with MatMinus(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa))(mtype(manifest[A]))
       case e@MatUnaryMinus(x) => reflectPure(new { override val original = Some(f,e) } with MatUnaryMinus(f(x))(e.r, e.vr, e.c, e.vc, e.a, e.aa))(mtype(manifest[A]))
       case e@MatTranspose(x) => reflectPure(new { override val original = Some(f,e) } with MatTranspose(f(x))(e.r, e.vr, e.c, e.vc, e.a))(mtype(manifest[A]))
+      case Reflect(e@MatMultiply(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatMultiply(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.cc, e.vcc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatTimes(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTimes(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatTimesScalar(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTimesScalar(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatTimesVec(x,y), u, es)  => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTimesVec(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatDivide(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatDivide(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatDivideScalar(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatDivideScalar(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatPlus(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatPlus(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatPlusScalar(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatPlusScalar(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatMinus(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatMinus(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatUnaryMinus(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatUnaryMinus(f(x))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatTranspose(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTranspose(f(x))(e.r, e.vr, e.c, e.vc, e.a), mapOver(f,u), f(es)))(mtype(manifest[A])) 
       case MatNumRows(x) => mat_num_rows(f(x))
       case MatNumCols(x) => mat_num_cols(f(x))
       // Read/write effects
@@ -324,6 +350,16 @@ trait MatOpsExp extends MatOps with VariablesExp {
     }).asInstanceOf[Exp[A]] // why??
   }
   
+  override def syms(e: Any): List[Sym[Any]] = e match {
+    case Mat3New(a) => a.flatMap(syms).toList
+    case _ => super.syms(e)
+  }
+
+  override def symsFreq(e: Any): List[(Sym[Any], Double)] = e match {
+    case Mat3New(a) => a.flatMap(symsFreq).toList
+    case _ => super.symsFreq(e)
+  }
+
   override def aliasSyms(e: Any): List[Sym[Any]] = e match {
     case MatMultiply(a,b) => Nil
     case MatTimes(a,b) => Nil
@@ -362,12 +398,12 @@ trait MatOpsExp extends MatOps with VariablesExp {
 
   ////////////////////
   // object interface
-  def mat_obj_new[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](vs: Exp[Vec[C,A]]*) = {
-    reflectMutable(MatObjNew[R,C,A](vs:_*)).unsafeImmutable
+  def mat_obj_new[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](vs: Exp[Vec[C,A]]*): Exp[Mat[R,C,A]] = {    
+    MatObjNew[R,C,A](vs:_*)
   }
   
   def mat_obj_n_new[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](r: Exp[Int], c: Exp[Int]) = {
-    reflectMutable(MatObjNNew[R,C,A](r,c)).unsafeImmutable
+    reflectMutable(MatObjNNew[R,C,A](r,c))//.unsafeImmutable
   }
 
   ///////////////////
@@ -403,6 +439,7 @@ trait MatOpsExp extends MatOps with VariablesExp {
   def mat_dcapply[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x:Exp[Mat[R,C,A]],i:Exp[Int]) = reflectPure(MatDCApply(x,i))
   
   def mat_mutable_clone[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x: Exp[Mat[R,C,A]]) = reflectMutable(MatClone(x))
+  def mat_clone[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x: Exp[Mat[R,C,A]]) = reflectPure(MatClone(x))
 }
 
 /**
@@ -411,19 +448,74 @@ trait MatOpsExp extends MatOps with VariablesExp {
 
 trait MatOpsExpOpt extends MatOpsExp {
   this:MatImplOps with DeLisztExp =>
+
+  override def mat_obj_new[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](vs: Exp[Vec[C,A]]*): Exp[Mat[R,C,A]] = {    
+    if (vs.length == 3) {
+      Predef.println("!!! found a matrix constructor with Vec3 args !!!")
+      val buf = new scala.collection.mutable.ArrayBuffer[Exp[A]]()
+      vs foreach { e => e match {
+        case Def(Vec3New(a,b,c)) => buf += a; buf += b; buf += c
+        
+        // could also rewrite the vec3 delite op operations to return VecNew nodes instead..        
+        case Def(m: DeliteOpMap[A,A,_]) => m.body match {
+          case ce: DeliteCollectElem[_,_] => ce.alloc match {
+            case Def(Vec3New(a,b,c)) => 
+              buf ++= (0 to 2) map { i => reifyEffects(m.func(dc_apply(m.in.asInstanceOf[Exp[DeliteCollection[A]]],unit(i))).asInstanceOf[Exp[A]]) }
+            case Def(Reflect(Vec3New(a,b,c), u, es))  =>
+              buf ++= (0 to 2) map { i => reifyEffects(m.func(dc_apply(m.in.asInstanceOf[Exp[DeliteCollection[A]]],unit(i))).asInstanceOf[Exp[A]]) }
+            case Def(Reify(Def(Reflect(Vec3New(a,b,c), u, es)), _,_)) => 
+              buf ++= (0 to 2) map { i => reifyEffects(m.func(dc_apply(m.in.asInstanceOf[Exp[DeliteCollection[A]]],unit(i))).asInstanceOf[Exp[A]]) }
+            case _ => Predef.println(" ***************XXXXXXXXXXXXXXXXXXXXXXX found non vec3?! : " + ce.alloc.Type.toString)
+                     Predef.println(" ***************XXXXXXXXXXXXXXXXXXXXXXX def is: " + findDefinition(ce.alloc.asInstanceOf[Sym[Any]]).toString)
+           }
+        }        
+        case Def(z: DeliteOpZipWith[A,A,_,_]) => z.body match {
+          case ce: DeliteCollectElem[_,_] => ce.alloc match {
+            case Def(Vec3New(a,b,c)) =>
+              buf ++= (0 to 2) map { i => reifyEffects(z.func(dc_apply(z.inA.asInstanceOf[Exp[DeliteCollection[A]]],unit(i)),dc_apply(z.inB.asInstanceOf[Exp[DeliteCollection[A]]],unit(i))).asInstanceOf[Exp[A]]) }
+            case Def(Reify(Def(Reflect(Vec3New(a,b,c), u, es)), _, _)) =>
+              buf ++= (0 to 2) map { i => reifyEffects(z.func(dc_apply(z.inA.asInstanceOf[Exp[DeliteCollection[A]]],unit(i)),dc_apply(z.inB.asInstanceOf[Exp[DeliteCollection[A]]],unit(i))).asInstanceOf[Exp[A]]) }
+           case _ => Predef.println(" ***************XXXXXXXXXXXXXXXXXXXXXXX found non vec3?! : " + ce.alloc.Type.toString)
+                     Predef.println(" ***************XXXXXXXXXXXXXXXXXXXXXXX def is: " + findDefinition(ce.alloc.asInstanceOf[Sym[Any]]).toString)
+	  }
+        }            
+        // case Def(e: DeliteOpLoop[_]) => e.body match {
+        //           case ce: DeliteCollectElem[_,_] => ce.alloc match {
+        //             case Def(Vec3New(a,b,c)) => buf += a.asInstanceOf[Exp[A]]; buf += b.asInstanceOf[Exp[A]]; buf += c.asInstanceOf[Exp[A]]            
+        //           }
+        //         }
+        case _ => Predef.println(" found non vec3?! : " + e.Type.toString)
+                  Predef.println(" def is: " + findDefinition(e.asInstanceOf[Sym[Any]]).toString)
+      }}
+      //if (buf.length == 0) return reflectMutable(MatObjNew[R,C,A](vs:_*))//.unsafeImmutable 
+      //else return reflectMutable(Mat3New[R,C,A](buf.toArray))//.unsafeImmutable
+      if (buf.length == 0) return MatObjNew[R,C,A](vs:_*)
+      else return Mat3New[R,C,A](buf.toArray)
+    }
+    else 
+      super.mat_obj_new(vs: _*)(manifest[R],implicitly[MVal[R]],manifest[C],implicitly[MVal[C]],manifest[A]) 
+  }
 }
 
 
 trait ScalaGenMatOps extends ScalaGenBase {
-  val IR:MatOpsExp
+  val IR:MatOpsExp with VecOpsExp
 
   import IR._
   
-  val matImplPath = "ppl.dsl.deliszt.datastruct.scala.MatImpl"
+  val matImplPath = "ppl.dsl.deliszt.datastruct.scala.MatImpl"  
+  val mat3x3ImplPath = "ppl.dsl.deliszt.datastruct.scala.Mat3x3Impl"
 
   override def emitNode(sym:Sym[Any],rhs:Def[Any])(implicit stream:PrintWriter) = rhs match {
     // these are the ops that call through to the underlying real data structure
-    case m@MatObjNew(vs @ _*) => emitValDef(sym, remap(matImplPath, "", m.a) + "(" + vs.map(quote).reduceLeft(_+","+_) + ")")
+    case m@MatObjNew(vs @ _*) => {
+        //if(vs.length == 3) {	 
+	    //    emitValDef(sym, remap(mat3x3ImplPath, "", m.a) + "(" + vs.map(quote).mkString(",") + ")")
+        //} else {
+          emitValDef(sym, remap(matImplPath, "", m.a) + "(" + vs.map(quote).reduceLeft(_+","+_) + ")")
+        //}
+    } 
+    case m@Mat3New(xs) => emitValDef(sym, " new " + remap(mat3x3ImplPath, "", m.a) + "(" + xs.map(quote).mkString(",") + ")")
     case m@MatObjNNew(numRows,numCols) => emitValDef(sym, remap(matImplPath, ".ofSize", m.a) + "(" + quote(numRows) + "," + quote(numCols) + ")")
     //case MatApply(x,i,j) => emitValDef(sym, quote(x) + "(" + quote(i) + ", " + quote(j) + ")")
     case MatDCApply(x,i) => emitValDef(sym,quote(x) + ".dcApply(" + quote(i) + ")")
@@ -460,6 +552,8 @@ trait CudaGenMatOps extends CudaGenBase {
     // these are the ops that call through to the underlying real data structure
     case m@MatObjNew(vs @ _*) if(!isHostAlloc) => emitValDef(sym, remap(sym.Type) + "()")
                                                  vs.zipWithIndex.foreach(elem => stream.println("%s.vectorUpdate(%s, %s);".format(quote(sym),elem._2,quote(elem._1))))
+    case m@Mat3New(xs) if(!isHostAlloc) => emitValDef(sym, remap(sym.Type) + "()")
+                                                 xs.zipWithIndex.foreach(elem => stream.println("%s.dcUpdate(%s, %s);".format(quote(sym),elem._2,quote(elem._1))))
     case m@MatObjNNew(numRows,numCols) if(!isHostAlloc) => emitValDef(sym, "Mat<" + remap(m.a) + "," + quote(numRows) + "," + quote(numCols) + ">()")
     case MatDCApply(x,i) => emitValDef(sym,quote(x) + ".dcApply(" + quote(i) + ")")
     case MatApply(x,i,j) => emitValDef(sym, quote(x) + ".apply(" + quote(i) + ", " + quote(j) + ")")

@@ -9,6 +9,7 @@ import reflect.Manifest
 import scala.virtualization.lms.common._
 import scala.virtualization.lms.util.OverloadHack
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
+import ppl.delite.framework.datastruct.scala.DeliteCollection
 
 trait FieldOps extends DSLType with Variables with OverloadHack {
   this: DeLiszt =>
@@ -65,32 +66,42 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
 
   ///////////////////////////////////////////////////
   // implemented via method on real data structure  
-  case class FieldApply[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[MO]) extends Def[T] {
+  case class FieldApply[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int]) extends Def[T] {
     val moM = manifest[MO]
     val vtM = manifest[T]
   }
   
-  case class FieldUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[MO], v: Exp[T]) extends Def[Unit] {
+  case class FieldRawApply[MO<:MeshObj:Manifest,A:Manifest](x: Exp[Field[MO,DeliteCollection[A]]], mo: Exp[Int], off: Exp[Int]) extends Def[A] {
+    val moM = manifest[MO]
+    val vtM = manifest[A]
+  }
+
+  case class FieldUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int], v: Exp[T]) extends Def[Unit] {
     val moM = manifest[MO]
     val vtM = manifest[T]
   }
   
-  case class FieldPlusUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[MO], v: Exp[T]) extends Def[Unit] {
+  case class FieldRawUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int], off: Exp[Int], v: Exp[Any]) extends Def[Unit] {
+    val moM = manifest[MO]
+    val vtM = manifest[T]
+  }
+
+  case class FieldPlusUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int], v: Exp[T]) extends Def[Unit] {
     val moM = manifest[MO]
     val vtM = manifest[T]
   }
   
-  case class FieldTimesUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[MO], v: Exp[T]) extends Def[Unit] {
+  case class FieldTimesUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int], v: Exp[T]) extends Def[Unit] {
     val moM = manifest[MO]
     val vtM = manifest[T]
   }
   
-  case class FieldMinusUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[MO], v: Exp[T]) extends Def[Unit] {
+  case class FieldMinusUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int], v: Exp[T]) extends Def[Unit] {
     val moM = manifest[MO]
     val vtM = manifest[T]
   }
   
-  case class FieldDivideUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[MO], v: Exp[T]) extends Def[Unit] {
+  case class FieldDivideUpdate[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO,T]], mo: Exp[Int], v: Exp[T]) extends Def[Unit] {
     val moM = manifest[MO]
     val vtM = manifest[T]
   }
@@ -145,16 +156,6 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
     val t = manifest[T]
   }
   
-  case class FieldIntApply[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int]) extends Def[T] {
-    val moM = manifest[MO]
-    val vtM = manifest[T]
-  }
-  
-  case class FieldIntUpdate[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int], v: Exp[T]) extends Def[Unit] {
-    val moM = manifest[MO]
-    val vtM = manifest[T]
-  }
-  
   case class FieldSize[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]]) extends Def[Int] {
     val moM = manifest[MO]
     val vtM = manifest[T]
@@ -163,11 +164,9 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   //////////////
   // mirroring
   override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
-    case e@FieldApply(x, i) => field_mo_apply(f(x), f(i))(e.moM, e.vtM)
-    case e@FieldIntApply(x, i) => field_apply(f(x), f(i))(e.moM, e.vtM)
+    case e@FieldApply(x, i) => field_apply(f(x), f(i))(e.moM, e.vtM)
     // Read/write effects
     case Reflect(e@FieldApply(l,r), u, es) => reflectMirrored(Reflect(FieldApply(f(l),f(r))(e.moM, e.vtM), mapOver(f,u), f(es)))(mtype(manifest[A]))
-    case Reflect(e@FieldIntApply(l,r), u, es) => reflectMirrored(Reflect(FieldIntApply(f(l),f(r))(e.moM, e.vtM), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(e@FieldUpdate(l,i,r), u, es) => reflectMirrored(Reflect(FieldUpdate(f(l),f(i),f(r))(e.moM, e.vtM), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(e@FieldPlusUpdate(l,i,r), u, es) => reflectMirrored(Reflect(FieldPlusUpdate(f(l),f(i),f(r))(e.moM, e.vtM), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(e@FieldTimesUpdate(l,i,r), u, es) => reflectMirrored(Reflect(FieldTimesUpdate(f(l),f(i),f(r))(e.moM, e.vtM), mapOver(f,u), f(es)))(mtype(manifest[A]))
@@ -177,16 +176,15 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
     // Allocation
     case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]]
-
+  
+  /*
   override def aliasSyms(e: Any): List[Sym[Any]] = e match {
     case DeLisztFieldWithConstCell(x) => Nil
     case DeLisztFieldWithConstEdge(x) => Nil
     case DeLisztFieldWithConstFace(x) => Nil
     case DeLisztFieldWithConstVertex(x) => Nil
     case FieldApply(a,i) => Nil
-    case FieldIntApply(a,i) => Nil
     case FieldUpdate(a,i,x) => Nil
-    case FieldIntUpdate(a,i,x) => Nil
     case FieldPlusUpdate(a,i,x) => Nil
     case FieldTimesUpdate(a,i,x) => Nil
     case FieldDivideUpdate(a,i,x) => Nil
@@ -200,9 +198,7 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
     case DeLisztFieldWithConstFace(x) => Nil
     case DeLisztFieldWithConstVertex(x) => Nil
     case FieldApply(a,i) => Nil
-    case FieldIntApply(a,i) => Nil
     case FieldUpdate(a,i,x) => syms(x)
-    case FieldIntUpdate(a,i,x) => syms(x)
     case FieldPlusUpdate(a,i,x) => syms(x)
     case FieldTimesUpdate(a,i,x) => syms(x)
     case FieldDivideUpdate(a,i,x) => syms(x)
@@ -216,9 +212,7 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
     case DeLisztFieldWithConstFace(x) => Nil
     case DeLisztFieldWithConstVertex(x) => Nil
     case FieldApply(a,i) => syms(a)
-    case FieldIntApply(a,i) => syms(a)
     case FieldUpdate(a,i,x) => Nil
-    case FieldIntUpdate(a,i,x) => Nil
     case FieldPlusUpdate(a,i,x) => Nil
     case FieldTimesUpdate(a,i,x) => Nil
     case FieldDivideUpdate(a,i,x) => Nil
@@ -232,24 +226,23 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
     case DeLisztFieldWithConstFace(x) => Nil
     case DeLisztFieldWithConstVertex(x) => Nil
     case FieldApply(a,i) => Nil
-    case FieldIntApply(a,i) => Nil
     case FieldUpdate(a,i,x) => syms(a)
-    case FieldIntUpdate(a,i,x) => syms(a)
     case FieldPlusUpdate(a,i,x) => syms(a)
     case FieldTimesUpdate(a,i,x) => syms(a)
     case FieldDivideUpdate(a,i,x) => syms(a)
     case FieldMinusUpdate(a,i,x) => syms(a)
     case _ => super.copySyms(e)
   }
-
+  */
 
   /////////////////////
   // object interface
 
   /////////////////////
   // class interface
-  def field_mo_apply[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO, T]], mo: Exp[MO]) = reflectEffect(FieldApply(x,mo))
-  def field_mo_update[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO, T]], mo: Exp[MO], v : Exp[T]) = reflectWrite(x)(FieldUpdate(x,mo,v))
+
+  def field_mo_apply[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO, T]], mo: Exp[MO]) = field_apply(x, ID(mo))
+  def field_mo_update[MO<:MeshObj:Manifest, T:Manifest](x: Exp[Field[MO, T]], mo: Exp[MO], v : Exp[T]) = field_update(x, ID(mo), v)
 
   def FieldWithConst[MO<:Cell:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Cell) = reflectMutable(DeLisztFieldWithConstCell(c))
   def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(DeLisztFieldWithConstEdge(c))
@@ -266,9 +259,13 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   def field_obj_new_face[T:Manifest]() = reflectMutable(FieldObjectNewFace[T]())
   def field_obj_new_vertex[T:Manifest]() = reflectMutable(FieldObjectNewVertex[T]())
 
-  def field_apply[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int]) = FieldIntApply[MO,T](x,n)
-  def field_update[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int], v: Exp[T]) = reflectWrite(x)(FieldIntUpdate[MO,T](x,n,v))
+  def field_apply[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int]) = reflectPure(FieldApply(x,n))
+  def field_update[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int], v: Exp[T]) = reflectWrite(x)(FieldUpdate(x,n,v))
   def field_size[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]]) = FieldSize(x)
+
+  // internal
+  def field_raw_apply[MO<:MeshObj:Manifest,A:Manifest](x: Exp[Field[MO,DeliteCollection[A]]], idx: Exp[Int], off: Exp[Int]) = reflectPure(FieldRawApply[MO,A](x,idx,off))
+  def field_raw_update[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int], off: Exp[Int], v: Exp[Any]) = reflectWrite(x)(FieldRawUpdate[MO,T](x,n,off,v))
 }
 
 trait FieldOpsExpOpt extends FieldOpsExp {
@@ -287,7 +284,14 @@ trait FieldOpsExpOpt extends FieldOpsExp {
     }
     case Def(ArithMinus(Def(FieldApply(x, mo)), b)) => FieldMinusUpdate(x, mo, b)
     case Def(ArithFractionalDivide(Def(FieldApply(x, mo)), b)) => FieldDivideUpdate(x, mo, b)
+    case Def(Vec3New(a,b,c)) => field_raw_update(x,ID(mo),0,a); field_raw_update(x,ID(mo),1,b); field_raw_update(x,ID(mo),2,c)
+    //case Def(Reify(Def(Reflect(Vec3New(a,b,c), u, es)),_,_)) => field_raw_update(x,ID(mo),0,a); field_raw_update(x,ID(mo),1,b); field_raw_update(x,ID(mo),2,c)
     case _ => super.field_mo_update(x, mo, v)
+  }
+  override def field_update[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int], v: Exp[T]) = v match {
+    case Def(Vec3New(a,b,c)) => field_raw_update(x,n,0,a); field_raw_update(x,n,1,b); field_raw_update(x,n,2,c)
+    //case Def(Reify(Def(Reflect(Vec3New(a,b,c), u, es)),_,_)) => field_raw_update(x,n,0,a); field_raw_update(x,n,1,b); field_raw_update(x,n,2,c)
+    case _ => super.field_update(x, n, v)
   }
 }
 
@@ -296,34 +300,67 @@ trait ScalaGenFieldOps extends ScalaGenBase {
   import IR._
 
   val fieldImplPath = "ppl.dsl.deliszt.datastruct.scala.FieldImpl"
+  val labelImplPath = "ppl.dsl.deliszt.datastruct.scala.LabelFieldImpl"
+  val vec3FieldImplPath = "ppl.dsl.deliszt.datastruct.scala.Vec3FieldImpl"
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
       // these are the ops that call through to the underlying real data structure
       case FieldApply(x,n) => emitValDef(sym, quote(x) + "(" + quote(n) + ")")
+      case FieldRawApply(x,n,off) => emitValDef(sym, quote(x) + ".raw_apply(" + quote(n) + "," + quote(off) + ")")
       case FieldUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") = " + quote(v))
+      case FieldRawUpdate(x,n,off,v) => emitValDef(sym, quote(x) + ".raw_update(" + quote(n) + "," + quote(off) + "," + quote(v) + ")")
       case FieldPlusUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") += " + quote(v))
       case FieldTimesUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") *= " + quote(v))
       case FieldMinusUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") -= " + quote(v))
       case FieldDivideUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") /= " + quote(v))
 
-      case f@DeLisztFieldWithConstCell(x) => emitValDef(sym, remap(fieldImplPath, ".cellWithConst", f.t) + "(" + quote(x) + ")")
-      case f@DeLisztFieldWithConstEdge(x) => emitValDef(sym, remap(fieldImplPath, ".edgeWithConst", f.t) + "(" + quote(x) + ")")
-      case f@DeLisztFieldWithConstFace(x) => emitValDef(sym, remap(fieldImplPath, ".faceWithConst", f.t) + "(" + quote(x) + ")")
-      case f@DeLisztFieldWithConstVertex(x) => emitValDef(sym, remap(fieldImplPath, ".vertexWithConst", f.t) + "(" + quote(x) + ")")
-      
+      case f@DeLisztFieldWithConstCell(x) => {
+         val mv = manifest[ppl.dsl.deliszt.datastruct.scala.Vec[Any]]
+         if(x.Type.toString().contains("Vec")) {  
+           emitValDef(sym, remap(vec3FieldImplPath, ".cellWithConst", f.t) + "(" + quote(x) + ")")
+         } else {
+           emitValDef(sym, remap(fieldImplPath, ".cellWithConst", f.t) + "(" + quote(x) + ")")
+         }
+      }
+      case f@DeLisztFieldWithConstEdge(x) => {
+         val mv = manifest[ppl.dsl.deliszt.datastruct.scala.Vec[Any]]
+         Predef.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX X.TYPE: " + x.Type)
+         if(x.Type.toString().contains("Vec")) {
+             emitValDef(sym, remap(vec3FieldImplPath, ".edgeWithConst", f.t) + "(" + quote(x) + ")")
+         } else {
+             emitValDef(sym, remap(fieldImplPath, ".edgeWithConst", f.t) + "(" + quote(x) + ")")
+         }
+      }
+
+      case f@DeLisztFieldWithConstFace(x) => {
+         val mv = manifest[ppl.dsl.deliszt.datastruct.scala.Vec[Any]]
+         if(x.Type.toString().contains("Vec")) {
+             emitValDef(sym, remap(vec3FieldImplPath, ".faceWithConst", f.t) + "(" + quote(x) + ")")
+         } else {
+             emitValDef(sym, remap(fieldImplPath, ".faceWithConst", f.t) + "(" + quote(x) + ")")
+         }
+      }
+      case f@DeLisztFieldWithConstVertex(x) => {
+         val mv = manifest[ppl.dsl.deliszt.datastruct.scala.Vec[Any]]
+         if(x.Type.toString().contains("Vec")) {
+             emitValDef(sym, remap(vec3FieldImplPath, ".vertexWithConst", f.t) + "(" + quote(x) + ")")
+         } else {
+             emitValDef(sym, remap(fieldImplPath, ".vertexWithConst", f.t) + "(" + quote(x) + ")")
+         }
+      }
       case f@FieldObjectNewCell() => emitValDef(sym, remap(fieldImplPath, ".ofCell", f.t) + "()")
       case f@FieldObjectNewEdge() => emitValDef(sym, remap(fieldImplPath, ".ofEdge", f.t) + "()")
       case f@FieldObjectNewFace() => emitValDef(sym, remap(fieldImplPath, ".ofFace", f.t) + "()")
       case f@FieldObjectNewVertex() => emitValDef(sym, remap(fieldImplPath, ".ofVertex", f.t) + "()")
       
-      case f@LabelFieldNewCell(url, m) => emitValDef(sym, quote(m) + ".labelCells[" + remap(f.t) + "](" + quote(url) + ")")
-      case f@LabelFieldNewEdge(url, m) => emitValDef(sym, quote(m) + ".labelEdges[" + remap(f.t) + "](" + quote(url) + ")")
-      case f@LabelFieldNewFace(url, m) => emitValDef(sym, quote(m) + ".labelFaces[" + remap(f.t) + "](" + quote(url) + ")")
-      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, quote(m) + ".labelVertices[" + remap(f.t) + "](" + quote(url) + ")")
+      case f@LabelFieldNewCell(url, m) => emitValDef(sym, remap(labelImplPath, ".ofCell", f.t) + "(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewEdge(url, m) => emitValDef(sym, remap(labelImplPath, ".ofEdge", f.t) + "(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewFace(url, m) => emitValDef(sym, remap(labelImplPath, ".ofFace", f.t) + "(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, remap(labelImplPath, ".ofVertex", f.t) + "(" + quote(m) + "," + quote(url) + ")")
       
-      case FieldIntApply(x,n) => emitValDef(sym, quote(x) + "(" + quote(n) + ")")
-      case FieldIntUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") = " + quote(v))
+      //case FieldIntApply(x,n) => emitValDef(sym, quote(x) + "(" + quote(n) + ")")
+      //case FieldIntUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") = " + quote(v))
       case FieldSize(x) => emitValDef(sym, quote(x) + ".size")
 
       case _ => super.emitNode(sym, rhs)
@@ -338,7 +375,10 @@ trait CudaGenFieldOps extends CudaGenBase {
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = rhs match {
     case FieldApply(x,n) => emitValDef(sym, quote(x) + ".apply(" + quote(n) + ")")
+    case FieldRawApply(x,n,off) => emitValDef(sym, quote(x) + ".raw_apply(" + quote(n) + "," + quote(off) + ")")
     case FieldUpdate(x,n,v) => stream.println(addTab() + quote(x) + ".update(" + quote(n) + "," + quote(v) + ");")
+    case FieldRawUpdate(x,n,off,v) => stream.println(addTab() + quote(x) + ".raw_update(" + quote(n) + "," + quote(off) + "," + quote(v) + ");")
+
     //case FieldPlusUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") += " + quote(v))
     //case FieldTimesUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") *= " + quote(v))
     //case FieldMinusUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") -= " + quote(v))

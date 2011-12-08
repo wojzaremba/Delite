@@ -25,30 +25,47 @@ object FieldImpl {
     new FieldImpl[T](new Array[T](Mesh.mesh.nvertices))
   }
   
-  def cellWithConst[T:ClassManifest](v: T) : Field[T] = {
-    val f = FieldImpl.ofCell[T]()
-    f.fill(v)
-    f
+  def cellWithConst[A:ClassManifest,T,R](v: A) : Field[R] = {
+    if(v.isInstanceOf[Vec[T]) {
+       withVec3[T](Mesh.mesh.ncells, v.asInstanceOf[Vec[T]]).asInstanceOf[Field[R]]
+    } else {
+      val f = FieldImpl.ofCell[T]()
+      f.fill(v)
+      f
+    }
   }
   
   def edgeWithConst[T:ClassManifest](v: T) : Field[T] = {
-    val f = FieldImpl.ofEdge[T]()
-    f.fill(v)
-    f
+    if(v.isInstanceOf[Vec[Double]]) {
+       withVec3[Double](Mesh.mesh.nedges, v.asInstanceOf[Vec[Double]]).asInstanceOf[Field[T]]
+    } else {
+       val f = FieldImpl.ofEdge[T]()
+       f.fill(v)
+       f
+    }
   }
   
   def faceWithConst[T:ClassManifest](v: T) : Field[T] = {
-    val f = FieldImpl.ofFace[T]()
-    f.fill(v)
-    f
+    if(v.isInstanceOf[Vec[Double]]) {
+       withVec3[Double](Mesh.mesh.nfaces, v.asInstanceOf[Vec[Double]]).asInstanceOf[Field[T]]
+    } else {
+       val f = FieldImpl.ofFace[T]()
+       f.fill(v)
+       f
+    }
   }
   
   def vertexWithConst[T:ClassManifest](v: T) : Field[T] = {
-    val f = FieldImpl.ofVertex[T]()
-    f.fill(v)
-    f
+    if(v.isInstanceOf[Vec[Double]]) {
+       withVec3[Double](Mesh.mesh.nvertices, v.asInstanceOf[Vec[Double]]).asInstanceOf[Field[T]]
+    } else {
+       val f = FieldImpl.ofVertex[T]()
+       f.fill(v)
+       f
+    }
   }
 }
+
 
 class FieldImpl[@specialized T: ClassManifest](val data : Array[T]) extends Field[T] {
   def apply(idx: Int) = data(Mesh.internal(idx))

@@ -181,55 +181,7 @@ trait SC extends DeLisztApplication {
       /**********
        * Loop 1 *
        **********/
-      for(f <- facesColor(args(1) + "1084")) {
-        val normal = face_unit_normal(f)
-        val vDotN = dot(globalVelocity,normal)
-        val area = face_area(f)
-        var flux = 0.0
-        val cell = if(vDotN >= 0.0) inside(f) else outside(f)
-        
-        flux = area * vDotN * Phi(cell)
-        
-        Flux(inside(f)) -= flux
-        Flux(outside(f)) += flux
-      }
-      for(f <- facesColor(args(1) + "1154")) {
-        val normal = face_unit_normal(f)
-        val vDotN = dot(globalVelocity,normal)
-        val area = face_area(f)
-        var flux = 0.0
-        val cell = if(vDotN >= 0.0) inside(f) else outside(f)
-        
-        flux = area * vDotN * Phi(cell)
-        
-        Flux(inside(f)) -= flux
-        Flux(outside(f)) += flux
-      }
-      for(f <- facesColor(args(1) + "1224")) {
-        val normal = face_unit_normal(f)
-        val vDotN = dot(globalVelocity,normal)
-        val area = face_area(f)
-        var flux = 0.0
-        val cell = if(vDotN >= 0.0) inside(f) else outside(f)
-        
-        flux = area * vDotN * Phi(cell)
-        
-        Flux(inside(f)) -= flux
-        Flux(outside(f)) += flux
-      }
-      for(f <- facesColor(args(1) + "1294")) {
-        val normal = face_unit_normal(f)
-        val vDotN = dot(globalVelocity,normal)
-        val area = face_area(f)
-        var flux = 0.0
-        val cell = if(vDotN >= 0.0) inside(f) else outside(f)
-        
-        flux = area * vDotN * Phi(cell)
-        
-        Flux(inside(f)) -= flux
-        Flux(outside(f)) += flux
-      }
-      for(f <- facesColor(args(1) + "1364")) {
+      for(f <- interior_set) {
         val normal = face_unit_normal(f)
         val vDotN = dot(globalVelocity,normal)
         val area = face_area(f)
@@ -245,21 +197,7 @@ trait SC extends DeLisztApplication {
       /**********
        * Loop 2 *
        **********/
-      for(f <- facesColor(args(1) + "1435")) {
-      // Print("OUTSET SET")
-        // Print(ID(f))
-        val normal = face_unit_normal(f)
-        if(ID(outside(f)) == 0)
-        {
-          // Print("outside 0 ", ID(inside(f)))
-          Flux(inside(f)) -= face_area(f) * dot(normal,globalVelocity) * Phi(inside(f))
-        }
-        else {
-          // Print("outside okay ", ID(outside(f)))
-          Flux(outside(f)) -= face_area(f) * dot(-normal,globalVelocity) * Phi(outside(f))
-        }
-      }
-      for(f <- facesColor(args(1) + "1537")) {
+      for(f <- outlet_set) {
       // Print("OUTSET SET")
         // Print(ID(f))
         val normal = face_unit_normal(f)
@@ -279,7 +217,7 @@ trait SC extends DeLisztApplication {
        **********/
 	    //Note: 'phi_sine_function(t)' is manually hoisted from the loop to prevent Ref[Double] type input for a GPU kernel
       val multiplier = phi_sine_function(t)
-      for(f <- facesColor(args(1) + "1084")) {
+      for(f <- inlet_set) {
         val area = face_area(f)
         val vDotN = dot(globalVelocity,face_unit_normal(f))
         if(ID(outside(f)) == 0)
@@ -287,58 +225,17 @@ trait SC extends DeLisztApplication {
         else
           Flux(outside(f)) += area * vDotN * multiplier	
       }
-      for(f <- facesColor(args(1) + "1154")) {
-        val area = face_area(f)
-        val vDotN = dot(globalVelocity,face_unit_normal(f))
-        if(ID(outside(f)) == 0)
-          Flux(inside(f)) += area * vDotN * multiplier
-        else
-          Flux(outside(f)) += area * vDotN * multiplier	
-      }
-      for(f <- facesColor(args(1) + "1224")) {
-        val area = face_area(f)
-        val vDotN = dot(globalVelocity,face_unit_normal(f))
-        if(ID(outside(f)) == 0)
-          Flux(inside(f)) += area * vDotN * multiplier
-        else
-          Flux(outside(f)) += area * vDotN * multiplier	
-      }
-      for(f <- facesColor(args(1) + "1294")) {
-        val area = face_area(f)
-        val vDotN = dot(globalVelocity,face_unit_normal(f))
-        if(ID(outside(f)) == 0)
-          Flux(inside(f)) += area * vDotN * multiplier
-        else
-          Flux(outside(f)) += area * vDotN * multiplier	
-      }
-      for(f <- facesColor(args(1) + "1364")) {
-        val area = face_area(f)
-        val vDotN = dot(globalVelocity,face_unit_normal(f))
-        if(ID(outside(f)) == 0)
-          Flux(inside(f)) += area * vDotN * multiplier
-        else
-          Flux(outside(f)) += area * vDotN * multiplier	
-      }
-
 
       /**********
        * Loop 4 *
        **********/
-      for(f <- facesColor(args(1) + "1435")) {
+      for(f <- far_field_set) {
         val normal = face_unit_normal(f)
         if(ID(outside(f)) == 0)
           Flux(inside(f)) -= dot(normal,globalVelocity) * face_area(f) * Phi(inside(f))
         else
           Flux(outside(f)) -= dot(-normal,globalVelocity) * face_area(f) * Phi(outside(f))
       }
-      for(f <- facesColor(args(1) + "1537")) {
-        val normal = face_unit_normal(f)
-        if(ID(outside(f)) == 0)
-          Flux(inside(f)) -= dot(normal,globalVelocity) * face_area(f) * Phi(inside(f))
-        else
-          Flux(outside(f)) -= dot(-normal,globalVelocity) * face_area(f) * Phi(outside(f))
-      }
-
 
       //TODO(zach): some more loops for boundary conditions go here
       for(c <- cells(mesh)) {
@@ -359,3 +256,4 @@ trait SC extends DeLisztApplication {
      }
   }
 }
+

@@ -11,18 +11,15 @@ import ppl.delite.framework.datastruct.scala.DeliteCollection
  */
  
 trait Field[T] extends DeliteCollection[T] {
-  def apply(i : Int) : T
-  def update(i : Int, v : T) : Unit
+  def apply(i: Int) : T
+  def raw_apply(i: Int, off: Int): Double = throw new UnsupportedOperationException("should have been overridden in Vec3 hack")
+  def update(i: Int, v: T) : Unit
+  def raw_update(i: Int, off: Int, v: Double): Unit = throw new UnsupportedOperationException("should have been overridden in Vec3 hack")
 
   def size : Int
   
   def dcApply(idx: Int) : T = apply(idx)
   def dcUpdate(idx: Int, x: T) : Unit = update(idx, x)
   def dcSize : Int = size
-  
-  def fill(v: T) {
-    for(i <- 0 until size) {
-      this(i) = if(v.isInstanceOf[Copyable]) v.asInstanceOf[Copyable].copy.asInstanceOf[T] else v
-    }
-  }
+  def fill(v: T) : Unit
 }
