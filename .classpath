@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="dsls/sac-staged/src"/>
+	<classpathentry kind="src" path="virtualization-lms-core/test-src"/>
+	<classpathentry kind="src" path="virtualization-lms-core/src"/>
+	<classpathentry kind="src" path="tests/src"/>
+	<classpathentry kind="src" path="apps/scala/src"/>
+	<classpathentry kind="src" path="benchmark/ParallelSortingExperiments/src"/>
+	<classpathentry kind="src" path="dsls/optiql/src"/>
+	<classpathentry kind="src" path="dsls/optiml/src"/>
+	<classpathentry excluding="ppl/delite/framework/codegen/delite/overrides/" kind="src" path="framework/src"/>
+	<classpathentry kind="src" path="runtime/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry kind="lib" path="lib_managed/scala_2.10.0-virtualized-SNAPSHOT/compile/scalatest_2.10.0-virtualized-SNAPSHOT-1.6.1-SNAPSHOT.jar"/>
+	<classpathentry kind="output" path="eclipse-compile"/>
+</classpath>
