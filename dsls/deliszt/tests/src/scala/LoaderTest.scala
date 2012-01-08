@@ -15,7 +15,8 @@ class StackSpec extends FlatSpec with ShouldMatchers {
     println(cfg)
 
     try {
-      MeshLoader.init(cfg)
+      MeshLoader.init()
+      MeshLoader.loadMesh(cfg)
     }
     catch {
       case e:java.lang.UnsatisfiedLinkError => {println(e); fail}

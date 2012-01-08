@@ -1,8 +1,8 @@
 package ppl.dsl.deliszt.datastruct.scala
 
 import java.io._
-import net.liftweb.json.{JsonParser, JsonAST}
-import net.liftweb.json.JsonDSL._
+import scala.util.parsing.json._
+import scala.io._
 
 /**
  * author: Michael Wu (mikemwu@stanford.edu)
@@ -12,84 +12,85 @@ import net.liftweb.json.JsonDSL._
  * Stanford University
  */
 
-object MeshLoader {
-  var loaded = false
 
-  def init(cfgPath : String) {
+object MeshLoader {
+
+  object Log extends Log("MeshLoader")
+
+  var loadedLibrary = false
+
+  def init(): Unit = {
     Global.wall_start = System.currentTimeMillis
-  
-    if(!loaded) {    
+    if (!loadedLibrary) {
       try {
-        System.loadLibrary("MeshLoader");
+        System.loadLibrary("MeshLoader")
+        Mesh.loader = new MeshLoader()
       }
       catch {
-        case e: java.lang.UnsatisfiedLinkError => if(e.getMessage.indexOf("already loaded") < 0) throw e
+        case e: java.lang.UnsatisfiedLinkError => if (e.getMessage.indexOf("already loaded") < 0) throw e
       }
-
-      loaded = true
-    }
-
-    val cfgFile = new File(cfgPath)
-
-    if(!cfgFile.exists) {
-      throw new FileNotFoundException("Liszt cfg file " + cfgPath + " does not exist")
-    }
-    
-    val cfg = new BufferedReader(new FileReader(cfgFile))
-    val json = JsonParser.parse(cfg)
-
-    implicit val formats = net.liftweb.json.DefaultFormats
-
-    Mesh.loader = new MeshLoader()
-
-    case class MeshFilename(`mesh-file`: String)
-
-    val meshFilename = json.extract[MeshFilename].`mesh-file`
-
-    println("Loading mesh file " + meshFilename)
-    
-    var file = new File(meshFilename)
-    if(!file.exists()) {
-      val resource = getClass.getResource(meshFilename)
-
-      if(resource != null) {
-        file = new File(resource.getPath)
-      }
-    }
-
-    if(!file.exists()) {
-      file = new File(cfgFile.getParent, meshFilename)
-    }
-
-    if(file.exists()) {
-      println("File exists, found at " + file.getPath)
-      Mesh.mesh = Mesh.loader.loadMesh(file.getPath)
-      
-      println("ncells: " + Mesh.mesh.ncells)
-      println("nedges: " + Mesh.mesh.nedges)
-      println("nfaces: " + Mesh.mesh.nfaces)
-      println("nvertices: " + Mesh.mesh.nvertices)
-    }
-    else {
-      throw new FileNotFoundException("Mesh file " + meshFilename + " does not exist")
+      loadedLibrary = true
     }
   }
+
+  //loads mesh - from path provided in .cfg file or directly from mesh file
+  def loadMesh(filepath: String): Mesh = {
+    { val file = new File(filepath)
+      if (!file.exists())
+        None
+      else
+      if (filepath.endsWith(".cfg")) {
+        val json = JSON.parseFull(Source.fromFile(file).mkString).get.asInstanceOf[Map[String, Any]]
+        json.get("mesh-file") match {
+          case Some(meshFilename: String) =>
+            Log.log("Loading mesh file from " + meshFilename)
+            val list : List[() => Option[File]] = List(
+              () => Some(new File(meshFilename)),
+              () => {
+                val resource = getClass.getResource(meshFilename)
+                if (resource != null)
+                  Some(new File(resource.getPath))
+                else None
+              }, 
+              () => Some(new File(file.getParent, meshFilename))
+            )
+            list.foldLeft[Option[Mesh]](None)((ack : Option[Mesh], elem : () => Option[File])=>
+              if (!ack.isDefined)
+                elem() match {
+                  case Some(f:File) =>  if (f.exists()) Option(Mesh.loader.loadMesh(f.getPath)) else None
+                  case _ => None
+                }
+              else None)
+          case None => None
+        }
+      } else
+      Option(Mesh.loader.loadMesh(filepath))
+    } match {
+      case Some(m:Mesh) => Log.log("ncells: " + m.ncells)
+      Log.log("nedges: " + m.nedges)
+      Log.log("nfaces: " + m.nfaces)
+      Log.log("nvertices: " + m.nvertices)
+      m
+      case None => throw new RuntimeException("Loading mesh from " + filepath +  " failed!")
+    }
+  }
+
 }
 
 class MeshLoader {
   @native
-  def loadMesh(file: String) : Mesh = null
+  def loadMesh(file: String): Mesh = null
 
-  def loadBoundarySet(name: String, mo_type: Int) = {
-    val bs = _loadBoundarySet(name, mo_type)
-    
-    if(bs == null) {
+  def loadBoundarySet(mesh : Mesh, name: String, mo_type: Int) = {
+    val bs = _loadBoundarySet(mesh, name, mo_type)
+
+    if (bs == null) {
       throw new RuntimeException("Loading boundary set " + name + " of type " + mo_type + " failed!")
     }
-    
+
     bs
   }
-  
+
   @native
-  def _loadBoundarySet(name: String, mo_type: Int) : BoundarySet = null
+  def _loadBoundarySet(mesh: Mesh, name: String, mo_type: Int): BoundarySet = null
 }

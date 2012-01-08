@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <pthread.h>
 #include <string>
+#include <map>
 #include <stdexcept>
 #include <stdarg.h>
 #include "JNICache.h"
@@ -13,11 +14,10 @@
 #define MESHLOADER_H_
 
 #ifdef DEBUG
-#define DEBUG_PRINT(msg) std::cerr << msg << std::endl
+#define DEBUG_PRINT(msg) std::cerr << msg << std::endl;
 #else
 #define DEBUG_PRINT(msg)
 #endif
-
 using namespace std;
 
 namespace System {
@@ -39,61 +39,66 @@ public:
      */
     jobject loadMesh(JNIEnv* env, jstring str);
 
-    template<typename MO>
-    jobject loadBoundarySet(JNIEnv* env, const char* name)
-    {
-      DEBUG_PRINT("Loading boundary set " << name);
-  
-      LisztPrivate::BoundarySet *bs = new LisztPrivate::BoundarySet();
-      if (!bs) {
-        throw MeshIO::MeshLoadException("Could not create boundary set");
-      }
-
-      DEBUG_PRINT("Created boundary set " << name)
-      
-      jobject bounds = NULL;
-      
+ template<typename MO> 
+ jobject loadBoundarySet(JNIEnv* env, jobject jmesh, const char* name)
+    {   
       pthread_mutex_lock(&lock);
+      jobject bounds = NULL;
+      LisztPrivate::BoundarySet* bs = NULL; 
       try {
+        int id = callIntMethod(env, jmesh, prefix + "/Mesh", "id", "()I");
+        DEBUG_PRINT("Loading boundary set " << name << " for mesh with id " << id);
+        if (boundaryMap.count(id) == 0) {
+          string message("can't read boundary set ");
+          string name_(name);
+          throw MeshIO::MeshLoadException(message + name);
+        } 
+        BoundarySetBuilder* boundary_builder = boundaryMap[id];
+	if (!boundary_builder) {
+          throw MeshIO::MeshLoadException("Boundary_builder is null");
+        }   
+	bs = new LisztPrivate::BoundarySet();
+        if (!bs) {
+          throw MeshIO::MeshLoadException("Could not create boundary set");
+        }   
+        DEBUG_PRINT("Created boundary set " << name)
         DEBUG_PRINT("calling loader " << name)
-      
-        if (boundary_builder.load<MO, LisztPrivate::BoundarySet>(name, bs)) {
+        if (boundary_builder->load<MO, LisztPrivate::BoundarySet>(name, bs)) {
           DEBUG_PRINT("loaded " << name);
           bounds = createObject(env,
                   prefix + "/BoundarySetImpl", "");
           DEBUG_PRINT("created " << name);
-
           const LisztPrivate::BoundarySet::ranges_t& ranges = bs->getRanges();
-                  
           // For ranges in bs
           for (LisztPrivate::BoundarySet::range_it it = ranges.begin(), end = ranges.end(); it != end; it++) {
               DEBUG_PRINT("iter " << name);
               callVoidMethod(env, bounds,
                       prefix + "/BoundarySetImpl", "add",
                       "(II)V", it->first, it->second);
-          }
-
+          }   
           DEBUG_PRINT("done iter " << name);
           callVoidMethod(env, bounds, prefix + "/BoundarySetImpl",
                   "freeze", "()V");
           DEBUG_PRINT("freeze " << name);
-        }
+        }   
         else {
           DEBUG_PRINT("Failed to load boundary set: " << name);
-        }
-      }
+        }   
+      }  
+      catch (MeshIO::MeshLoadException e) {
+        std::cerr << e.what() << std::endl;
+        bounds = NULL;
+      } 
       catch(...) {
         DEBUG_PRINT("Failed to load boundary set: " << name);
         bounds = NULL;
-      }
-      pthread_mutex_unlock(&lock);
-      
+      }   
       DEBUG_PRINT("return " << name);
-
-      delete bs;
-      
+      if (bs != NULL) delete bs; 
+      pthread_mutex_unlock(&lock);
       return bounds;
-    }
+    } 
+
 
     /*
      Construct a Java object with the specific arguments.
@@ -174,13 +179,10 @@ private:
     jobject getScalaObjField(JNIEnv* env, jclass& cls, jobject& jobj,
             string field, string type);
 
-    JNICache* cache;
-    BoundarySetBuilder boundary_builder;
-    MeshIO::LisztFileReader reader;
-    CRSMesh::Mesh mesh;
-    jobject jmesh;
-    bool loaded;
     pthread_mutex_t lock;
+    map <int, BoundarySetBuilder*> boundaryMap;
+    JNICache* cache;
+
 };
 }
 

@@ -21,26 +21,27 @@ JNIEXPORT jobject JNICALL Java_generated_scala_MeshLoader_loadMesh (JNIEnv* env,
 }
 
 JNIEXPORT jobject JNICALL Java_ppl_dsl_deliszt_datastruct_scala_MeshLoader__1loadBoundarySet
-  (JNIEnv * env, jobject obj, jstring str, jint type) {
+  (JNIEnv * env, jobject obj, jobject mesh, jstring str, jint type) {
   string name(env->GetStringUTFChars(str, 0));
   
   if(type == 0) {
-    return ml->loadBoundarySet<LisztPrivate::ElemTypes::VertexType>(env, name.c_str());
+    return ml->loadBoundarySet<LisztPrivate::ElemTypes::VertexType>(env, mesh, name.c_str());
   }
   else if(type == 1) {
-    return ml->loadBoundarySet<LisztPrivate::ElemTypes::EdgeType>(env, name.c_str());
+    return ml->loadBoundarySet<LisztPrivate::ElemTypes::EdgeType>(env, mesh, name.c_str());
   }
   else if(type == 2) {
-    return ml->loadBoundarySet<LisztPrivate::ElemTypes::FaceType>(env, name.c_str());
+    return ml->loadBoundarySet<LisztPrivate::ElemTypes::FaceType>(env, mesh, name.c_str());
   }
   else if(type == 3) {
-    return ml->loadBoundarySet<LisztPrivate::ElemTypes::CellType>(env, name.c_str());
+    return ml->loadBoundarySet<LisztPrivate::ElemTypes::CellType>(env, mesh, name.c_str());
   }
   
   return NULL;
 }
 
+
 JNIEXPORT jobject JNICALL Java_generated_scala_MeshLoader__1loadBoundarySet
-  (JNIEnv * env, jobject obj, jstring str, jint type) {
-  return Java_ppl_dsl_deliszt_datastruct_scala_MeshLoader__1loadBoundarySet(env, obj, str, type);
+  (JNIEnv * env, jobject obj, jobject mesh, jstring str, jint type) {
+  return Java_ppl_dsl_deliszt_datastruct_scala_MeshLoader__1loadBoundarySet(env, obj, mesh, str, type);
 }

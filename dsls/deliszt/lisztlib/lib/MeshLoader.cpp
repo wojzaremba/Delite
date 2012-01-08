@@ -2,15 +2,24 @@
 #include <stdarg.h>
 #include <stdexcept>
 #include <string>
+#include <map>
+#include <stdlib.h>
 #include <jni.h>
 #include "MeshLoader.h"
 #include "Liszt/BoundarySet.h"
+
+#include "MeshIO/FluentParse.h"
+#include "MeshIO/OFFParse.h"
+#include "MeshIO/DPLParse.h"
+#include "MeshIO/LisztFileWriter.h"
+#include "MeshIO/BoundaryTable.h"
+
 
 #include <stdio.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
-
+#include <fstream>
 
 void handler(int sig) {
   void *array[10];
@@ -28,21 +37,18 @@ void handler(int sig) {
 namespace System {
 using namespace CRSMesh;
 
-MeshLoader::MeshLoader(bool generated) : jmesh(NULL), loaded(false) {
+MeshLoader::MeshLoader(bool generated) {
   if(generated) {
     prefix = "generated/scala";
   }
   else {
     prefix = "ppl/dsl/deliszt/datastruct/scala";
   }
-  
   //signal(SIGSEGV, handler);
-  
-  DEBUG_PRINT("new cache");
   cache = new JNICache();
-  
   lock = PTHREAD_MUTEX_INITIALIZER;
 }
+
 
 jobject MeshLoader::createObject(JNIEnv* env, jclass& cls, string type, ...) {
     va_list args;
@@ -199,6 +205,8 @@ void MeshLoader::setScalaField(JNIEnv* env, jclass& cls, jobject& jobj, string f
   env->CallVoidMethodV(jobj, cid, args);
 }
 
+
+
 void MeshLoader::setCRSField(JNIEnv* env, jobject& jmesh, string field,
         CRSMeshPrivate::CRS& crs, size_t from) {
     jintArray row_idx = copyIdxArray(env, crs.row_idx, from+1);
@@ -275,17 +283,55 @@ jintArray MeshLoader::copyIdPairArray(JNIEnv* env, CRSMeshPrivate::IDPair* array
   return jarray;
 }
 
-jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
-  if(!loaded) {
-    try {
-      jmesh = NULL;
-      DEBUG_PRINT("convert filename");
-      // Convert file name
-      string filename(env->GetStringUTFChars(str, 0));
+bool endsWith (std::string const &fullString, std::string const &ending)
+{
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
+}
 
-      DEBUG_PRINT("read in file");
+
+jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {    
+    pthread_mutex_lock(&lock);
+    DEBUG_PRINT("convert filename");
+    string filename(env->GetStringUTFChars(str, 0));
+    jobject jmesh = NULL;
+    try {
+      DEBUG_PRINT("read in file " << filename);
+      const char *output;
+      if(endsWith(filename,".lmesh")) {
+        output = filename.c_str();
+      } else {
+	output = tmpnam (NULL);;
+        std::cerr << "creating target mesh file (.lmesh file format) " << output << std::endl;
+        MeshIO::LisztFileWriter writer;
+        MeshIO::BoundaryTable boundaries;
+        writer.boundaries = &boundaries;
+        if (endsWith(filename, string(".msh"))) {
+          MeshIO::FluentParse parse;
+          parse.init(&writer,filename.c_str(),output);
+          parse.parseAll();
+        } else if(endsWith(filename,".off")) {
+          MeshIO::OFFParse off;
+          off.init(&writer,filename.c_str(),output);
+          off.parseAll();
+        } else if(endsWith(filename,"dpl")) {
+          MeshIO::DPLParse dpl;
+          dpl.init(&writer,filename.c_str(),output);
+          dpl.parseAll();
+        } else {
+          throw MeshIO::MeshLoadException("extension not supported");
+        }  
+        boundaries.finalizeBoundarySetTable();
+        boundaries.writeBoundarySetTable(writer);
+        writer.writeHeader();
+        writer.close();
+      }
       // Read in mesh
-      reader.init(filename);
+      MeshIO::LisztFileReader reader;
+      reader.init(output);
 
       DEBUG_PRINT("header");
       MeshIO::LisztHeader h = reader.header();
@@ -311,6 +357,7 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
 
       // Load mesh
       DEBUG_PRINT("from facet edge builder");
+      CRSMesh::Mesh mesh;
       mesh.initFromFacetEdgeBuilder(&builder);
 
       // Set fields on mesh
@@ -319,7 +366,7 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
       DEBUG_PRINT("create mesh");
       jclass meshClass = cache->getClass(env, prefix + "/Mesh");
       jmesh = createObject(env, meshClass, "");            
-
+     
       // Set size fields
       setScalaField(env, meshClass, jmesh, "nvertices", "I", data.nvertices);
       setScalaField(env, meshClass, jmesh, "nedges", "I", data.nedges);
@@ -356,10 +403,10 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
       // Set properties we know about
       // Position for vertices
       loadPositions(env, jmesh, mesh, reader);
-      
-      boundary_builder.init(h.nBoundaries, reader.boundaries());
-      
-      loaded = true;
+      int id = callIntMethod(env, jmesh, prefix + "/Mesh", "id", "()I");
+      BoundarySetBuilder* boundary_builder = new BoundarySetBuilder();
+      boundary_builder->init(h.nBoundaries, reader.boundaries());
+      boundaryMap[id] = boundary_builder;
     }
     catch (MeshIO::MeshLoadException e) {
       std::cerr << e.what() << std::endl;
@@ -369,13 +416,10 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
       std::cerr << "System exception while loading mesh" << std::endl;
       jmesh = NULL;
     }
-  }
-  else {
-    std::cerr << "Mesh already loaded!" << std::endl; 
-  }
-  
-  return jmesh;
+    pthread_mutex_unlock(&lock);
+    return jmesh;
 }
+
 
 MeshLoader::~MeshLoader() {
 }

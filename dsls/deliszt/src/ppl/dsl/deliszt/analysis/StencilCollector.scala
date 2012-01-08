@@ -68,7 +68,7 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
     analysisResults("StencilCollectorStencils") = forMap
     analysisResults("StencilCollectorMeshsets") = msMap
   
-    MeshLoader.init(if(args.length > 0) args(0) else "liszt.cfg")
+    MeshLoader.init()
   }
   
   // Mark accesses
@@ -180,12 +180,13 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
   def maybeValue(x: Def[Any])(implicit stream: PrintWriter) : Option[Any] = {
     val o = x match {
       // or could also lookup the exp
-      case DeLisztBoundarySetCells(name) => Mesh.boundarySetCells(value[String](name))
-      case DeLisztBoundarySetEdges(name) => Mesh.boundarySetEdges(value[String](name))
-      case DeLisztBoundarySetFaces(name) => Mesh.boundarySetFaces(value[String](name))
-      case DeLisztBoundarySetVertices(name) => Mesh.boundarySetVertices(value[String](name))
+      //XXX : temporary broken (boundarySetCells have to take inf about mesh
+      case DeLisztBoundarySetCells(name, mesh) => Mesh.mesh.boundarySetCells(value[String](name))
+      case DeLisztBoundarySetEdges(name, mesh) => Mesh.mesh.boundarySetEdges(value[String](name))
+      case DeLisztBoundarySetFaces(name, mesh) => Mesh.mesh.boundarySetFaces(value[String](name))
+      case DeLisztBoundarySetVertices(name, mesh) => Mesh.mesh.boundarySetVertices(value[String](name))
 
-      case DeLisztMesh() => OneObj(0)
+      //case DeLisztMesh() => OneObj(0)
 
       case DeLisztVerticesCell(e, m) => multiset(e, (mo:Int) => Mesh.mesh.verticesCell(mo))
       case DeLisztVerticesEdge(e, m) => multiset(e, (mo:Int) => Mesh.mesh.verticesEdge(mo))
@@ -593,11 +594,10 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
           }
           
           // Rest should just be added to schedule
-          case DeLisztBoundarySetCells(name) =>
-          case DeLisztBoundarySetEdges(name) =>
-          case DeLisztBoundarySetFaces(name) =>
-          case DeLisztBoundarySetVertices(name) =>
-          case DeLisztMesh() =>
+          case DeLisztBoundarySetCells(name, m) =>
+          case DeLisztBoundarySetEdges(name, m) =>
+          case DeLisztBoundarySetFaces(name, m) =>
+          case DeLisztBoundarySetVertices(name, m) =>
           case DeLisztVerticesCell(e, m) =>
           case DeLisztVerticesEdge(e, m) =>
           case DeLisztVerticesFace(e, m) =>
