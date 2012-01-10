@@ -369,7 +369,6 @@ class Mesh {
     val pos = vertexData.data.get("position")
     pos match {
       case Some(array: Array[Object]) =>
-        Log.log("method generateFile, position array : " + array)
         for (i <- 0 until nvertices) {
           for (j <- 0 until 3) {
               f.write(toByteArray(array(i).asInstanceOf[Array[Double]](j)))

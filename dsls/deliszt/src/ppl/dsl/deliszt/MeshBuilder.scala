@@ -1,8 +1,11 @@
 package ppl.dsl.deliszt
 
+import reflect.Manifest
 import datastruct.scala.LabelData
-import virtualization.lms.common.{EffectExp, BaseFatExp, Base}
 import ppl.dsl.deliszt.datastruct.scala.Log
+import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
+import scala.virtualization.lms.common._
+import ppl.delite.framework.ops._
 
 /**
  * dynamic mesh creation
@@ -16,8 +19,12 @@ trait MeshBuilderOps extends Base {
 
   object Log extends Log("MeshBuilder")
 
-  class MeshBuilder(nvertices: Int, nedges: Int, nfaces : Int, ncells : Int) {
-    val meshId : Int = MeshBuilder.maxId
+  object FromFileMesh {
+    def apply(filename: String): Rep[Mesh] = meshGetFromFile(filename)
+  }
+
+  class MeshBuilder(nvertices: Int, nedges: Int, nfaces: Int, ncells: Int) {
+    val meshId: Int = MeshBuilder.maxId
     MeshBuilder.maxId += 1
 
     newMeshBuilder(meshId, nvertices, nedges, nfaces, ncells)
@@ -28,18 +35,18 @@ trait MeshBuilderOps extends Base {
 
     def addCellByFace(ids: Int*): Int = meshAddCellByFace(meshId, ids: _*)
 
-    def setVertexPosition(id : Int, x : Double, y : Double, z : Double) = setVertexData("position", id, Array[Double](x, y, z))
+    def setVertexPosition(id: Int, x: Double, y: Double, z: Double) = setVertexData("position", id, Array[Double](x, y, z))
 
-    def setVertexData(name: String, id : Int, value : Any) = meshSetVertexData(meshId, name, id, value)
+    def setVertexData(name: String, id: Int, value: Any) = meshSetVertexData(meshId, name, id, value)
 
     def build(): Rep[Mesh] = meshBuild(meshId)
   }
 
-  private  object MeshBuilder {
+  private object MeshBuilder {
     var maxId = 0
   }
 
-  def newMeshBuilder(meshId : Int, nvertices : Int, nedges : Int, nfaces : Int, ncells : Int) : Unit
+  def newMeshBuilder(meshId: Int, nvertices: Int, nedges: Int, nfaces: Int, ncells: Int): Unit
 
   def meshAddEdgeByVertex(meshId: Int, id1: Int, id2: Int): Int
 
@@ -47,18 +54,21 @@ trait MeshBuilderOps extends Base {
 
   def meshAddCellByFace(meshId: Int, ids: Int*): Int
 
-  def meshSetVertexData(meshId: Int, name: String, id : Int, value : Any) : Unit
+  def meshSetVertexData(meshId: Int, name: String, id: Int, value: Any): Unit
 
   def meshBuild(meshId: Int): Rep[Mesh]
+
+  def meshGetFromFile(filename: String): Rep[Mesh]
 }
 
 
-trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
+trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp with DeliteOpsExp {
 
   import scala.collection.mutable.Map
   import ppl.dsl.deliszt.datastruct.scala.{Mesh => MeshStruct}
 
   case class DeLisztMeshBuild(m: MeshStruct) extends Def[Mesh]
+  case class DeLisztMeshPath(filename : String) extends Def[Mesh]
 
   val meshMap = Map.empty[Int, MeshSkeleton]
 
@@ -69,7 +79,7 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
     meshMap(id)
   }
 
-  class MeshSkeleton(meshId : Int, nvertices : Int, nedges : Int, nfaces : Int, ncells : Int) {
+  class MeshSkeleton(meshId: Int, nvertices: Int, nedges: Int, nfaces: Int, ncells: Int) {
 
     class ListTreeMap {
 
@@ -111,6 +121,7 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
         new CRSImpl(rows, values)
       }
     }
+
     Log.log("Creating new MeshSkeleton " + this)
 
 
@@ -135,7 +146,7 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
     var cidx = 0
     var nfe = 0
 
-    def toMesh() : MeshStruct = {
+    def toMesh(): MeshStruct = {
       m.vtov = vtov.getCRS()
       m.vtoe = vtoe.getCRS()
       m.vtof = vtof.getCRS()
@@ -186,18 +197,18 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
 
     val vertexData = new LabelData
 
-    def setVertexData(name: String, id : Int, value : Any) {
+    def setVertexData(name: String, id: Int, value: Any) {
       Log.log("Setting vertex data for " + name + " for id " + id)
       (m.vertexData.data.getOrElseUpdate(name, new Array[Object](m.nvertices)))(id) = value.asInstanceOf[Object]
     }
 
     override def toString() = {
-      "MeshSkeleton: meshId " + meshId + ", nvertices " + nvertices + ", nedges " + nedges + ", nfaces " + nfaces +  ", ncells " + ncells
+      "MeshSkeleton: meshId " + meshId + ", nvertices " + nvertices + ", nedges " + nedges + ", nfaces " + nfaces + ", ncells " + ncells
     }
   }
 
 
-  def newMeshBuilder(meshId : Int, nvertices : Int, nedges : Int, nfaces : Int, ncells : Int) : Unit = {
+  def newMeshBuilder(meshId: Int, nvertices: Int, nedges: Int, nfaces: Int, ncells: Int): Unit = {
     meshMap.put(meshId, new MeshSkeleton(meshId, nvertices, nedges, nfaces, ncells))
   }
 
@@ -213,13 +224,18 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
     getMesh(meshId).addCellByFace(ids: _*)
   }
 
-  def meshSetVertexData(meshId: Int, name: String, id : Int, value : Any) {
+  def meshSetVertexData(meshId: Int, name: String, id: Int, value: Any) {
     getMesh(meshId).setVertexData(name, id, value)
   }
 
   def meshBuild(meshId: Int): Rep[Mesh] = {
     val meshSkeleton = getMesh(meshId)
     Log.log("Building new mesh from MeshSkeleton " + meshSkeleton)
-    reflectEffect(DeLisztMeshBuild(meshSkeleton.toMesh()))
+    reflectPure(DeLisztMeshBuild(meshSkeleton.toMesh()))
+  }
+
+  def meshGetFromFile(filename: String): Rep[Mesh] = {
+    Log.log("Loading mesh from file  " + filename)
+    reflectPure(DeLisztMeshPath(filename))
   }
 }

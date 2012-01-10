@@ -25,12 +25,17 @@ trait FieldOps extends DSLType with Variables with OverloadHack {
     def apply[MO<:Face:Manifest,T:Manifest]()(implicit ev : MO =:= Face, o: Overloaded2) = field_obj_new_face[T]()
     def apply[MO<:Vertex:Manifest,T:Manifest]()(implicit ev : MO =:= Vertex, o: Overloaded3) = field_obj_new_vertex[T]()
   }
-  
+
   def FieldWithConst[MO<:Cell:Manifest, T:Manifest](c: Rep[T])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
   def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Rep[T])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
   def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Rep[T])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
   def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Rep[T])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
-  
+
+  def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
+  def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
+  def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
+  def FieldWithLabel[MO<:Vertex:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
+
   def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Rep[String])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
   def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Rep[String])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
   def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Rep[String])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
@@ -250,7 +255,12 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(DeLisztFieldWithConstEdge(c))
   def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(DeLisztFieldWithConstFace(c))
   def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(DeLisztFieldWithConstVertex(c))
-  
+
+  def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Cell) = reflectMutable(LabelFieldNewCell[T](url, m))
+  def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(LabelFieldNewEdge[T](url, m))
+  def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(LabelFieldNewFace[T](url, m))
+  def FieldWithLabel[MO<:Vertex:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(LabelFieldNewVertex[T](url, m))
+
   def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Exp[String])(implicit ev : MO =:= Cell) = reflectMutable(LabelFieldNewCell[T](url, mesh))
   def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Exp[String])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(LabelFieldNewEdge[T](url, mesh))
   def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Exp[String])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(LabelFieldNewFace[T](url, mesh))

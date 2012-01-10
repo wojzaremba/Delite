@@ -232,7 +232,11 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
         }
       }
         //can make check
-      case DeliteIfThenElse(_, a, b, _) => getMesh(a.asInstanceOf[Exp[MeshObj]])
+      case DeliteIfThenElse(_, a, b, _) => {
+        val m1 = getMesh(a.asInstanceOf[Exp[MeshObj]])
+        val m2 = getMesh(b.asInstanceOf[Exp[MeshObj]])
+        if (m1 != m2) throw new Exception("both if branches should reference to same mesh") else m1
+      }
       case MeshOperator(mesh) => mesh
       case DeLisztFlipEdge(e) => getMesh(e)
       case DeLisztFlipFace(f) => getMesh(f)
@@ -415,6 +419,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
         val filename = m.generateFile()
         emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
       }
+      case DeLisztMeshPath(filename) => emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
       case DeLisztMesh() => emitValDef(sym, "Mesh.mesh")
       case DeLisztBoundarySetCells(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetCells(" + quote(name) + ")")
       case DeLisztBoundarySetEdges(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetEdges(" + quote(name) + ")")
