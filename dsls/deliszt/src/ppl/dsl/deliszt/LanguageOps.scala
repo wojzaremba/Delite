@@ -138,8 +138,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
   case class DeLisztBoundarySetFaces(name: Exp[String], m : Exp[Mesh]) extends MeshSetOperator[Face](m)
   case class DeLisztBoundarySetVertices(name: Exp[String], m : Exp[Mesh]) extends MeshSetOperator[Vertex](m)
 
-  case class DeLisztMesh() extends Def[Mesh]
-  //case class DeLisztMesh(mesh: Exp[Mesh]) extends Def[Mesh]
+  case class DeLisztMesh(mesh: Exp[Mesh]) extends Def[Mesh]
 
   case class DeLisztVerticesCell(val e: Exp[Int], m: Exp[Mesh]) extends MeshSetOperator[Vertex](m)
   case class DeLisztVerticesEdge(val e: Exp[Int], m: Exp[Mesh]) extends MeshSetOperator[Vertex](m)
@@ -221,7 +220,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
   case class WallTime() extends Def[Double]
   case class ProcessorTime() extends Def[Double]
 
-  private def getMesh[MO <: MeshObj](e: Exp[MO]) : Exp[Mesh] = {
+  def findMesh[MO <: MeshObj](e: Exp[MO]) : Exp[Mesh] = {
     val tp = findDefinition(e.asInstanceOf[Sym[_]]).get
     tp.rhs match {
       case DeliteCollectionApply(x, n) => {
@@ -231,16 +230,15 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
           case _ => throw new Exception("Can't find corresponding mesh " + tp2.rhs.toString() + " " )
         }
       }
-        //can make check
       case DeliteIfThenElse(_, a, b, _) => {
-        val m1 = getMesh(a.asInstanceOf[Exp[MeshObj]])
-        val m2 = getMesh(b.asInstanceOf[Exp[MeshObj]])
-        if (m1 != m2) throw new Exception("both if branches should reference to same mesh") else m1
+        val m1 = findMesh(a.asInstanceOf[Exp[MeshObj]])
+        val m2 = findMesh(b.asInstanceOf[Exp[MeshObj]])
+        if (m1.asInstanceOf[Sym[_]].id != m2.asInstanceOf[Sym[_]].id) throw new Exception("both if branches should reference to same mesh") else m1
       }
       case MeshOperator(mesh) => mesh
-      case DeLisztFlipEdge(e) => getMesh(e)
-      case DeLisztFlipFace(f) => getMesh(f)
-      case _ => throw new Exception("Can't find corresponding mesh (can't find DeliteCollectionApply node) " + tp.rhs.toString())
+      case DeLisztFlipEdge(e) => findMesh(e)
+      case DeLisztFlipFace(f) => findMesh(f)
+      case _ => throw new Exception("Can't find corresponding mesh (can't find DeliteCollectionApply node) " + tp.rhs.toString)
     }
   }
 
@@ -248,7 +246,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
 
   def _init(args: Exp[Array[String]]) = {
     reflectEffect(DeLisztInit(args))
-   // reflectEffect(DeLisztLoadCfgMesh(args))
+    findOrCreateDefinition(DeLisztLoadCfgMesh(args))
   }
   def Print(as: Exp[Any]*) = reflectEffect(DeLisztPrint(as)(reifyEffectsHere(print_impl(as))))
 
@@ -263,19 +261,18 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
   def BoundarySet[MO<:Face:Manifest](name: Exp[String], m : Exp[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) = reflectPure(DeLisztBoundarySetFaces(name, m))
   def BoundarySet[MO<:Vertex:Manifest](name: Exp[String], m : Exp[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectPure(DeLisztBoundarySetVertices(name, m))
 
-  def mesh = reflectPure(DeLisztMesh())
-  /*{
+  def mesh = {
       val m = globalDefs.find(tp => tp.rhs match {
         case DeLisztLoadCfgMesh(_) => true
         case _ => false
       }).get.rhs
       reflectPure(DeLisztMesh(toAtom(m.asInstanceOf[Def[Mesh]])))
-  } */
+  }
 
-  def vertices(e: Exp[Cell])(implicit x: Overloaded5) = reflectPure(DeLisztVerticesCell(ID(e), getMesh(e)))
-  def vertices(e: Exp[Edge])(implicit x: Overloaded3) = reflectPure(DeLisztVerticesEdge(ID(e), getMesh(e)))
-  def vertices(e: Exp[Face])(implicit x: Overloaded4) = reflectPure(DeLisztVerticesFace(ID(e), getMesh(e)))
-  def vertices(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztVerticesVertex(ID(e), getMesh(e)))
+  def vertices(e: Exp[Cell])(implicit x: Overloaded5) = reflectPure(DeLisztVerticesCell(ID(e), findMesh(e)))
+  def vertices(e: Exp[Edge])(implicit x: Overloaded3) = reflectPure(DeLisztVerticesEdge(ID(e), findMesh(e)))
+  def vertices(e: Exp[Face])(implicit x: Overloaded4) = reflectPure(DeLisztVerticesFace(ID(e), findMesh(e)))
+  def vertices(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztVerticesVertex(ID(e), findMesh(e)))
   def vertices(e: Exp[Mesh])(implicit x: Overloaded1) = reflectPure(DeLisztVerticesMesh(e))
 
   def crs_ctov(mesh: Exp[Mesh]) = reflectPure(DeLisztCtov(mesh))
@@ -283,15 +280,15 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
   def crs_ftov(mesh: Exp[Mesh]) = reflectPure(DeLisztFtov(mesh))
   def crs_vtov(mesh: Exp[Mesh]) = reflectPure(DeLisztVtov(mesh))
 
-  def verticesCCW(e: Exp[Face]) = reflectPure(DeLisztFaceVerticesCCW(e, getMesh(e)))
-  def verticesCW(e: Exp[Face]) = reflectPure(DeLisztFaceVerticesCW(e, getMesh(e)))
+  def verticesCCW(e: Exp[Face]) = reflectPure(DeLisztFaceVerticesCCW(e, findMesh(e)))
+  def verticesCW(e: Exp[Face]) = reflectPure(DeLisztFaceVerticesCW(e, findMesh(e)))
   
-  def vertex(e: Exp[Cell], i: Exp[Int]) = reflectPure(DeLisztVertex(ID(e),i, getMesh(e)))
+  def vertex(e: Exp[Cell], i: Exp[Int]) = reflectPure(DeLisztVertex(ID(e),i, findMesh(e)))
 
-  def cells(e: Exp[Cell])(implicit x: Overloaded5) = reflectPure(DeLisztCellsCell(ID(e), getMesh(e)))
-  def cells(e: Exp[Edge])(implicit x: Overloaded3) = reflectPure(DeLisztCellsEdge(ID(e), getMesh(e)))
-  def cells(e: Exp[Face])(implicit x: Overloaded4) = reflectPure(DeLisztCellsFace(ID(e), getMesh(e)))
-  def cells(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztCellsVertex(ID(e), getMesh(e)))
+  def cells(e: Exp[Cell])(implicit x: Overloaded5) = reflectPure(DeLisztCellsCell(ID(e), findMesh(e)))
+  def cells(e: Exp[Edge])(implicit x: Overloaded3) = reflectPure(DeLisztCellsEdge(ID(e), findMesh(e)))
+  def cells(e: Exp[Face])(implicit x: Overloaded4) = reflectPure(DeLisztCellsFace(ID(e), findMesh(e)))
+  def cells(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztCellsVertex(ID(e), findMesh(e)))
   def cells(mesh: Exp[Mesh])(implicit x: Overloaded1) = reflectPure(DeLisztCellsMesh(mesh))
   
   def crs_ctoc(mesh: Exp[Mesh]) = reflectPure(DeLisztCtoc(mesh))
@@ -299,46 +296,46 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
   def crs_ftoc(mesh: Exp[Mesh]) = reflectPure(DeLisztFtoc(mesh))
   def crs_vtoc(mesh: Exp[Mesh]) = reflectPure(DeLisztVtoc(mesh))
   
-  def cellsCCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeCellsCCW(e, getMesh(e)))
-  def cellsCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeCellsCW(e, getMesh(e)))
+  def cellsCCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeCellsCCW(e, findMesh(e)))
+  def cellsCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeCellsCW(e, findMesh(e)))
 
-  def edges(e: Exp[Cell])(implicit x: Overloaded4) = reflectPure(DeLisztEdgesCell(ID(e), getMesh(e)))
-  def edges(e: Exp[Face])(implicit x: Overloaded3) = reflectPure(DeLisztEdgesFace(ID(e), getMesh(e)))
-  def edges(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztEdgesVertex(ID(e), getMesh(e)))
+  def edges(e: Exp[Cell])(implicit x: Overloaded4) = reflectPure(DeLisztEdgesCell(ID(e), findMesh(e)))
+  def edges(e: Exp[Face])(implicit x: Overloaded3) = reflectPure(DeLisztEdgesFace(ID(e), findMesh(e)))
+  def edges(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztEdgesVertex(ID(e), findMesh(e)))
   def edges(mesh: Exp[Mesh])(implicit x: Overloaded1) = reflectPure(DeLisztEdgesMesh(mesh))
   
   def crs_ctoe(mesh: Exp[Mesh]) = reflectPure(DeLisztCtoe(mesh))
   def crs_ftoe(mesh: Exp[Mesh]) = reflectPure(DeLisztFtoe(mesh))
   def crs_vtoe(mesh: Exp[Mesh]) = reflectPure(DeLisztVtoe(mesh))
 
-  def edgesCCW(e: Exp[Face]) = reflectPure(DeLisztFaceEdgesCCW(e, getMesh(e)))
-  def edgesCW(e: Exp[Face]) = reflectPure(DeLisztFaceEdgesCW(e, getMesh(e)))
+  def edgesCCW(e: Exp[Face]) = reflectPure(DeLisztFaceEdgesCCW(e, findMesh(e)))
+  def edgesCW(e: Exp[Face]) = reflectPure(DeLisztFaceEdgesCW(e, findMesh(e)))
 
-  def faces(e: Exp[Edge])(implicit x: Overloaded3) = reflectPure(DeLisztFacesEdge(ID(e), getMesh(e)))
-  def faces(e: Exp[Cell])(implicit x: Overloaded4) = reflectPure(DeLisztFacesCell(ID(e), getMesh(e)))
-  def faces(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztFacesVertex(ID(e), getMesh(e)))
+  def faces(e: Exp[Edge])(implicit x: Overloaded3) = reflectPure(DeLisztFacesEdge(ID(e), findMesh(e)))
+  def faces(e: Exp[Cell])(implicit x: Overloaded4) = reflectPure(DeLisztFacesCell(ID(e), findMesh(e)))
+  def faces(e: Exp[Vertex])(implicit x: Overloaded2) = reflectPure(DeLisztFacesVertex(ID(e), findMesh(e)))
   def faces(e: Exp[Mesh])(implicit x: Overloaded1) = reflectPure(DeLisztFacesMesh(e))
   
   def crs_ctof(mesh: Exp[Mesh]) = reflectPure(DeLisztCtof(mesh))
   def crs_etof(mesh: Exp[Mesh]) = reflectPure(DeLisztEtof(mesh))
   def crs_vtof(mesh: Exp[Mesh]) = reflectPure(DeLisztVtof(mesh))
 
-  def facesCCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeFacesCCW(e, getMesh(e)))
-  def facesCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeFacesCW(e, getMesh(e)))
+  def facesCCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeFacesCCW(e, findMesh(e)))
+  def facesCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeFacesCW(e, findMesh(e)))
   
-  def face(e: Exp[Edge], i: Exp[Int]) = reflectPure(DeLisztFace(ID(e), i, getMesh(e)))
+  def face(e: Exp[Edge], i: Exp[Int]) = reflectPure(DeLisztFace(ID(e), i, findMesh(e)))
 
-  def head(e: Exp[Edge]) = reflectPure(DeLisztEdgeHead(e, getMesh(e)))
-  def tail(e: Exp[Edge]) = reflectPure(DeLisztEdgeTail(e, getMesh(e)))
+  def head(e: Exp[Edge]) = reflectPure(DeLisztEdgeHead(e, findMesh(e)))
+  def tail(e: Exp[Edge]) = reflectPure(DeLisztEdgeTail(e, findMesh(e)))
 
-  def inside(e: Exp[Face]) = reflectPure(DeLisztFaceInside(e, getMesh(e)))
-  def outside(e: Exp[Face]) = reflectPure(DeLisztFaceOutside(e, getMesh(e)))
+  def inside(e: Exp[Face]) = reflectPure(DeLisztFaceInside(e, findMesh(e)))
+  def outside(e: Exp[Face]) = reflectPure(DeLisztFaceOutside(e, findMesh(e)))
 
   def flip(e: Exp[Edge])(implicit x: Overloaded1) = reflectPure(DeLisztFlipEdge(e))
   def flip(e: Exp[Face])(implicit x: Overloaded2) = reflectPure(DeLisztFlipFace(e))
 
-  def towards(e: Exp[Edge], v: Exp[Vertex])(implicit x: Overloaded1) = reflectPure(DeLisztTowardsEdgeVertex(e,v, getMesh(e)))
-  def towards(e: Exp[Face], c: Exp[Cell])(implicit x: Overloaded2) = reflectPure(DeLisztTowardsFaceCell(e,c, getMesh(e)))
+  def towards(e: Exp[Edge], v: Exp[Vertex])(implicit x: Overloaded1) = reflectPure(DeLisztTowardsEdgeVertex(e,v, findMesh(e)))
+  def towards(e: Exp[Face], c: Exp[Cell])(implicit x: Overloaded2) = reflectPure(DeLisztTowardsFaceCell(e,c, findMesh(e)))
   
   def size[MO<:MeshObj:Manifest](s: Exp[MeshSet[MO]]) = reflectPure(DeLisztSize(s))
 
@@ -400,6 +397,8 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
 
 trait LanguageOpsExpOpt extends LanguageOpsExp {
   this: DeLisztExp =>
+
+
   
   override def ID[MO<:MeshObj:Manifest](x: Exp[MO]) = x match {
     case Def(DeLisztFlipEdge(e)) => super.ID(e)
@@ -415,12 +414,13 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
       case DeLisztInit(args) => emitValDef(sym, "Liszt.init(" + quote(args) + ")")
+      case DeLisztLoadCfgMesh(args) => emitValDef(sym, "Liszt.load(" + quote(args) + ")")
       case DeLisztMeshBuild(m) => {
         val filename = m.generateFile()
         emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
       }
       case DeLisztMeshPath(filename) => emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
-      case DeLisztMesh() => emitValDef(sym, "Mesh.mesh")
+      case DeLisztMesh(mesh) => emitValDef(sym, quote(mesh))
       case DeLisztBoundarySetCells(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetCells(" + quote(name) + ")")
       case DeLisztBoundarySetEdges(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetEdges(" + quote(name) + ")")
       case DeLisztBoundarySetFaces(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetFaces(" + quote(name) + ")")

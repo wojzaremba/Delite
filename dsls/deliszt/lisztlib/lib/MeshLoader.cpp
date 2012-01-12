@@ -37,6 +37,10 @@ void handler(int sig) {
 namespace System {
 using namespace CRSMesh;
 
+pthread_mutex_t MeshLoader::lock = PTHREAD_MUTEX_INITIALIZER;
+map <string, jobject> MeshLoader::toMeshMap;
+map <int, BoundarySetBuilder*> MeshLoader::boundaryMap;
+
 MeshLoader::MeshLoader(bool generated) {
   if(generated) {
     prefix = "generated/scala";
@@ -46,7 +50,6 @@ MeshLoader::MeshLoader(bool generated) {
   }
   //signal(SIGSEGV, handler);
   cache = new JNICache();
-  lock = PTHREAD_MUTEX_INITIALIZER;
 }
 
 
@@ -297,6 +300,10 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
     pthread_mutex_lock(&lock);
     DEBUG_PRINT("convert filename");
     string filename(env->GetStringUTFChars(str, 0));
+    if (toMeshMap.count(filename) > 0) {
+      DEBUG_PRINT("mesh loaded from toMeshMap");
+      return toMeshMap[filename];   
+    }
     jobject jmesh = NULL;
     try {
       DEBUG_PRINT("read in file " << filename);
@@ -407,6 +414,7 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
       BoundarySetBuilder* boundary_builder = new BoundarySetBuilder();
       boundary_builder->init(h.nBoundaries, reader.boundaries());
       boundaryMap[id] = boundary_builder;
+      toMeshMap[filename] = jmesh;
     }
     catch (MeshIO::MeshLoadException e) {
       std::cerr << e.what() << std::endl;

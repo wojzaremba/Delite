@@ -2,42 +2,42 @@ package ppl.dsl.deliszt.datastruct.scala
 
 object Vec3FieldImpl {
   
-  def ofCell() : Vec3FieldImpl = {
-      new Vec3FieldImpl(Mesh.mesh.ncells, new Array[Double](3*Mesh.mesh.ncells))
+  def ofCell(m : Mesh = Mesh.mesh) : Vec3FieldImpl = {
+      new Vec3FieldImpl(m.ncells, new Array[Double](3*m.ncells))
   }
   
-  def ofEdge() : Vec3FieldImpl = {
-      new Vec3FieldImpl(Mesh.mesh.nedges, new Array[Double](3*Mesh.mesh.nedges))
+  def ofEdge(m : Mesh = Mesh.mesh) : Vec3FieldImpl = {
+      new Vec3FieldImpl(m.nedges, new Array[Double](3*m.nedges))
   }
   
-  def ofFace() : Vec3FieldImpl = {
-      new Vec3FieldImpl(Mesh.mesh.nfaces, new Array[Double](3*Mesh.mesh.nfaces))
+  def ofFace(m : Mesh = Mesh.mesh) : Vec3FieldImpl = {
+      new Vec3FieldImpl(m.nfaces, new Array[Double](3*m.nfaces))
   }
   
-  def ofVertex() : Vec3FieldImpl = {
-      new Vec3FieldImpl(Mesh.mesh.nvertices, new Array[Double](3*Mesh.mesh.nvertices))      
+  def ofVertex(m : Mesh = Mesh.mesh) : Vec3FieldImpl = {
+      new Vec3FieldImpl(m.nvertices, new Array[Double](3*m.nvertices))
   }
 
-  def cellWithConst[T:ClassManifest](v: T) : Field[T] = {
-      val f = Vec3FieldImpl.ofCell()
+  def cellWithConst[T:ClassManifest](v: T, m : Mesh = Mesh.mesh) : Field[T] = {
+      val f = Vec3FieldImpl.ofCell(m)
       f.fill(v.asInstanceOf[Vec[Double]])
       f.asInstanceOf[Field[T]]
   }
   
-  def edgeWithConst[T:ClassManifest](v: T) : Field[T] = {
-      val f = Vec3FieldImpl.ofEdge()
+  def edgeWithConst[T:ClassManifest](v: T, m : Mesh = Mesh.mesh) : Field[T] = {
+      val f = Vec3FieldImpl.ofEdge(m)
       f.fill(v.asInstanceOf[Vec[Double]])
       f.asInstanceOf[Field[T]]
   }
   
-  def faceWithConst[T:ClassManifest](v: T) : Field[T] = {
-      val f = Vec3FieldImpl.ofFace()
+  def faceWithConst[T:ClassManifest](v: T, m : Mesh = Mesh.mesh) : Field[T] = {
+      val f = Vec3FieldImpl.ofFace(m)
       f.fill(v.asInstanceOf[Vec[Double]])
       f.asInstanceOf[Field[T]]
   }
   
-  def vertexWithConst[T:ClassManifest](v: T) : Field[T] = {
-      val f = Vec3FieldImpl.ofVertex()
+  def vertexWithConst[T:ClassManifest](v: T, m : Mesh = Mesh.mesh) : Field[T] = {
+      val f = Vec3FieldImpl.ofVertex(m)
       f.fill(v.asInstanceOf[Vec[Double]])
       f.asInstanceOf[Field[T]]
   }

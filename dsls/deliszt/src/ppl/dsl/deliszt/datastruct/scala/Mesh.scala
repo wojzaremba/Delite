@@ -95,19 +95,19 @@ class Mesh {
 
 
   def boundarySetCells(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(Mesh.mesh, name, MeshObj.CELL_TYPE)
+    Mesh.loader.loadBoundarySet(this, name, MeshObj.CELL_TYPE)
   }
 
   def boundarySetEdges(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(Mesh.mesh, name, MeshObj.EDGE_TYPE)
+    Mesh.loader.loadBoundarySet(this, name, MeshObj.EDGE_TYPE)
   }
 
   def boundarySetFaces(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(Mesh.mesh, name, MeshObj.FACE_TYPE)
+    Mesh.loader.loadBoundarySet(this, name, MeshObj.FACE_TYPE)
   }
 
   def boundarySetVertices(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(Mesh.mesh, name, MeshObj.VERTEX_TYPE)
+    Mesh.loader.loadBoundarySet(this, name, MeshObj.VERTEX_TYPE)
   }
 
   def verticesVertex(e: Int): MeshSet = IndexSetImpl(vtov, e)

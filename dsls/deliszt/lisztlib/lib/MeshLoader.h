@@ -43,11 +43,12 @@ public:
  jobject loadBoundarySet(JNIEnv* env, jobject jmesh, const char* name)
     {   
       pthread_mutex_lock(&lock);
+      DEBUG_PRINT("Loading boundary set" << name)
       jobject bounds = NULL;
       LisztPrivate::BoundarySet* bs = NULL; 
       try {
         int id = callIntMethod(env, jmesh, prefix + "/Mesh", "id", "()I");
-        DEBUG_PRINT("Loading boundary set " << name << " for mesh with id " << id);
+        DEBUG_PRINT(" Mesh id " << id);
         if (boundaryMap.count(id) == 0) {
           string message("can't read boundary set ");
           string name_(name);
@@ -179,11 +180,15 @@ private:
     jobject getScalaObjField(JNIEnv* env, jclass& cls, jobject& jobj,
             string field, string type);
 
-    pthread_mutex_t lock;
-    map <int, BoundarySetBuilder*> boundaryMap;
+    static pthread_mutex_t lock;
     JNICache* cache;
+    static map <string, jobject> toMeshMap;
+    static map <int, BoundarySetBuilder*> boundaryMap;
+
 
 };
+
+
 }
 
 #endif
