@@ -302,7 +302,9 @@ jobject MeshLoader::loadMesh(JNIEnv* env, jstring str) {
     string filename(env->GetStringUTFChars(str, 0));
     if (toMeshMap.count(filename) > 0) {
       DEBUG_PRINT("mesh loaded from toMeshMap");
-      return toMeshMap[filename];   
+      jobject jmesh = toMeshMap[filename];
+      pthread_mutex_unlock(&lock);
+      return jmesh;   
     }
     jobject jmesh = NULL;
     try {

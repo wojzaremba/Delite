@@ -15,7 +15,7 @@ object LogSettings {
       },
       "default" -> {
         (x: Set[String]) =>
-          x ++ List("MeshBuilder") ++ List("MeshLoader")
+          Set.empty[String]//x ++ List("MeshBuilder") ++ List("MeshLoader")
       }
     )
   var enabled_logs: Set[String] = Set.empty[String]
