@@ -37,7 +37,6 @@ object LogSettings {
   }
 
   def enabled(s: String): Boolean = {
-    println("Checking enabled: %s in %s".format(s, enabled_logs))
     if (rules.contains("all")) {
       true
     } else {

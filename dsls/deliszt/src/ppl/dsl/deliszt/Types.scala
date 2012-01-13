@@ -32,3 +32,7 @@ trait BoundarySet[MO<:MeshObj] extends MeshSet[MO]
 trait CRS
 trait Field[+MO<:MeshObj,T] extends DeliteCollection[T]
 trait LabelField[MO<:MeshObj,T] extends DeliteCollection[T]
+
+
+//helpful for IO operations
+trait SyncedFile

@@ -1,11 +1,11 @@
 package ppl.dsl.deliszt
 
-import datastruct.scala.MeshLoader
 import java.io.PrintWriter
 import reflect.Manifest
 
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
 import scala.virtualization.lms.common._
+
 
 /* Machinery provided by DeLiszt itself (language features and control structures).
  *
@@ -18,6 +18,15 @@ import scala.virtualization.lms.common._
 
 trait LanguageOps extends Base with MeshBuilderOps { this: DeLiszt with MathOps =>
   def _init(args: Rep[Array[String]]) : Unit
+
+  //should be part of LMS
+  def infix_toInt(d: Rep[Double]) : Rep[Int]
+  
+  //SyncedFile should be part of Delite - common mechanism to deal with distributed file (current implementation is faked)
+  def SyncedFile(name: Rep[String]) : Rep[SyncedFile]
+  def infix_write(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
+  def infix_close(f: Rep[SyncedFile]) : Unit
+
 
   def Print(as: Rep[Any]*) : Unit
   //Boundary set without mesh parameter reference to default mesh from cfg file (to keep programs working)
@@ -127,9 +136,14 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
     def unapply(m : MeshOperator[MeshObj]) = Some(m.mesh)
   }
 
+  case class NumericToInt[T:Numeric:Manifest](e: Exp[T]) extends Def[Int]
+
   /******* Ops *********/
   case class DeLisztInit(args: Exp[Array[String]]) extends Def[Unit]
   case class DeLisztLoadCfgMesh(args: Exp[Array[String]]) extends Def[Mesh]
+  case class DeLisztFile(name: Exp[String]) extends Def[SyncedFile]
+  case class DeLisztCloseFile(file: Exp[SyncedFile]) extends Def[Unit]
+  case class DeLisztWrite(file : Exp[SyncedFile], as : Seq[Exp[Any]]) extends Def[Unit]
   case class DeLisztPrint(as: Seq[Exp[Any]])(block: Exp[Unit]) // stupid limitation...
     extends DeliteOpSingleTask(block)
 
@@ -248,6 +262,13 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
     reflectEffect(DeLisztInit(args))
     findOrCreateDefinition(DeLisztLoadCfgMesh(args))
   }
+
+  def infix_toInt(d: Exp[Double]) = reflectPure(NumericToInt(d))
+
+  def SyncedFile(name: Exp[String]) = reflectMutable(DeLisztFile(name))
+  def infix_write(f : Rep[SyncedFile], as: Exp[Any]*) = reflectWrite(f)(DeLisztWrite(f, as))
+  def infix_close(f : Rep[SyncedFile]) = reflectWrite(f)(DeLisztCloseFile(f))
+
   def Print(as: Exp[Any]*) = reflectEffect(DeLisztPrint(as)(reifyEffectsHere(print_impl(as))))
 
   //I had to copy this lines, because of abstract definition
@@ -411,6 +432,12 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
   val IR: LanguageOpsExp
   import IR._
 
+  override def quote(x: Exp[Any]) : String = x match {
+    case Const(s: String) => "\"\"\""+s+"\"\"\""
+    case _ => super.quote(x)
+  }
+
+
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
       case DeLisztInit(args) => emitValDef(sym, "Liszt.init(" + quote(args) + ")")
@@ -421,6 +448,16 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
       }
       case DeLisztMeshPath(filename) => emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
       case DeLisztMesh(mesh) => emitValDef(sym, quote(mesh))
+
+      case NumericToInt(e) => emitValDef(sym, quote(e) + ".toInt" )
+
+      //woj.zaremba : This file is faulty implement - currently do not take care of concurent accesss (it is mine temporary impl.)
+      case DeLisztFile(name) => emitValDef(sym, "new SyncedFile(" + quote(name) + ")" )
+      case DeLisztWrite(f, str) => for(a <- str)
+            emitValDef(sym, quote(f) + ".write(" + quote(a) + ")" )
+
+      case DeLisztCloseFile(f) => emitValDef(sym, quote(f) + ".close()" )
+
       case DeLisztBoundarySetCells(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetCells(" + quote(name) + ")")
       case DeLisztBoundarySetEdges(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetEdges(" + quote(name) + ")")
       case DeLisztBoundarySetFaces(name, mesh) => emitValDef(sym, quote(mesh) + ".boundarySetFaces(" + quote(name) + ")")

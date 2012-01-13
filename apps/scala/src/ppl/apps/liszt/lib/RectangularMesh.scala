@@ -1,4 +1,4 @@
-package ppl.dsl.deliszt.lib
+package ppl.apps.liszt.lib
 
 import ppl.dsl.deliszt._
 
