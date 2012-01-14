@@ -19,9 +19,14 @@ object LogSettings {
       }
     )
   var enabled_logs: Set[String] = Set.empty[String]
-  val rules = JSON.parseFull(Source.fromFile(new File("liszt.cfg")).mkString).get.asInstanceOf[Map[String, Any]].getOrElse("log", "default") match {
-    case s: String => List(s)
-    case rs: List[_] => rs.map(_.asInstanceOf[String])
+
+  val rules = if ((new File("liszt.cfg")).exists()) {
+    JSON.parseFull(Source.fromFile(new File("liszt.cfg")).mkString).get.asInstanceOf[Map[String, Any]].getOrElse("log", "default") match {
+      case s: String => List(s)
+      case rs: List[_] => rs.map(_.asInstanceOf[String])
+    }
+  } else {
+    List("default")
   }
   setLevel(rules)
   println("log: log enabled for %s".format(enabled_logs))

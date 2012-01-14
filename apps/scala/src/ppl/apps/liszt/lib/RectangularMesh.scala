@@ -19,27 +19,75 @@ trait SimpleMesh extends DeLisztApplication {
     def apply(x: Double, y: Double, step: Double): Rep[Mesh] = {
       val xs = (x / step).toInt + 1
       val ys = (y / step).toInt + 1
-      val builder = new MeshBuilder(xs * ys, 3 * (xs - 1) * (ys - 1) + xs + ys - 2, 2 * (xs - 1) * (ys - 1), 2)
+      val builder = new MeshBuilder
       var i: Int = 0
       var j: Int = 0
       while (j < ys) {
         i = 0
         while (i < xs) {
-          builder.setVertexPosition(i + j * xs, i * step, j * step, 0d)
+          builder.setVertexPosition(i + j * xs, i * step, j * step, 0.)
 
           if (i < (xs - 1) && j < (ys - 1)) {
-            val a = builder.addEdgeByVertex(i + j * xs, 1 + i + j * xs)
-            val b = builder.addEdgeByVertex(1 + i + j * xs, 1 + i + (j + 1) * xs)
-            val c = builder.addEdgeByVertex(1 + i + (j + 1) * xs, i + j * xs)
-            builder.addFaceByEdge(a, b, c)
+            val a = Vertex(i + j * xs)
+            val b = Vertex(1 + i + j * xs)
+            val c = Vertex(i + (j + 1) * xs)
+            val d = Vertex(1 + i + (j + 1) * xs)
 
-            val d = builder.addEdgeByVertex(i + j * xs, i + (j + 1) * xs)
-            val e = builder.addEdgeByVertex(i + (j + 1) * xs, 1 + i + (j + 1) * xs)
-            builder.addFaceByEdge(d, e, c)
+            builder.addFaceByVertex(a, b, d)
+            builder.addFaceByVertex(a, d, c)
           }
           i += 1
         }
         j += 1
+      }
+      builder.build()
+    }
+  }
+  
+  object CubeMesh {
+    def apply(side: Double, step: Double): Rep[Mesh] = CuboidMesh(side, side, side, step)
+  }
+
+  object CuboidMesh {
+    def apply(x: Double, y: Double, z: Double, step: Double): Rep[Mesh] = {
+      val xs = (x / step).toInt + 1
+      val ys = (y / step).toInt + 1
+      val zs = (z / step).toInt + 1
+      val builder = new MeshBuilder
+      var i: Int = 0
+      var j: Int = 0
+      var k: Int = 0
+      while (k < zs) {
+        j = 0
+        while (j < ys) {
+          i = 0
+          while (i < xs) {
+            builder.setVertexPosition(i + j * xs + k * xs * ys, i * step, j * step, k * step)
+
+            if (i < (xs - 1) && j < (ys - 1) && k < (zs - 1)) {
+              val a0 = Vertex(i + j * xs + k * xs * ys)
+              val b0 = Vertex(1 + i + j * xs + k * xs * ys)
+              val c0 = Vertex(i + (j + 1) * xs + k * xs * ys)
+              val d0 = Vertex(1 + i + (j + 1) * xs + k * xs * ys)
+
+              val a1 = Vertex(i + j * xs + (k + 1) * xs * ys)
+              val b1 = Vertex(1 + i + j * xs + (k + 1) * xs * ys)
+              val c1 = Vertex(i + (j + 1) * xs + (k + 1) * xs * ys)
+              val d1 = Vertex(1 + i + (j + 1) * xs + (k + 1) * xs * ys)
+
+              builder.addCellByVertex(a0, b0, d0, b1)
+              builder.addCellByVertex(a0, c0, d0, b1)
+              builder.addCellByVertex(c0, d0, d1, b1)
+
+              builder.addCellByVertex(d1, c1, a1, c0)
+              builder.addCellByVertex(d1, b1, a1, c0)
+              builder.addCellByVertex(b1, a1, a0, c0)
+            }
+            i += 1
+          }
+          j += 1
+        }
+        k += 1
       }
       builder.build()
     }

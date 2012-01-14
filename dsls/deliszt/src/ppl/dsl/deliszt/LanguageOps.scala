@@ -20,7 +20,7 @@ trait LanguageOps extends Base with MeshBuilderOps { this: DeLiszt with MathOps 
   def _init(args: Rep[Array[String]]) : Unit
 
   //should be part of LMS
-  def infix_toInt(d: Rep[Double]) : Rep[Int]
+  def infix_toInt[T : Numeric:Manifest](d: Rep[T]) : Rep[Int]
   
   //SyncedFile should be part of Delite - common mechanism to deal with distributed file (current implementation is faked)
   def SyncedFile(name: Rep[String]) : Rep[SyncedFile]
@@ -263,7 +263,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
     findOrCreateDefinition(DeLisztLoadCfgMesh(args))
   }
 
-  def infix_toInt(d: Exp[Double]) = reflectPure(NumericToInt(d))
+  def infix_toInt[T : Numeric : Manifest](d: Exp[T]) = reflectPure(NumericToInt(d))
 
   def SyncedFile(name: Exp[String]) = reflectMutable(DeLisztFile(name))
   def infix_write(f : Rep[SyncedFile], as: Exp[Any]*) = reflectWrite(f)(DeLisztWrite(f, as))
@@ -432,7 +432,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
   val IR: LanguageOpsExp
   import IR._
 
-  override def quote(x: Exp[Any]) : String = x match {
+  override def quote_(x: Exp[Any]) : String = x match {
     case Const(s: String) => "\"\"\""+s+"\"\"\""
     case _ => super.quote(x)
   }
@@ -454,7 +454,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
       //woj.zaremba : This file is faulty implement - currently do not take care of concurent accesss (it is mine temporary impl.)
       case DeLisztFile(name) => emitValDef(sym, "new SyncedFile(" + quote(name) + ")" )
       case DeLisztWrite(f, str) => for(a <- str)
-            emitValDef(sym, quote(f) + ".write(" + quote(a) + ")" )
+            emitValDef(sym, quote(f) + ".write(" + quote_(a) + ")" )
 
       case DeLisztCloseFile(f) => emitValDef(sym, quote(f) + ".close()" )
 
