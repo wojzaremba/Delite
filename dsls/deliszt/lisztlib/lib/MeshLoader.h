@@ -18,6 +18,7 @@
 #else
 #define DEBUG_PRINT(msg)
 #endif
+
 using namespace std;
 
 namespace System {

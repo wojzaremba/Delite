@@ -27,10 +27,13 @@ object LogSettings {
     }
   } else {
     List("default")
+  } +
+  System.getenv("LOG") match {
+    case null => List()
+    case label => List(label)
   }
-  setLevel(rules)
-  println("log: log enabled for %s".format(enabled_logs))
 
+  setLevel(rules)
 
   def setLevel(rules: List[String]) {
     for (rule <- rules) {

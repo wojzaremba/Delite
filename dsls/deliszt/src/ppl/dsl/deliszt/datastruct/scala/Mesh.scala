@@ -3,6 +3,7 @@ package ppl.dsl.deliszt.datastruct.scala
 import collection.mutable.{Map, HashMap, ArrayBuffer}
 import java.io._
 import java.nio.ByteBuffer
+import scala.Array
 
 /**
  * author: Michael Wu (mikemwu@stanford.edu)
@@ -90,6 +91,8 @@ class Mesh {
   val edgeData = new LabelData
   val faceData = new LabelData
   val vertexData = new LabelData
+
+  var boundaries = Map.empty[String, (Int, Int)]
 
   def verticesMesh: MeshSet = MeshSetImpl(nvertices)
 
@@ -328,6 +331,29 @@ class Mesh {
           id_t edge;
           HalfFacet hf[2];
   } __attribute__((packed));
+  //This ordering pairs the duals, which is useful when writing methods that work on the
+//mesh and the dual mesh
+enum IOElemType {
+    VERTEX_T = 0,
+    CELL_T = 1,
+    EDGE_T = 2,
+    FACE_T = 3,
+    TYPE_SIZE = 4,
+    AGG_FLAG = 1 << 7  // Set high bit if aggregating multiple element types
+};
+
+struct BoundarySet {
+        IOElemType type; //type of boundary set
+        union {
+            id_t start; //inclusive
+            lsize_t left_id; // number of entries from beginning of table
+        };
+        union {
+            id_t end; //exclusive
+            lsize_t right_id; // number of entries from beginning of table
+        };
+        file_ptr name_string; //offset to null-terminated string
+} __attribute__((packed));
   */
 
   def toByteArray(i: Int) = {
@@ -359,13 +385,12 @@ class Mesh {
     f.write(toByteArray(nfaces))
     f.write(toByteArray(ncells))
     f.write(toByteArray(nfe))
-    f.write(zero) //nBoundaries
-    f.write(toByteArray(sizeOfLisztHeader));
-    f.write(zero) // position_table
-    f.write(toByteArray(sizeOfLisztHeader + 8 * 3 * nvertices));
-    f.write(zero) // facet_edge_table
-    f.write(zero);
-    f.write(zero) // boundary_set_table
+    f.write(toByteArray(boundaries.size)) //nBoundaries
+    f.write(toByteArray(sizeOfLisztHeader));f.write(zero) // position_table
+    val facet_edge_table = sizeOfLisztHeader + 8 * 3 * nvertices
+    f.write(toByteArray(facet_edge_table));f.write(zero) // facet_edge_table
+    val boundary_set_table = facet_edge_table + 4 * 6 * nfe
+    f.write(toByteArray(boundary_set_table));f.write(zero) // boundary_set_table
     val pos = vertexData.data.get("position")
     pos match {
       case Some(array: Array[Object]) =>
@@ -389,6 +414,20 @@ class Mesh {
         f.write(one) //hf[1].cell
         f.write(toByteArray(v1)) //hf[1].vert
       }
+    }
+
+    for (((name, (start, end)), i) <- boundaries.zipWithIndex) {
+      val pname = boundary_set_table + 4*5*boundaries.size + i*32
+      Log.log("Boundary set " + name + " starts " + start + " ends " + end + " pointer to name " + pname)
+      f.write(zero) // VERTEX_T = 0
+      f.write(toByteArray(start))
+      f.write(toByteArray(end))
+      f.write(toByteArray(pname));f.write(zero)
+    }
+
+    for ((name, _) <- boundaries) {
+      f.write(name.getBytes)
+      f.write((new Array[Byte](32-name.size)))
     }
 
     f.close()

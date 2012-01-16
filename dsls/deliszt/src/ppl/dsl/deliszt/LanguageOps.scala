@@ -25,6 +25,7 @@ trait LanguageOps extends Base with MeshBuilderOps { this: DeLiszt with MathOps 
   //SyncedFile should be part of Delite - common mechanism to deal with distributed file (current implementation is faked)
   def SyncedFile(name: Rep[String]) : Rep[SyncedFile]
   def infix_write(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
+  def infix_writeln(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
   def infix_close(f: Rep[SyncedFile]) : Unit
 
 
@@ -267,6 +268,10 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
 
   def SyncedFile(name: Exp[String]) = reflectMutable(DeLisztFile(name))
   def infix_write(f : Rep[SyncedFile], as: Exp[Any]*) = reflectWrite(f)(DeLisztWrite(f, as))
+  def infix_writeln(f : Rep[SyncedFile], as: Exp[Any]*) = {
+    infix_write(f, as:_*)
+    infix_write(f, Const("""\n"""))
+  }
   def infix_close(f : Rep[SyncedFile]) = reflectWrite(f)(DeLisztCloseFile(f))
 
   def Print(as: Exp[Any]*) = reflectEffect(DeLisztPrint(as)(reifyEffectsHere(print_impl(as))))
@@ -418,9 +423,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
 
 trait LanguageOpsExpOpt extends LanguageOpsExp {
   this: DeLisztExp =>
-
-
-  
   override def ID[MO<:MeshObj:Manifest](x: Exp[MO]) = x match {
     case Def(DeLisztFlipEdge(e)) => super.ID(e)
     case Def(DeLisztFlipFace(e)) => super.ID(e)
@@ -431,12 +433,6 @@ trait LanguageOpsExpOpt extends LanguageOpsExp {
 trait ScalaGenLanguageOps extends ScalaGenBase {
   val IR: LanguageOpsExp
   import IR._
-
-  override def quote_(x: Exp[Any]) : String = x match {
-    case Const(s: String) => "\"\"\""+s+"\"\"\""
-    case _ => super.quote(x)
-  }
-
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
@@ -454,7 +450,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
       //woj.zaremba : This file is faulty implement - currently do not take care of concurent accesss (it is mine temporary impl.)
       case DeLisztFile(name) => emitValDef(sym, "new SyncedFile(" + quote(name) + ")" )
       case DeLisztWrite(f, str) => for(a <- str)
-            emitValDef(sym, quote(f) + ".write(" + quote_(a) + ")" )
+            emitValDef(sym, quote(f) + ".write(" + quote(a) + ")" )
 
       case DeLisztCloseFile(f) => emitValDef(sym, quote(f) + ".close()" )
 
