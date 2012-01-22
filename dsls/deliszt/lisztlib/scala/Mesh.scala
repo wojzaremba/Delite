@@ -11,8 +11,8 @@ import collection.mutable.{Map, HashMap}
  */
 
 class LabelData[MO<:MeshObj] {
-  val data: Map[String,Array[Object]] = new HashMap[String,Array[Object]]()
-  val fns: Map[String,Object => Object] = new HashMap[String,Object => Object]()
+  //val data: Map[String,Array[Object]] = new HashMap[String,Array[Object]]()
+  //val fns: Map[String,Object => Object] = new HashMap[String,Object => Object]()
 } 
 
 trait MeshObj {

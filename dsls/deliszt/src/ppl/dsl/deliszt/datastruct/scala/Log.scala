@@ -4,53 +4,37 @@ import util.parsing.json.JSON
 import io.Source
 import java.io.File
 
-//woj.zaremba : Not best place for this class, however it is necessary during runtime
-
 object LogSettings {
-  val log_rules: Map[String, Set[String] => Set[String]] =
-    Map(
-      "none" -> {
-        (x: Set[String]) =>
-          Set.empty[String]
-      },
-      "default" -> {
-        (x: Set[String]) =>
-          Set.empty[String]//x ++ List("MeshBuilder") ++ List("MeshLoader")
+  def log_rules(key : String) : (String => Boolean) = {
+    key match {
+      case "none" => {
+        _: String => false
       }
-    )
+      case "all" => {
+        _: String => true
+      }
+      case _ => {
+        x: String => List("MeshBuilder", "MeshLoader").contains(x)
+      }
+    }
+  }
   var enabled_logs: Set[String] = Set.empty[String]
 
-  val rules = if ((new File("liszt.cfg")).exists()) {
+  val rules : List[String] = if ((new File("liszt.cfg")).exists()) {
     JSON.parseFull(Source.fromFile(new File("liszt.cfg")).mkString).get.asInstanceOf[Map[String, Any]].getOrElse("log", "default") match {
       case s: String => List(s)
       case rs: List[_] => rs.map(_.asInstanceOf[String])
     }
   } else {
-    List("default")
-  } +
-  System.getenv("LOG") match {
-    case null => List()
-    case label => List(label)
-  }
+    List()
+  }.asInstanceOf[List[String]] ++
+    (System.getenv("LOG") match {
+      case null => List()
+      case label => List(label.toString)
+    }).asInstanceOf[List[String]]
 
-  setLevel(rules)
+  def enabled(s: String): Boolean = rules.exists((x: String) => log_rules(x)(s))
 
-  def setLevel(rules: List[String]) {
-    for (rule <- rules) {
-      enabled_logs = log_rules.get(rule) match {
-        case Some(x) => x(enabled_logs)
-        case None => enabled_logs + rule
-      }
-    }
-  }
-
-  def enabled(s: String): Boolean = {
-    if (rules.contains("all")) {
-      true
-    } else {
-      enabled_logs.contains(s)
-    }
-  }
 }
 
 class Log(unit: String) {

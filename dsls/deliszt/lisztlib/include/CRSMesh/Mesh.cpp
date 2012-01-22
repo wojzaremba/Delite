@@ -4,6 +4,8 @@
  *  Created on: Sep 26, 2009
  *      Author: zd
  */
+
+
 typedef MeshIterator<Vertex> Mesh_vertex_it;
 typedef MeshIterator<Edge> Mesh_edge_it;
 typedef MeshIterator<Face> Mesh_face_it;
@@ -80,9 +82,10 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
     data.nfaces = nF;
     data.ncells = nC;
 
+    DEBUG_PRINT("nv " << nV << " nE " << nE << " nF " << nF << " nC " << nC)
 
     
-    //edge to vertex init
+    DEBUG_PRINT("edge to vertex init")
     
     lsize_t nEF[] = { nE, nF };
     CRSConst * etovi[2] = { &data.etov, &data.ftoc };
@@ -102,8 +105,9 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
     	
     	etovi[t]->initValues(nEF[t]);
 		
-		// First accumulate counts of adjacencies so that we can figure out offsets
-		FOR_EACH(ee,t + 2) //edge or face
+		DEBUG_PRINT("First accumulate counts of adjacencies so that we can figure out offsets")
+		FOR_EACH(ee,t + 2) 
+			DEBUG_PRINT("edge or face ")
 			id_t e = ee->edgeOrFace(t);
 			id_t head = ee->vertOrCell(t);
 			id_t tail = ee->flip()->vertOrCell(t);
@@ -129,7 +133,7 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
 			} while(ff != ee);
 		END_FOR_EACH
 		
-		// Assign offset ranges and allocate memory
+		DEBUG_PRINT("Assign offset ranges and allocate memory")
 		vtoei[t].writeIndices();
 		vtovi[t].writeIndices();
 		
@@ -138,7 +142,7 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
 		ctoei[t].writeIndices();
 		ctovi[t].writeIndices();
 		
-		// Now that offsets and memory are allocated, actually record adjacencies
+		DEBUG_PRINT("Now that offsets and memory are allocated, actually record adjacencies")
 		FOR_EACH(ee,t + 2)
 			id_t e = ee->edgeOrFace(t);
 			id_t head = ee->vertOrCell(t);
@@ -194,7 +198,7 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
     	}
     }
     
-    //now we detect the cell types:
+    DEBUG_PRINT("now we detect the cell types:")
     FORALL_SET_SER(cell, this->cells())
         size_t nv = cell.vertices().size();
         size_t ne = cell.edges().size();
@@ -202,7 +206,7 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
         
         //TETRA
         if(nv == 4 && ne == 6 && nf == 4) {
-           //cout << "Found potential tet: " << cell.ID() << std::endl;
+           DEBUG_PRINT("Found potential tet: " << cell.ID())
            HalfFacet * fe = b->cellMap()[cell.ID()];
            id_t v[4]; std::fill_n(v,4,-1);
            id_t e[6]; std::fill_n(e,6,-1);
@@ -238,7 +242,7 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
            replace_if_same(cell.ID(),&data,v,e,f,c);
         } else if(nv == 8 && ne == 12 && nf == 6) {
             //HEXA
-            //cout << "Found potential hexa: " << cell.ID() << std::endl;
+            DEBUG_PRINT("Found potential hexa: " << cell.ID())
             HalfFacet * fe = b->cellMap()[cell.ID()];
             id_t v[8]; std::fill_n(v,8,-1);
             id_t e[12]; std::fill_n(e,12,-1);
@@ -299,8 +303,8 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
             id_t e[9]; std::fill_n(e,9,-1);
             id_t f[5]; std::fill_n(f,5,-1);
             id_t c[5]; std::fill_n(c,5,-1);
-            //cout << "Found potential wedge: " << cell.ID() << std::endl;
-            //find a triangle face to start with
+            DEBUG_PRINT("Found potential wedge: " << cell.ID())
+            DEBUG_PRINT("find a triangle face to start with")
             Face face = cell.faces().element();
             FORALL_SET_SER(f,cell.faces())
                 if(f.edges().size() == 3)
@@ -353,13 +357,13 @@ inline void Mesh::initFromFacetEdgeBuilder(MeshIO::FacetEdgeBuilder * b) {
             c[4] = fe2->cell();
             replace_if_same(cell.ID(),&data,v,e,f,c);
         } else if(nv == 5 && ne == 8 && nf == 5) {
-            //PYRAMID
+            DEBUG_PRINT("PYRAMID")
             id_t v[5]; std::fill_n(v,5,-1);
             id_t e[8]; std::fill_n(e,8,-1);
             id_t f[5]; std::fill_n(f,5,-1);
             id_t c[5]; std::fill_n(c,5,-1);
-            //cout << "Found potential pyramid: " << cell.ID() << std::endl;
-            //find the quad face to start with
+            DEBUG_PRINT("Found potential pyramid: " << cell.ID())
+            DEBUG_PRINT("find the quad face to start with");
             Face face = cell.faces().element();
             FORALL_SET_SER(f,cell.faces())
                 if(f.edges().size() == 4)

@@ -10,7 +10,7 @@ class RuntimeProject(info: ProjectInfo) extends DefaultProject(info) {
   override def testResourcesPath = "test-resources"
 
   val scalaToolsSnapshots = ScalaToolsSnapshots
-  val lift_json = "net.liftweb" %% "lift-json" % "2.4-SNAPSHOT"
+  val lift_json = "net.liftweb" %% "lift-json_2.9.0" % "2.4-SNAPSHOT"
   
   val apacheMaven = "Apache Maven Repository" at "https://repository.apache.org/content/groups/snapshots-group/"
   val commonsMath = "org.apache.commons" % "commons-math" % "3.0-SNAPSHOT"

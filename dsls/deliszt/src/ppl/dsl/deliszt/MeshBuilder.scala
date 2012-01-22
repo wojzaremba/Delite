@@ -1,12 +1,18 @@
 package ppl.dsl.deliszt
 
+import datastruct.scala.BoundaryRange._
+import datastruct.scala.LabelData._
+import datastruct.scala.Mesh._
+import datastruct.scala.MeshSize._
+import datastruct.scala.{BoundaryRange, LabelData, CRSImpl, Log}
 import reflect.Manifest
-import datastruct.scala.LabelData
-import ppl.dsl.deliszt.datastruct.scala.Log
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
 import scala.virtualization.lms.util.OverloadHack
 import scala.virtualization.lms.common._
 import ppl.delite.framework.ops._
+import scala.specialized
+import java.io.PrintWriter
+import collection.mutable.Map
 
 /**
  * dynamic mesh creation
@@ -18,6 +24,7 @@ import ppl.delite.framework.ops._
 
 
 trait MeshBuilderOps extends Base with OverloadHack {
+  this: DeLiszt =>
 
   object Log extends Log("MeshBuilder")
 
@@ -41,9 +48,9 @@ trait MeshBuilderOps extends Base with OverloadHack {
 
     def addCell(ids: Face*)(implicit o: Overloaded1): Cell = meshAddCellByFace(meshId, ids: _*)
 
-    def setVertexPosition(v: Int, x: Double, y: Double, z: Double) = setData("position", Vertex(v), Array[Double](x, y, z))
+    def setPosition(v: Int, x: Double, y: Double, z: Double) = setData("position", Vertex(v), x, y, z)
 
-    def setData(name: String, v: Vertex, value: Any) = meshSetData(meshId, name, v, value)
+    def setData[T:Manifest](name: String, v: Vertex, value: T*) = meshSetData(meshId, name, v, value : _*)
 
     def setBoundarySet(name: String, v: Vertex) = meshSetBoundarySet(meshId, name, v)
 
@@ -66,7 +73,7 @@ trait MeshBuilderOps extends Base with OverloadHack {
 
   def meshAddCellByFace(meshId: Int, ids: Face*): Cell
 
-  def meshSetData(meshId: Int, name: String, id: Vertex, value: Any): Unit
+  def meshSetData[T:Manifest](meshId: Int, name: String, id: Vertex, value: T*): Unit
 
   def meshSetBoundarySet(meshId: Int, name: String, v: Vertex): Unit
 
@@ -76,15 +83,16 @@ trait MeshBuilderOps extends Base with OverloadHack {
 }
 
 
-trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp with DeliteOpsExp {
+trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp {
+  this: DeLisztExp =>
 
-  import scala.collection.immutable.{TreeSet => Set}
   import scala.collection.mutable.Map
-  import ppl.dsl.deliszt.datastruct.scala.{Mesh => MeshStruct}
+  import scala.collection.SortedSet
+  import ppl.dsl.deliszt.datastruct.scala._
 
-  case class DeLisztMeshBuild(m: MeshStruct) extends Def[Mesh]
+  case class DeLisztMeshBuild(m: Mesh) extends Def[ppl.dsl.deliszt.Mesh]
 
-  case class DeLisztMeshPath(filename: String) extends Def[Mesh]
+  case class DeLisztMeshPath(filename: String) extends Def[ppl.dsl.deliszt.Mesh]
 
   val meshMap = Map.empty[Int, MeshSkeleton]
 
@@ -94,290 +102,6 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp wi
     }
     meshMap(id)
   }
-
-  class MeshSkeleton(meshId: Int) {
-
-    class ListTreeMap {
-
-      import ppl.dsl.deliszt.datastruct.scala.{CRS, CRSImpl}
-
-      var nkeys = 0
-      var nvalues = 0
-      var map = Map.empty[Int, Set[Int]]
-
-      def apply(key: Int) = map.get(key) match {
-        case None => Set.empty[Int]
-        case Some(v) => v
-      }
-
-      def intersect(ids: Int*): Option[Int] = {
-        val set = intersectList(ids : _*)
-        if (set.isEmpty)
-          None
-        else
-          Option(set.head)
-      }
-
-      def intersectList(ids: Int*): Set[Int] = {
-        if (ids.length <= 1) {
-          Set()
-        } else {
-          var common = this(ids.head)
-          for (e <- ids.tail)
-            common = common.intersect(this(e))
-          common
-        }
-      }
-
-      def attach(keys: Int*)(values: Int*) {
-        for (key <- keys; value <- values)
-          attachCouple(key)(value)
-      }
-
-      def attachDifferent(keys: Int*)(values: Int*) {
-        for {key <- keys
-             value <- values
-             if key != value}
-          attachCouple(key)(value)
-      }
-
-      def attachCouple(key: Int)(value: Int) {
-        if (map.contains(key)) {
-          val list = map(key)
-          if (!list.contains(value)) {
-            nvalues += 1
-            nkeys = Math.max(nkeys, key + 1)
-            map(key) += value
-          }
-        } else {
-          nvalues += 1
-          nkeys = Math.max(nkeys, key + 1)
-          map += (key -> Set(value))
-        }
-      }
-
-
-      def getCRS(): CRS = {
-        val rows = Array.ofDim[Int](nkeys)
-        val values = Array.ofDim[Int](nvalues)
-        var i = 0
-        var offset = 0
-        while (i < nkeys) {
-          rows(i) = offset
-          if (map.contains(i)) {
-            val list = map(i).zipWithIndex
-            for ((v, index) <- list) {
-              values(offset + index) = v
-            }
-            offset += map(i).size
-          }
-          i += 1
-        }
-        new CRSImpl(rows, values)
-      }
-
-      def swapKeys(a: Int, b: Int): (Set[Int], Set[Int]) = {
-        val alist = this(a)
-        val blist = this(b)
-        map(a) = blist
-        map(b) = alist
-        (alist, blist)
-      }
-
-      def swapValues(a: Int, b: Int)(aset: Set[Int], bset: Set[Int]) {
-        var bsetCopy = bset
-        for (ka <- aset) {
-          if (!map(ka).contains(b)) {
-            map(ka) = map(ka).map(x => if (x == a) b else x)
-          } else {
-            map(ka) = map(ka).map(x => if (x == a) b else if (x == b) a else x)
-            bsetCopy -= ka
-          }
-        }
-        for (kb <- bsetCopy) {
-          map(kb) = map(kb).map(x => if (x == b) a else x)
-        }
-      }
-    }
-
-    Log.log("Creating new MeshSkeleton with id " + meshId)
-
-
-    val vtov = new ListTreeMap
-    val vtoe = new ListTreeMap
-    val vtof = new ListTreeMap
-    val vtoc = new ListTreeMap
-
-    val etov = new ListTreeMap
-    val etof = new ListTreeMap
-    val etoc = new ListTreeMap
-
-    val ftov = new ListTreeMap
-    val ftoe = new ListTreeMap
-    val ftoc = new ListTreeMap
-
-    val ctov = new ListTreeMap
-    val ctoe = new ListTreeMap
-    val ctof = new ListTreeMap
-
-    val m = new MeshStruct()
-    var vidx = 0
-    var eidx = 0
-    var fidx = 0
-    var cidx = 0
-    var nfe = 0
-    val vertexData = new LabelData
-    val data = Map.empty[String, Map[Int, Object]]
-    val boundarySet = Map.empty[String, Set[Int]]
-    val boundaries = Map.empty[String, (Int, Int)]
-
-    def swapVertex(a: Int, b: Int) {
-      (vtov.swapValues(a, b) _).tupled(vtov.swapKeys(a, b))
-      (etov.swapValues(a, b) _).tupled(vtoe.swapKeys(a, b))
-      (ftov.swapValues(a, b) _).tupled(vtof.swapKeys(a, b))
-      (ctov.swapValues(a, b) _).tupled(vtoc.swapKeys(a, b))
-      for ((name, map) <- data) {
-        val objectA = map(a)
-        val objectB = map(b)
-        map(a) = objectB
-        map(b) = objectA
-      }
-    }
-
-    def renumerate() {
-      var pos = 0
-      var oldPos = 0
-      for ((name, set) <- boundarySet) {
-        oldPos = pos
-        for (v <- set) {
-          Log.log("swapping vertex " + v + " to " + pos)
-          if (pos < v) {
-            swapVertex(v, pos)
-            pos += 1
-          } else if (pos == v) {
-            pos += 1
-          } else {
-            throw new Exception("Can't reorder vertices to establish boundary sets")
-          }
-        }
-        boundaries(name) = (oldPos, pos)
-      }
-    }
-
-    def toMesh(): MeshStruct = {
-      renumerate()
-      m.nvertices = vidx
-      m.nedges = eidx
-      m.nfaces = fidx
-      m.ncells = Math.max(2, cidx)
-      m.vtov = vtov.getCRS()
-      m.vtoe = vtoe.getCRS()
-      m.vtof = vtof.getCRS()
-      m.vtoc = vtof.getCRS()
-
-      m.etov = etov.getCRS()
-      m.etof = etof.getCRS()
-      m.etoc = etof.getCRS()
-
-      m.ftov = ftov.getCRS()
-      m.ftoe = ftoe.getCRS()
-      m.ftoc = ftoe.getCRS()
-
-      m.ctov = ftoe.getCRS()
-      m.ctoe = ftoe.getCRS()
-      m.ctof = ftoe.getCRS()
-      m.ctoc = ftoe.getCRS()
-      m.nfe = nfe
-      m.boundaries = boundaries
-      for ((k, map) <- data) {
-        for ((id, value) <- map)
-          (m.vertexData.data.getOrElseUpdate(k, new Array[Object](vidx + 1)))(id) = value.asInstanceOf[Object]
-      }
-      m
-    }
-
-    def combine(a2b: ListTreeMap, b2a: ListTreeMap)(aid: Int*)(bid: Int*) {
-      a2b.attach(aid: _*)(bid: _*)
-      b2a.attach(bid: _*)(aid: _*)
-    }
-
-    def addEdgeByVertex(id1: Vertex, id2: Vertex): Edge = {
-      vidx = Math.max(vidx, Math.max(id1, id2) + 1)
-      val list = vtoe.intersectList(id1, id2)
-      list.find(e=>etov.map.get(e) == List(id1, id2)) match {
-        case Some(e) => new Edge(e, new Vertex(id1), new Vertex(id2))
-        case None =>
-          combine(vtoe, etov)(id1, id2)(eidx)
-          vtov.attachDifferent(id1, id2)(id1, id2)
-          val e = new Edge(eidx, new Vertex(id1), new Vertex(id2))
-          eidx += 1
-          Log.log("Added new edge " + e)
-          e
-      }
-    }
-
-    def addFaceByEdge(ids: Edge*): Face = {
-      val f = new Face(etof.intersect(ids: _*).getOrElse({
-        nfe += ids.length
-        combine(etof, ftoe)(ids: _*)(fidx)
-        val vertices = (for (id <- ids) yield etov(id)).flatten
-        combine(vtof, ftov)(vertices: _*)(fidx)
-        fidx += 1
-        fidx - 1
-      }))
-      Log.log("Added new face " + f)
-      f
-    }
-
-    def addFaceByVertex(ids: Vertex*): Face = {
-      val shifted = ids.last +: ids.init
-      addFaceByEdge(
-        (for (
-          (a, b) <- ids zip shifted
-        )
-        yield addEdgeByVertex(a, b)): _*)
-    }
-
-    def addCellByFace(ids: Face*): Cell = {
-      val c = new Cell(ftoc.intersect(ids: _*).getOrElse({
-        combine(ftoc, ctof)(ids: _*)(cidx)
-        val edges = (for (id <- ids) yield ftoe(id)).flatten
-        val vertices = (for (id <- ids) yield etov(id)).flatten
-        combine(etoc, ctoe)(edges: _*)(cidx)
-        combine(vtoc, ctov)(vertices: _*)(cidx)
-        cidx += 1
-        cidx - 1
-      }))
-      Log.log("Added new cell " + c)
-      c
-    }
-
-    //make sense only for tetrahedron
-    def addCellByVertex(ids: Vertex*): Cell = {
-      Log.log("Adding new cell by vertices " + ids)
-      val faces =
-        for {a <- ids
-             b <- ids
-             c <- ids
-             if (a < b) && (b < c)}
-        yield addFaceByVertex(a, b, c)
-      addCellByFace(faces: _*)
-    }
-
-    def setBoundarySetForVertex(name: String, id: Int) = {
-      boundarySet(name) = boundarySet.getOrElse(name, Set.empty[Int]) + id
-    }
-
-    def setVertexData(name: String, id: Int, value: Any) {
-      Log.log("Setting vertex data for " + name + " for id " + id)
-      (data.getOrElseUpdate(name, Map.empty[Int, Object]))(id) = value.asInstanceOf[Object]
-    }
-
-    override def toString() = {
-      "MeshSkeleton: meshId " + meshId + ", nvertices " + (vidx + 1) + ", nedges " + (eidx + 1) + ", nfaces " + (fidx + 1) + ", ncells " + (cidx + 1)
-    }
-  }
-
 
   def newMeshBuilder(meshId: Int): Unit = {
     meshMap.put(meshId, new MeshSkeleton(meshId))
@@ -398,20 +122,354 @@ trait MeshBuilderOpsExp extends MeshBuilderOps with BaseFatExp with EffectExp wi
   def meshAddCellByFace(meshId: Int, ids: Face*): Cell =
     getMesh(meshId).addCellByFace(ids: _*)
 
-  def meshSetData(meshId: Int, name: String, v: Vertex, value: Any) =
-    getMesh(meshId).setVertexData(name, v, value)
+  def meshSetData[T:Manifest](meshId: Int, name: String, v: Vertex, value: T*) =
+    getMesh(meshId).setVertexData(name, v, value : _*)
 
   def meshSetBoundarySet(meshId: Int, name: String, v: Vertex) =
     getMesh(meshId).setBoundarySetForVertex(name, v)
 
-  def meshBuild(meshId: Int): Rep[Mesh] = {
+  def meshBuild(meshId: Int): Rep[ppl.dsl.deliszt.Mesh] = {
     val meshSkeleton = getMesh(meshId)
     Log.log("Building new mesh from MeshSkeleton " + meshSkeleton)
     reflectPure(DeLisztMeshBuild(meshSkeleton.toMesh()))
   }
 
-  def meshGetFromFile(filename: String): Rep[Mesh] = {
+  def meshGetFromFile(filename: String): Rep[ppl.dsl.deliszt.Mesh] = {
     Log.log("Loading mesh from file  " + filename)
     reflectPure(DeLisztMeshPath(filename))
+  }
+}
+
+class MeshSkeleton(meshId: Int) {
+  object Log extends Log("MeshSkeleton")
+
+  class ListTreeMap {
+    var nkeys = 0
+    var nvalues = 0
+    var map = Map.empty[Int, List[Int]]
+
+    def apply(key: Int) = map.get(key) match {
+      case None => List.empty[Int]
+      case Some(v) => v
+    }
+
+    def intersect(ids: Int*): Option[Int] = {
+      val list = intersectSets(ids: _*)
+      if (list.isEmpty)
+        None
+      else
+        Option(list.head)
+    }
+
+    def intersectSets(ids: Int*): List[Int] = {
+      if (ids.length <= 1) {
+        List()
+      } else {
+        var common = this(ids.head)
+        for (e <- ids.tail)
+          common = common.intersect(this(e))
+        common
+      }
+    }
+
+    def set(keys: Int*)(values: Int*) {
+      for (key <- keys; value <- values)
+        set_(key)(value)
+    }
+
+    def setDifferent(keys: Int*)(values: Int*) {
+      for {key <- keys
+           value <- values
+           if key != value}
+        set_(key)(value)
+    }
+
+    def set_(key: Int)(value: Int) {
+      if (map.contains(key)) {
+        val list = map(key)
+        if (!list.contains(value)) {
+          nvalues += 1
+          nkeys = Math.max(nkeys, key + 1)
+          map(key) = map(key) ++ List(value)
+        }
+      } else {
+        nvalues += 1
+        nkeys = Math.max(nkeys, key + 1)
+        map += (key -> List(value))
+      }
+    }
+
+
+    def getCRS(): CRSImpl = {
+      val rows = Array.ofDim[Int](nkeys + 1)
+      val values = Array.ofDim[Int](nvalues)
+      var i = 0
+      var offset = 0
+      while (i < nkeys) {
+        rows(i) = offset
+        if (map.contains(i)) {
+          val list = map(i).zipWithIndex
+          for ((v, index) <- list) {
+            values(offset + index) = v
+          }
+          offset += map(i).size
+        }
+        i += 1
+      }
+      rows(nkeys) = offset
+      new CRSImpl(rows, values)
+    }
+
+
+    def swapKeys(a: Int, b: Int): (List[Int], List[Int]) = {
+      val alist = this(a)
+      val blist = this(b)
+      map(a) = blist
+      map(b) = alist
+      (alist, blist)
+    }
+
+    def swapValues(a: Int, b: Int)(aset: List[Int], bset: List[Int]) {
+      var bsetCopy = bset.toSet
+      for (ka <- aset) {
+        if (!map(ka).contains(b)) {
+          map(ka) = map(ka).map(x => if (x == a) b else x)
+        } else {
+          map(ka) = map(ka).map(x => if (x == a) b else if (x == b) a else x)
+          bsetCopy -= ka
+        }
+      }
+      for (kb <- bsetCopy) {
+        map(kb) = map(kb).map(x => if (x == b) a else x)
+      }
+    }
+  }
+
+  class MeshElementData {
+
+    val intData = Map.empty[String, (Map[Int, Int], Int)]
+    val doubleData = Map.empty[String, (Map[Int, Double], Int)]
+
+    def update[T](t : Tuple2[String, Int], value : T*)(implicit man: Manifest[T]) {
+      val (name, id) = t
+      Log.log("Setting vertex data for " + name + " for id " + id)
+      val size = value.size
+      val m = (man.toString) match {
+        case "int" => intData
+        case "Int" => intData
+        case "double" => doubleData
+        case "Double" => doubleData
+        case _ => throw new Exception("Not supported format for mesh element data " + man.toString)
+      }
+      val map = m.asInstanceOf[Map[String, Tuple2[Map[Int, T], Int]]].getOrElseUpdate(name, (Map.empty[Int, T], size))
+      if (map._2 != size) throw new Exception("Wrong number of parameters for mesh element data")
+      for ((v,i)<-value.zipWithIndex)
+        map._1(id*size + i) = v
+
+    }
+
+    def toArray[T:Manifest](map : Map[Int, T]) : Array[T] = {
+      val size = (map.maxBy[Int](x => x._1))._1
+      val ret = new Array[T](size + 1)
+      for ((k:Int, v:T) <- map)
+        ret(k) = v
+      ret
+    }
+
+    def toMapArray[T:Manifest](m : Map[String, (Map[Int, T], Int)]) : scala.collection.immutable.Map[String, Array[T]] = {
+      m.map(v => (v._1, toArray[T](v._2._1))).toMap
+    }
+
+
+    def toLabelData(): LabelData = {
+      LabelData(toMapArray[Int](intData), toMapArray[Double](doubleData))
+    }
+
+    def swap[T:Manifest](m : Map[String, (Map[Int, T], Int)], a: Int, b: Int) {
+      for ((_, (map, size)) <- m) {
+        for (i <- 0 until size) {
+          val objectA = map(a*size + i)
+          val objectB = map(b*size + i)
+          map(a*size + i) = objectB
+          map(b*size + i) = objectA
+        }
+      }
+    }
+
+    def swap(a : Int, b : Int) {
+      swap(intData, a, b)
+      swap(doubleData, a, b)
+    }
+  }
+
+  Log.log("Creating new MeshSkeleton with id " + meshId)
+
+
+  val vtov = new ListTreeMap
+  val vtoe = new ListTreeMap
+  val vtof = new ListTreeMap
+  val vtoc = new ListTreeMap
+
+  val etov = new ListTreeMap
+  val etof = new ListTreeMap
+  val etoc = new ListTreeMap
+
+  val ftov = new ListTreeMap
+  val ftoe = new ListTreeMap
+  val ftoc = new ListTreeMap
+
+  val ctov = new ListTreeMap
+  val ctoe = new ListTreeMap
+  val ctof = new ListTreeMap
+  val ctoc = new ListTreeMap
+
+  var vidx = 0
+  var eidx = 0
+  var fidx = 0
+  var cidx = 0
+  var nfe = 0
+  val vdata = new MeshElementData
+  val edata = new MeshElementData
+  val fdata = new MeshElementData
+  val cdata = new MeshElementData
+  val boundarySet = Map.empty[String, Set[Int]]
+  val boundaries = Map.empty[String, BoundaryRange]
+
+  def swapVertex(a: Int, b: Int) {
+    (vtov.swapValues(a, b) _).tupled(vtov.swapKeys(a, b))
+    (etov.swapValues(a, b) _).tupled(vtoe.swapKeys(a, b))
+    (ftov.swapValues(a, b) _).tupled(vtof.swapKeys(a, b))
+    (ctov.swapValues(a, b) _).tupled(vtoc.swapKeys(a, b))
+    vdata.swap(a,b)
+  }
+
+  def renumerate() {
+    var pos = 0
+    var oldPos = 0
+    for ((name, set) <- boundarySet) {
+      val sortedSet = set.toList.sorted
+      oldPos = pos
+      Log.log("boundary set " + name + " initially is compound of vertices " + sortedSet)
+      for (v <- sortedSet) {
+        Log.log("swapping vertex " + v + " to " + pos)
+        if (pos < v) {
+          swapVertex(v, pos)
+        } else if (pos > v) {
+          throw new Exception("Can't reorder vertices to establish boundary sets")
+        }
+        pos += 1
+      }
+      boundaries(name) = BoundaryRange(oldPos, pos)
+    }
+  }
+
+  import ppl.dsl.deliszt.datastruct.scala._
+  def toMesh(): Mesh = {
+    renumerate()
+    Mesh(MeshSize(vidx, eidx, fidx, Math.max(cidx, 2)), vtov.getCRS(), vtoe.getCRS(), vtof.getCRS(), vtoc.getCRS(), etov.getCRS(), etof.getCRS(), etoc.getCRS(),
+      ftov.getCRS(), ftoe.getCRS(), ftoc.getCRS(), ctov.getCRS(), ctoe.getCRS(), ctof.getCRS(), ctoc.getCRS(), vdata.toLabelData, edata.toLabelData,
+      fdata.toLabelData, cdata.toLabelData, boundaries.toMap)
+  }
+
+  def combine(a2b: ListTreeMap, b2a: ListTreeMap)(aid: Int*)(bid: Int*) {
+    a2b.set(aid: _*)(bid: _*)
+    b2a.set(bid: _*)(aid: _*)
+  }
+
+  def addEdgeByVertex(id1: Vertex, id2: Vertex): Edge = {
+    vidx = Math.max(vidx, Math.max(id1, id2) + 1)
+    vtoe.intersect(id1, id2) match {
+      case Some(e) => new Edge(e, new Vertex(id1), new Vertex(id2))
+      case None =>
+        combine(vtoe, etov)(id1, id2)(eidx)
+        vtov.setDifferent(id1, id2)(id1, id2)
+        val e = new Edge(eidx, new Vertex(id1), new Vertex(id2))
+        eidx += 1
+        Log.log("Added new edge " + e)
+        e
+    }
+  }
+
+  def addFaceByEdge(ids: Edge*): Face = {
+    val f = new Face(etof.intersect(ids: _*).getOrElse({
+      combine(etof, ftoe)(ids: _*)(fidx)
+      val vertices = (for (id <- ids) yield etov(id)).flatten
+      combine(vtof, ftov)(vertices: _*)(fidx)
+      fidx += 1
+      fidx - 1
+    }))
+    Log.log("Added new face " + f)
+    f
+  }
+
+  def addFaceByVertex(ids: Vertex*): Face = {
+    val shifted = ids.last +: ids.init
+    addFaceByEdge(
+      (for (
+        (a, b) <- ids zip shifted
+      )
+      yield addEdgeByVertex(a, b)): _*)
+  }
+
+  val orientation = Map.empty[Int, (Int, Int)]
+
+  def addCellByFace(ids: Face*): Cell = {
+    val c = new Cell(ftoc.intersect(ids: _*).getOrElse({
+      for (f <- ids) {
+        ftoc.map.get(f) match {
+          case Some(cell) => orientation(f) = (cell.head, cidx)
+          case None => orientation(f) = if (cidx == 0) (cidx, 1) else (cidx, 0)
+        }
+      }
+      combine(ftoc, ctof)(ids: _*)(cidx)
+      val edges = (for (id <- ids) yield ftoe(id)).flatten
+      val vertices = (for (id <- ids) yield etov(id)).flatten
+      combine(etoc, ctoe)(edges: _*)(cidx)
+      combine(vtoc, ctov)(vertices: _*)(cidx)
+      cidx += 1
+      cidx - 1
+    }))
+    Log.log("Added new cell " + c)
+    c
+  }
+
+  //make sense only for tetrahedron
+  def addCellByVertex(ids: Vertex*): Cell = {
+    Log.log("Adding new cell by vertices " + ids)
+    val array = ids.toArray
+    if (ids.size != 4) throw new Exception("Only support for adding tetrahedrons, please specify 4 vertices oriented as xyz")
+    val faces = for (t <- List((0, 2, 1), (2, 3, 1), (2, 0, 3), (0, 1, 3)))
+    yield addFaceByVertex(array(t._1), array(t._2), array(t._3))
+    addCellByFace(faces: _*)
+  }
+
+  def setBoundarySetForVertex(name: String, id: Int) = {
+    Log.log("set boundary set for " + name + " for id " + id)
+    boundarySet(name) = boundarySet.getOrElse(name, Set.empty[Int]) + id
+  }
+
+
+  def setVertexData[T:Manifest](name: String, id: Int, value: T*) {
+    vdata((name, id)) = value : _*
+  }
+
+  override def toString() = {
+    "MeshSkeleton: meshId " + meshId + ", nvertices " + vidx + ", nedges " + eidx + ", nfaces " + fidx + ", ncells " + cidx + ", nfe " + nfe
+  }
+}
+
+trait ScalaGenMeshBuilderOps extends ScalaGenBase {
+  val IR: MeshBuilderOpsExp
+  import IR._
+
+  override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
+    rhs match {
+      case DeLisztMeshBuild(m) => {
+        val filename = m.serialize()
+        emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
+      }
+      case DeLisztMeshPath(filename) => emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
+      case _ => super.emitNode(sym, rhs)
+    }
   }
 }

@@ -59,6 +59,9 @@ end_header
 
   object OutputMesh {
     var pos : Rep[Field[Vertex,Vec[_3,Double]]] = null
+
+    def apply(mesh: Rep[Mesh]) = apply[Int](mesh)
+
     def apply[T : Numeric : Manifest](mesh: Rep[Mesh], fields: Rep[Field[Vertex, T]]*) {
       pos = FieldWithLabel[Vertex,Vec[_3,Double]]("position", mesh)
       val f = SyncedFile("output.ply")
@@ -78,7 +81,6 @@ end_header
         f.writeln("property int vertex" + i)
       f.writeln("end_header")
       for (v <- vertices(mesh)) {
-        //wz: faulty implementation
         f.write(pos(v).x + " " + pos(v).y + " " + pos(v).z)
 	for (field <- fields)
           f.write(" " + field(v).toInt)

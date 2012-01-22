@@ -6,7 +6,6 @@ import reflect.Manifest
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
 import scala.virtualization.lms.common._
 
-
 /* Machinery provided by DeLiszt itself (language features and control structures).
  *
  * author: Michael Wu (mikemwu@stanford.edu)
@@ -16,7 +15,7 @@ import scala.virtualization.lms.common._
  * Stanford University
  */
 
-trait LanguageOps extends Base with MeshBuilderOps { this: DeLiszt with MathOps =>
+trait LanguageOps extends Base { this: DeLiszt with MathOps =>
   def _init(args: Rep[Array[String]]) : Unit
 
   //should be part of LMS
@@ -124,7 +123,7 @@ trait LanguageOps extends Base with MeshBuilderOps { this: DeLiszt with MathOps 
   def processor_time() : Rep[Double]
 }
 
-trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with MeshBuilderOpsExp{
+trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   this: LanguageImplOps with DeLisztExp =>
 
   class MeshSetOperator[MO <: MeshObj](val mesh: Exp[Mesh]) extends Def[MeshSet[MO]]
@@ -292,7 +291,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp with Mes
         case DeLisztLoadCfgMesh(_) => true
         case _ => false
       }).get.rhs
-      reflectPure(DeLisztMesh(toAtom(m.asInstanceOf[Def[Mesh]])))
+      reflectPure(DeLisztMesh(toAtom(m).asInstanceOf[Def[Mesh]]))
   }
 
   def vertices(e: Exp[Cell])(implicit x: Overloaded5) = reflectPure(DeLisztVerticesCell(ID(e), findMesh(e)))
@@ -438,11 +437,6 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
     rhs match {
       case DeLisztInit(args) => emitValDef(sym, "Liszt.init(" + quote(args) + ")")
       case DeLisztLoadCfgMesh(args) => emitValDef(sym, "Liszt.load(" + quote(args) + ")")
-      case DeLisztMeshBuild(m) => {
-        val filename = m.generateFile()
-        emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
-      }
-      case DeLisztMeshPath(filename) => emitValDef(sym, "MeshLoader.loadMesh(\"" + filename + "\")")
       case DeLisztMesh(mesh) => emitValDef(sym, quote(mesh))
 
       case NumericToInt(e) => emitValDef(sym, quote(e) + ".toInt" )

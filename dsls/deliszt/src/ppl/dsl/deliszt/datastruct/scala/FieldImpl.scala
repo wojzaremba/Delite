@@ -1,5 +1,6 @@
 package ppl.dsl.deliszt.datastruct.scala
 
+
 /**
  * author: Michael Wu (mikemwu@stanford.edu)
  * last modified: 04/24/2011
@@ -9,6 +10,7 @@ package ppl.dsl.deliszt.datastruct.scala
  */
 
 object FieldImpl {
+
   def ofCell[T:ClassManifest](m : Mesh = Mesh.mesh) : Field[T] = {
     new FieldImpl[T](new Array[T](m.ncells))
   }
@@ -73,4 +75,8 @@ class FieldImpl[@specialized T: ClassManifest](val data : Array[T]) extends Fiel
       }
     }
   }
+
+  override def toString() = "FieldImpl " + data.toList.toString
+
+
 }

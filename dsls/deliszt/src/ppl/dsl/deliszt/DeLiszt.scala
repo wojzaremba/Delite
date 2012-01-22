@@ -72,7 +72,7 @@ trait DeLisztCCodeGenPkg extends CGenEqual with CGenVariables with CGenImplicitO
 /**
  * This the trait that every DeLiszt application must extend.
  */
-trait DeLiszt extends DeLisztScalaOpsPkg with LanguageOps
+trait DeLiszt extends DeLisztScalaOpsPkg with LanguageOps with MeshBuilderOps
   with MeshPrivateOps with MeshSetOps
   with IntMOps
   with MathOps
@@ -88,7 +88,7 @@ trait DeLisztCompiler extends DeLiszt with ListOps {  // FieldPrivateOps, MeshPr
 /**
  * These are the corresponding IR nodes for DeLiszt.
  */
-trait DeLisztExp extends DeLisztCompiler with DeLisztScalaOpsPkgExp with LanguageOpsExpOpt
+trait DeLisztExp extends DeLisztCompiler with DeLisztScalaOpsPkgExp with LanguageOpsExpOpt with MeshBuilderOpsExp
   with LanguageImplOpsStandard
   with MeshSetOpsExp
   with MeshPrivateOpsExp
@@ -161,8 +161,8 @@ trait DeLisztCodeGenBase extends GenericFatCodegen {
   }
 }
 
-trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg with ScalaGenDeliteOps with ScalaGenLanguageOps 
-  with ScalaGenArithOps with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps
+trait DeLisztCodeGenScala extends DeLisztCodeGenBase with DeLisztScalaCodeGenPkg with ScalaGenDeliteOps with ScalaGenLanguageOps
+with ScalaGenMeshBuilderOps with ScalaGenArithOps with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps
   with ScalaGenFieldOps with ScalaGenIntMOps with ScalaGenMeshPrivateOps with ScalaGenMeshSetOps
   with ScalaGenMatOps with ScalaGenVecOps with ScalaGenLoopColoringOps /*with LoopColoringOpt*/ // LoopColoringOpt only needed here for debugging (it's mixed into DeLiszt's DeliteCodeGenPkg)
   with DeliteScalaGenAllOverrides with DeLisztScalaGenExternal { //with ScalaGenMLInputReaderOps {

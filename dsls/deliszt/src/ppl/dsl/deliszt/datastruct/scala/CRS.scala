@@ -17,13 +17,14 @@ trait CRS {
   def values : Array[Int]
 }
 
-class CRSImpl(val rows : Array[Int], val values : Array[Int]) extends CRS {
+case class CRSImpl(val rows : Array[Int], val values : Array[Int]) extends CRS {
   def row(r : Int) = {rows(r)}
   def apply(row : Int, i : Int) = {values(rows(row) + i)}
   def update(row : Int, i : Int, v : Int) {values(rows(row) + i) = v}
-  def len(row : Int) =
-    if (row < rows.length - 1)
-      rows(row+1) - rows(row)
-    else
-      values.length - rows(row)
+  def len(row : Int) = rows(row+1) - rows(row)
+  override  def toString() = {
+    rows.toList.toString + " " + values.toList.toString()
+  }
+
+
 }

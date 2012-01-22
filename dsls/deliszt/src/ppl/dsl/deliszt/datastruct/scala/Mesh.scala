@@ -1,8 +1,10 @@
 package ppl.dsl.deliszt.datastruct.scala
 
-import collection.mutable.{Map, HashMap, ArrayBuffer}
+import collection.mutable.{ArrayBuffer}
 import java.io._
 import java.nio.ByteBuffer
+import net.liftweb.json._
+import net.liftweb.json.Serialization._
 import scala.Array
 
 /**
@@ -14,10 +16,11 @@ import scala.Array
  */
 
 object Mesh {
-  var maxId = 0
   var mesh: Mesh = null
 
-  var loader: MeshLoader = null
+  var maxId = 0
+
+  val loader: MeshLoader = new MeshLoader
 
   val DMASK = 0x80000000
   val IMASK = 0x7FFFFFFF
@@ -50,52 +53,55 @@ object Mesh {
   def wall_time() = 0.0
 
   def processor_time() = 0.0
+
+  val formats = new Formats{
+    val dateFormat = DefaultFormats.lossless.dateFormat
+    override val typeHints = ShortTypeHints(List(classOf[BoundaryRange], classOf[Map[String, BoundaryRange]], classOf[CRSImpl],
+      classOf[LabelData], classOf[MeshSize]))
+    override val typeHintFieldName = "type"
+  }
 }
 
-class LabelData {
-  val data: Map[String, Array[Object]] = new HashMap[String, Array[Object]]()
-  val fns: Map[String, Object => Object] = new HashMap[String, Object => Object]()
+case class BoundaryRange(start : Int, end : Int)
+
+case class LabelData(intData : Map[String, Array[Int]], doubleData : Map[String, Array[Double]]) {
+  def apply[T](name : String)(implicit m: ClassManifest[T]) : Array[T] = {
+    (m.toString match {
+      case "int" | "Int" => intData(name)
+      case "double" | "Double" => doubleData(name)
+      //wz: we should pass everywhere fields as arrays of primitives
+      case "generated.scala.Vec[Double]" =>
+        val arr = doubleData(name)
+        val size = arr.size / 3
+        val retArray = new Array[Vec[Double]](size)
+        for (i <- 0 until size)
+          retArray(i) = new VecImpl[Double](Array[Double](arr(3*i), arr(3*i+1), arr(3*i+2)))
+        retArray
+      case x => throw new Exception("not supported type " + x)
+    }).asInstanceOf[Array[T]]
+  }
+  
+  override def toString() = {
+    val s = new StringBuilder
+    for (m <- List(intData, doubleData))
+    for ((k, array) <- m)
+      s.append(k + " -> " + array.toList.toString + "\n")
+    s.toString()
+  }
 }
 
-class Mesh {
+case class MeshSize(nvertices : Int, nedges : Int, nfaces : Int, ncells : Int)
+
+case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vtoc: CRSImpl, etov: CRSImpl, etof: CRSImpl,
+                          etoc: CRSImpl, ftov: CRSImpl, ftoe: CRSImpl, ftoc: CRSImpl, ctov: CRSImpl, ctoe: CRSImpl, ctof: CRSImpl, ctoc: CRSImpl, vertexData: LabelData, edgeData: LabelData,
+                          faceData: LabelData, cellData: LabelData, vboundaries : Map[String, BoundaryRange]) {
+  val (nvertices, nedges, nfaces, ncells) = (size.nvertices, size.nedges, size.nfaces, size.ncells)
   def typeName = "Mesh"
 
   val id = Mesh.maxId
   Mesh.maxId += 1
 
-  var nvertices: Int = 0
-  var nedges: Int = 0
-  var nfaces: Int = 0
-  var ncells: Int = 0
-  var nfe: Int = 0
-
-  var vtov: CRS = null
-  var vtoe: CRS = null
-  var vtof: CRS = null
-  var vtoc: CRS = null
-
-  var etov: CRS = null
-  var etof: CRS = null
-  var etoc: CRS = null
-
-  var ftov: CRS = null
-  var ftoe: CRS = null
-  var ftoc: CRS = null
-
-  var ctov: CRS = null
-  var ctoe: CRS = null
-  var ctof: CRS = null
-  var ctoc: CRS = null
-
-  val cellData = new LabelData
-  val edgeData = new LabelData
-  val faceData = new LabelData
-  val vertexData = new LabelData
-
-  var boundaries = Map.empty[String, (Int, Int)]
-
   def verticesMesh: MeshSet = MeshSetImpl(nvertices)
-
 
   def boundarySetCells(name: String): BoundarySet = {
     Mesh.loader.loadBoundarySet(this, name, MeshObj.CELL_TYPE)
@@ -110,7 +116,12 @@ class Mesh {
   }
 
   def boundarySetVertices(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(this, name, MeshObj.VERTEX_TYPE)
+    if (vboundaries != null) {
+      val a = vboundaries(name)
+      ppl.dsl.deliszt.datastruct.scala.BoundarySetRangeImpl(a.start, a.end)
+    } else {
+      Mesh.loader.loadBoundarySet(this, name, MeshObj.VERTEX_TYPE)
+    }
   }
 
   def verticesVertex(e: Int): MeshSet = IndexSetImpl(vtov, e)
@@ -243,36 +254,13 @@ class Mesh {
     if (facing) e else Mesh.flip(e)
   }
 
-  def label[T: ClassManifest](ld: LabelData, url: String): Array[T] = {
-    ld.data.get(url) match {
-      case Some(data) => {
-        ld.fns.get(url) match {
-          // If we find a function, use it to convert
-          case Some(fn) => {
-            val labelData = new Array[T](data.size)
-            var i = 0
-            while (i < data.size) {
-              labelData(i) = fn(data(i)).asInstanceOf[T]
-              i += 1
-            }
-            labelData
-          }
+  def labelCell[T: ClassManifest](url: String): Array[T] = cellData[T](url)
 
-          // Straight up data
-          case _ => data.asInstanceOf[Array[T]]
-        }
-      }
-      case _ => null
-    }
-  }
+  def labelEdge[T: ClassManifest](url: String): Array[T] = edgeData[T](url)
 
-  def labelCell[T: ClassManifest](url: String): Array[T] = label(cellData, url)
+  def labelFace[T: ClassManifest](url: String): Array[T] = faceData[T](url)
 
-  def labelEdge[T: ClassManifest](url: String): Array[T] = label(edgeData, url)
-
-  def labelFace[T: ClassManifest](url: String): Array[T] = label(faceData, url)
-
-  def labelVertex[T: ClassManifest](url: String): Array[T] = label(vertexData, url)
+  def labelVertex[T: ClassManifest](url: String): Array[T] = vertexData[T](url)
 
   // Use special CellSetImpl, don't expose 0 cell
   val cells: MeshSet = new CellSetImpl(ncells - 1)
@@ -280,18 +268,6 @@ class Mesh {
   val faces: MeshSet = new MeshSetImpl(nfaces)
   val vertices: MeshSet = new MeshSetImpl(nvertices)
 
-  def positionToVec(p: Object): Object = {
-    val a = p.asInstanceOf[Array[Double]]
-
-    val v = DoubleVecImpl.ofSize(3)
-    v(0) = a(0)
-    v(1) = a(1)
-    v(2) = a(2)
-
-    v
-  }
-
-  vertexData.fns("position") = positionToVec
 
   //Coloring hack: remove this!
   def coloredIndexSet(filename: String): MeshSet = {
@@ -311,127 +287,26 @@ class Mesh {
     new IndexSetImpl(arr, arr.size, 0, arr.size, Mesh.FORWARD)
   }
 
-
-  val LISZT_MAGIC_NUMBER = 0x18111022
-
-  /*  struct LisztHeader {
-          uint32_t magic_number; //LISZT_MAGIC_NUMBER
-          lsize_t nV,nE,nF,nC,nFE, nBoundaries;
-          file_ptr position_table;
-          file_ptr facet_edge_table;
-          file_ptr boundary_set_table;
-  } __attribute__((packed));
-
-  struct FileFacetEdge { //
-          struct HalfFacet {
-                  id_t cell;
-                  id_t vert;
-          } __attribute__((packed));
-          id_t face;
-          id_t edge;
-          HalfFacet hf[2];
-  } __attribute__((packed));
-  //This ordering pairs the duals, which is useful when writing methods that work on the
-//mesh and the dual mesh
-enum IOElemType {
-    VERTEX_T = 0,
-    CELL_T = 1,
-    EDGE_T = 2,
-    FACE_T = 3,
-    TYPE_SIZE = 4,
-    AGG_FLAG = 1 << 7  // Set high bit if aggregating multiple element types
-};
-
-struct BoundarySet {
-        IOElemType type; //type of boundary set
-        union {
-            id_t start; //inclusive
-            lsize_t left_id; // number of entries from beginning of table
-        };
-        union {
-            id_t end; //exclusive
-            lsize_t right_id; // number of entries from beginning of table
-        };
-        file_ptr name_string; //offset to null-terminated string
-} __attribute__((packed));
-  */
-
-  def toByteArray(i: Int) = {
-    val ret = new Array[Byte](4)
-    ByteBuffer.wrap(ret).putInt(i);
-    ret.reverse
+  def getFileName() = {
+    (new File("mesh" + id + ".xml")).getAbsolutePath
   }
 
-  def toByteArray(d: Double) = {
-    val ret = new Array[Byte](8)
-    ByteBuffer.wrap(ret).putDouble(d);
-    ret.reverse
-  }
-
-  object Log extends Log("Mesh")
-
-  val sizeOfLisztHeader = 7 * 4 + 3 * 8
-
-  def generateFile(): String = {
-    val zero = new Array[Byte](4)
-    val one = new Array[Byte](4)
-    one(0) = 1.toByte
-    var i = 0
-    val name = "out" + id + ".lmesh"
-    val f = new FileOutputStream(name)
-    f.write(toByteArray(LISZT_MAGIC_NUMBER))
-    f.write(toByteArray(nvertices))
-    f.write(toByteArray(nedges))
-    f.write(toByteArray(nfaces))
-    f.write(toByteArray(ncells))
-    f.write(toByteArray(nfe))
-    f.write(toByteArray(boundaries.size)) //nBoundaries
-    f.write(toByteArray(sizeOfLisztHeader));f.write(zero) // position_table
-    val facet_edge_table = sizeOfLisztHeader + 8 * 3 * nvertices
-    f.write(toByteArray(facet_edge_table));f.write(zero) // facet_edge_table
-    val boundary_set_table = facet_edge_table + 4 * 6 * nfe
-    f.write(toByteArray(boundary_set_table));f.write(zero) // boundary_set_table
-    val pos = vertexData.data.get("position")
-    pos match {
-      case Some(array: Array[Object]) =>
-        for (i <- 0 until nvertices) {
-          for (j <- 0 until 3) {
-              f.write(toByteArray(array(i).asInstanceOf[Array[Double]](j)))
-            }
-        }
-      case None =>
-    }
-    for (i <- 0 until nfaces) {
-      for (j <- 0 until ftoe.len(i)) {
-        val edge = ftoe.apply(i, j)
-        val v0 = etov(edge, 0)
-        val v1 = etov(edge, 1)
-        Log.log("method generateFile, fem : face " + i + ", edge " + edge + ", vertex0 " + v0  + ", vertex1 " + v1)
-        f.write(toByteArray(i)) //face
-        f.write(toByteArray(edge)) //edge
-        f.write(zero) //hf[0].cell
-        f.write(toByteArray(v0)) //hf[0].vert
-        f.write(one) //hf[1].cell
-        f.write(toByteArray(v1)) //hf[1].vert
-      }
+  private def using[A <: {def close() : Unit}, B](param: A)(f: A => B): B =
+    try {
+      f(param)
+    } finally {
+      param.close()
     }
 
-    for (((name, (start, end)), i) <- boundaries.zipWithIndex) {
-      val pname = boundary_set_table + 4*5*boundaries.size + i*32
-      Log.log("Boundary set " + name + " starts " + start + " ends " + end + " pointer to name " + pname)
-      f.write(zero) // VERTEX_T = 0
-      f.write(toByteArray(start))
-      f.write(toByteArray(end))
-      f.write(toByteArray(pname));f.write(zero)
-    }
 
-    for ((name, _) <- boundaries) {
-      f.write(name.getBytes)
-      f.write((new Array[Byte](32-name.size)))
+  //mesh serialization
+  def serialize() = {
+    implicit val formats = ppl.dsl.deliszt.datastruct.scala.Mesh.formats
+    val asJson = writePretty(this)
+    using(new FileWriter(getFileName())) {
+      fileWriter => fileWriter.write(asJson)
     }
-
-    f.close()
-    (new File(name)).getAbsolutePath()
+    getFileName()
   }
 
 }
