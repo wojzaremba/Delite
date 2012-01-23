@@ -75,6 +75,8 @@ trait LanguageOps extends Base { this: DeLiszt with MathOps =>
   def faces(e: Rep[Edge])(implicit x: Overloaded3) : Rep[MeshSet[Face]]
   def faces(e: Rep[Cell])(implicit x: Overloaded4) : Rep[MeshSet[Face]]
 
+  def mesh(e: Rep[MeshObj]) : Rep[Mesh]
+
   def facesCCW(e: Rep[Edge]) : Rep[MeshSet[Face]]
   def facesCW(e: Rep[Edge]) : Rep[MeshSet[Face]]
   
@@ -143,7 +145,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   case class DeLisztLoadCfgMesh(args: Exp[Array[String]]) extends Def[Mesh]
   case class DeLisztFile(name: Exp[String]) extends Def[SyncedFile]
   case class DeLisztCloseFile(file: Exp[SyncedFile]) extends Def[Unit]
-  case class DeLisztWrite(file : Exp[SyncedFile], as : Seq[Exp[Any]]) extends Def[Unit]
+  case class DeLisztWrite(file : Exp[SyncedFile], as : Exp[Any]) extends Def[Unit]
   case class DeLisztPrint(as: Seq[Exp[Any]])(block: Exp[Unit]) // stupid limitation...
     extends DeliteOpSingleTask(block)
 
@@ -266,7 +268,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   def infix_toInt[T : Numeric : Manifest](d: Exp[T]) = reflectPure(NumericToInt(d))
 
   def SyncedFile(name: Exp[String]) = reflectMutable(DeLisztFile(name))
-  def infix_write(f : Rep[SyncedFile], as: Exp[Any]*) = reflectWrite(f)(DeLisztWrite(f, as))
+  def infix_write(f : Rep[SyncedFile], as: Exp[Any]*) = for (a <- as) reflectWrite(f)(DeLisztWrite(f, a))
   def infix_writeln(f : Rep[SyncedFile], as: Exp[Any]*) = {
     infix_write(f, as:_*)
     infix_write(f, Const("""\n"""))
@@ -349,6 +351,8 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   def facesCW(e: Exp[Edge]) = reflectPure(DeLisztEdgeFacesCW(e, findMesh(e)))
   
   def face(e: Exp[Edge], i: Exp[Int]) = reflectPure(DeLisztFace(ID(e), i, findMesh(e)))
+
+  def mesh(e: Exp[MeshObj]) = findMesh(e)
 
   def head(e: Exp[Edge]) = reflectPure(DeLisztEdgeHead(e, findMesh(e)))
   def tail(e: Exp[Edge]) = reflectPure(DeLisztEdgeTail(e, findMesh(e)))
@@ -443,8 +447,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
 
       //woj.zaremba : This file is faulty implement - currently do not take care of concurent accesss (it is mine temporary impl.)
       case DeLisztFile(name) => emitValDef(sym, "new SyncedFile(" + quote(name) + ")" )
-      case DeLisztWrite(f, str) => for(a <- str)
-            emitValDef(sym, quote(f) + ".write(" + quote(a) + ")" )
+      case DeLisztWrite(f, str) => emitValDef(sym, quote(f) + ".write(" + quote(str) + ")" )
 
       case DeLisztCloseFile(f) => emitValDef(sym, quote(f) + ".close()" )
 

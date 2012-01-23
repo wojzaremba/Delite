@@ -9,11 +9,8 @@ import ppl.dsl.deliszt._
  * Time: 10:52 AM
  */
 
-trait SimpleMesh extends DeLisztApplication {
-
-  implicit def toMesh(e : ExtendedMesh): Rep[Mesh] = e.mesh
-
-  case class ExtendedMesh(mesh : Rep[Mesh], boundary: Rep[MeshSet[Vertex]])
+trait SimpleMesh {
+  this: Libs =>
 
   object SquareMesh {
     def apply(side: Double, step: Double): ExtendedMesh = RectangularMesh(side, side, step)

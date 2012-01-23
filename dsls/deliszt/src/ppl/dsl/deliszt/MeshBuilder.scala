@@ -326,7 +326,8 @@ class MeshSkeleton(meshId: Int) {
   var vidx = 0
   var eidx = 0
   var fidx = 0
-  var cidx = 0
+  // wz : for some reason cells index starts from 1
+  var cidx = 1
   var nfe = 0
   val vdata = new MeshElementData
   val edata = new MeshElementData
@@ -411,19 +412,12 @@ class MeshSkeleton(meshId: Int) {
       yield addEdgeByVertex(a, b)): _*)
   }
 
-  val orientation = Map.empty[Int, (Int, Int)]
 
   def addCellByFace(ids: Face*): Cell = {
     val c = new Cell(ftoc.intersect(ids: _*).getOrElse({
-      for (f <- ids) {
-        ftoc.map.get(f) match {
-          case Some(cell) => orientation(f) = (cell.head, cidx)
-          case None => orientation(f) = if (cidx == 0) (cidx, 1) else (cidx, 0)
-        }
-      }
       combine(ftoc, ctof)(ids: _*)(cidx)
       val edges = (for (id <- ids) yield ftoe(id)).flatten
-      val vertices = (for (id <- ids) yield etov(id)).flatten
+      val vertices = (for (id <- ids) yield ftov(id)).flatten
       combine(etoc, ctoe)(edges: _*)(cidx)
       combine(vtoc, ctov)(vertices: _*)(cidx)
       cidx += 1

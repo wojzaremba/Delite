@@ -10,7 +10,8 @@ import java.nio.ByteBuffer
  * Date: 01/13/11
  */
 
-trait OutputMesh extends DeLisztApplication {
+trait OutputMesh extends DeLisztApplication{
+this: Libs =>
 
   /*
   ply
@@ -58,45 +59,44 @@ end_header
   
 
   object OutputMesh {
-    var pos : Rep[Field[Vertex,Vec[_3,Double]]] = null
-
     def apply(mesh: Rep[Mesh]) = apply[Int](mesh)
+    
+    def apply[T : Numeric : Manifest](mesh: Rep[Mesh], fields: Seq[Function1[Rep[Vertex], Rep[T]]]) =
+      apply[T](mesh, fields:_*)
 
-    def apply[T : Numeric : Manifest](mesh: Rep[Mesh], fields: Rep[Field[Vertex, T]]*) {
-      pos = FieldWithLabel[Vertex,Vec[_3,Double]]("position", mesh)
+    def apply[T : Numeric : Manifest](mesh: Rep[Mesh], fields: Function1[Rep[Vertex], Rep[T]]*)(implicit o: Overloaded6) : Unit = {
       val f = SyncedFile("output.ply")
-
       f.writeln("ply")
       f.writeln("format ascii 1.0")
 
-      f.writeln("element vertex " + vertices(mesh).size)
+      f.writeln("element vertex ", vertices(mesh).size)
       for (cord <- List("x", "y", "z"))
-        f.writeln("property float " + cord)
+        f.writeln("property float ", cord)
       for (col <- List("red", "green", "blue"))
-        f.writeln("property uchar " + col)
-      f.writeln("element face " + faces(mesh).size)
+        f.writeln("property uchar ", col)
+      f.writeln("element face ", faces(mesh).size)
       f.writeln("property list uchar int vertex_index")      
-      f.writeln("element edge " + edges(mesh).size)
+      f.writeln("element edge ", edges(mesh).size)
       for (i <- List("1", "2"))
-        f.writeln("property int vertex" + i)
+        f.writeln("property int vertex", i)
       f.writeln("end_header")
       for (v <- vertices(mesh)) {
-        f.write(pos(v).x + " " + pos(v).y + " " + pos(v).z)
-	for (field <- fields)
-          f.write(" " + field(v).toInt)
+        f.write(v.x, " ", v.y, " ", v.z)
+	for (field <- fields) 
+          f.write(" ", field(v).toInt)
         for (i <- 0 until (3-fields.size))
           f.write(" 0")
         f.writeln()
       }
       for (face <- faces(mesh)) {
-        f.write("" + vertices(face).size)
+        f.write(vertices(face).size)
         for (v <- vertices(face)) {
-          f.write(" " + ID(v))
+          f.write(" ", ID(v))
         }
         f.writeln()        
       }
       for (e <- edges(mesh)) {
-        f.writeln(ID(head(e)) + " " + ID(tail(e)))
+        f.writeln(ID(head(e)), " ", ID(tail(e)))
       }
       f.close()
     }

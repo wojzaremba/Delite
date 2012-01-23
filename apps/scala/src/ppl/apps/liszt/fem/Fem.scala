@@ -8,29 +8,33 @@ object FemRunner extends DeLisztApplicationRunner with Fem
 
 
 trait Fem extends DeLisztApplication with Libs {
-
+  
   var vF: Rep[Field[Vertex, Int]] = null
- // var boundary: Rep[MeshSet[Vertex]] = null
+  var m : ExtendedMesh = null
 
-  def main(): Unit = {
-/*val builder = new MeshBuilder
-builder.addCell(Vertex(0), Vertex(1), Vertex(2), Vertex(3))
-builder.setPosition(Vertex(0), 0., 0., 0.)
-builder.setPosition(Vertex(1), 1., 0., 0.)
-builder.setPosition(Vertex(2), 0., 1., 0.)
-builder.setPosition(Vertex(3), 0., 0., 1.)
- builder.setBoundarySet("boundary", Vertex(2))
- builder.setBoundarySet("boundary", Vertex(1))
-val mesh1 = builder.build
-    boundary = BoundarySet[Vertex]("boundary", mesh1)
+  def f(x : Rep[Double], y: Rep[Double], z : Rep[Double]) : Tuple3[Rep[Double], Rep[Double], Rep[Double]] =
+    (100.*x*x*x, 200.*y*y*y, 100.*sin(z))
+
+/*  def deltaF(x : Double, y: Double, z : Double) =
+    2 + 2*3*y - sin(z)
 */
 
-    val mesh1 = CubeMesh(3., 1.)
-    vF = FieldWithConst[Vertex, Int](0, mesh1)
-    for (v <- mesh1.boundary) {
+  def init() {
+    m = CubeMesh(1., 0.1)
+  }
+
+  def main(): Unit = {
+    init()
+    OutputMesh(m, f _)
+
+//for (c <- cells(m)) println(ID(c) + "  " + c.det)
+
+
+  //  for (c <- cells(m)) println(detF(c))
+  //  vF = FieldWithConst[Vertex, Int](0, m)
+    /*for (v <- mesh1.boundary) {
 	vF(v) = 255
-    }
-    OutputMesh(mesh1, vF, vF, vF)
+    }*/
 
   }
 }

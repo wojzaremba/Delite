@@ -49,7 +49,7 @@ trait FieldOps extends DSLType with Variables with OverloadHack {
   /**
    * This class defines the public interface for the Field[T] class.
    */
-  class fieldOpsCls[MO<:MeshObj:Manifest, T:Manifest](x: Rep[Field[MO, T]]) {
+  class fieldOpsCls[MO<:MeshObj:Manifest, T:Manifest](x: Rep[Field[MO, T]]) extends Function1[Rep[MO], Rep[T]] {
     def apply(mo : Rep[MO]) = field_mo_apply(x, mo)
     def update(mo: Rep[MO], v: Rep[T]) = field_mo_update(x,mo,v)
 

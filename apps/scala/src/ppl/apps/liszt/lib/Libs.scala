@@ -10,4 +10,6 @@ import java.nio.ByteBuffer
  * Date: 01/13/11
  */
 
-trait Libs extends DeLisztApplication with OutputMesh with SimpleMesh
+trait Libs extends DeLisztApplication with OutputMesh with SimpleMesh with Common {
+  this: Libs => 
+}
