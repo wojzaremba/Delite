@@ -31,15 +31,15 @@ trait FieldOps extends DSLType with Variables with OverloadHack {
   def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Rep[T])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
   def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Rep[T])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
 
-  def FieldWithConst[MO<:Cell:Manifest, T:Manifest](c: Rep[T], m:Rep[Mesh])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
-  def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Rep[T], m:Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
-  def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Rep[T], m:Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
-  def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Rep[T], m:Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
+  def FieldWithConst[MO<:Cell:Manifest, T:Manifest](c: Rep[T], mesh : Rep[Mesh])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
+  def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Rep[T], mesh : Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
+  def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Rep[T], mesh : Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
+  def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Rep[T], mesh : Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
 
-  def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
-  def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
-  def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
-  def FieldWithLabel[MO<:Vertex:Manifest, T:Manifest](url : Rep[String], m : Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
+  def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Rep[String], mesh : Rep[Mesh])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
+  def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Rep[String], mesh : Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
+  def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Rep[String], mesh : Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) : Rep[Field[Face,T]]
+  def FieldWithLabel[MO<:Vertex:Manifest, T:Manifest](url : Rep[String], mesh : Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) : Rep[Field[Vertex,T]]
 
   def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Rep[String])(implicit ev : MO =:= Cell) : Rep[Field[Cell,T]]
   def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Rep[String])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[Field[Edge,T]]
@@ -73,12 +73,6 @@ trait FieldOps extends DSLType with Variables with OverloadHack {
 
 trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   this: DeLisztExp with FieldImplOps =>
-
-  class FieldDef[MO<:MeshObj:Manifest, T:Manifest](val mesh: Exp[Mesh]) extends Def[Field[MO, T]]
-
-  object FieldDef {
-    def unapply[MO<:MeshObj:Manifest, T:Manifest](m : FieldDef[MO, T]) = Some(m.mesh)
-  }
 
   //def reflectPure[T:Manifest](x: Def[T]): Exp[T] = toAtom(x) // TODO: just to make refactoring easier in case we want to change to reflectSomething
 
@@ -126,19 +120,19 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
 
   ////////////////////////////////
   // implemented via delite ops
-  case class DeLisztFieldWithConstCell[T:Manifest](v: Exp[T], m: Exp[Mesh]) extends FieldDef[Cell,T](m) {
+  case class DeLisztFieldWithConstCell[T:Manifest](v: Exp[T], mesh: Exp[Mesh]) extends Def[Field[Cell, T]] {
     val t = manifest[T]
   }
   
-  case class DeLisztFieldWithConstEdge[T:Manifest](v: Exp[T], m: Exp[Mesh]) extends FieldDef[Edge,T](m) {
+  case class DeLisztFieldWithConstEdge[T:Manifest](v: Exp[T], mesh: Exp[Mesh]) extends Def[Field[Edge, T]] {
     val t = manifest[T]
   }
   
-  case class DeLisztFieldWithConstFace[T:Manifest](v: Exp[T], m: Exp[Mesh]) extends FieldDef[Face,T](m) {
+  case class DeLisztFieldWithConstFace[T:Manifest](v: Exp[T], mesh: Exp[Mesh]) extends Def[Field[Face, T]] {
     val t = manifest[T]
   }
   
-  case class DeLisztFieldWithConstVertex[T:Manifest](v: Exp[T], m: Exp[Mesh]) extends FieldDef[Vertex,T](m) {
+  case class DeLisztFieldWithConstVertex[T:Manifest](v: Exp[T], mesh: Exp[Mesh]) extends Def[Field[Vertex, T]] {
     val t = manifest[T]
   }
   
@@ -158,19 +152,19 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
     val t = manifest[T]
   }
 
-  case class LabelFieldNewCell[T:Manifest](url: Exp[String], m: Exp[Mesh]) extends FieldDef[Cell,T](m) {
+  case class LabelFieldNewCell[T:Manifest](url: Exp[String], mesh: Exp[Mesh]) extends Def[Field[Cell, T]] {
     val t = manifest[T]
   }
   
-  case class LabelFieldNewEdge[T:Manifest](url: Exp[String], m: Exp[Mesh]) extends FieldDef[Edge,T](m) {
+  case class LabelFieldNewEdge[T:Manifest](url: Exp[String], mesh: Exp[Mesh]) extends Def[Field[Edge, T]] {
     val t = manifest[T]
   }
   
-  case class LabelFieldNewFace[T:Manifest](url: Exp[String], m: Exp[Mesh]) extends FieldDef[Face,T](m) {
+  case class LabelFieldNewFace[T:Manifest](url: Exp[String], mesh: Exp[Mesh]) extends Def[Field[Face, T]] {
     val t = manifest[T]
   }
   
-  case class LabelFieldNewVertex[T:Manifest](url: Exp[String], m: Exp[Mesh]) extends FieldDef[Vertex,T](m) {
+  case class LabelFieldNewVertex[T:Manifest](url: Exp[String], mesh: Exp[Mesh]) extends Def[Field[Vertex, T]] {
     val t = manifest[T]
   }
   
@@ -198,10 +192,10 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   }).asInstanceOf[Exp[A]]
   
   override def aliasSyms(e: Any): List[Sym[Any]] = e match {
-    case DeLisztFieldWithConstCell(x, m) => Nil
-    case DeLisztFieldWithConstEdge(x, m) => Nil
-    case DeLisztFieldWithConstFace(x, m) => Nil
-    case DeLisztFieldWithConstVertex(x, m) => Nil
+    case DeLisztFieldWithConstCell(x, mesh) => Nil
+    case DeLisztFieldWithConstEdge(x, mesh) => Nil
+    case DeLisztFieldWithConstFace(x, mesh) => Nil
+    case DeLisztFieldWithConstVertex(x, mesh) => Nil
     case FieldApply(a,i) => Nil
     case FieldUpdate(a,i,x) => Nil
     case FieldPlusUpdate(a,i,x) => Nil
@@ -212,10 +206,10 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   }
 
   override def containSyms(e: Any): List[Sym[Any]] = e match {
-    case DeLisztFieldWithConstCell(x, m) => Nil
-    case DeLisztFieldWithConstEdge(x, m) => Nil
-    case DeLisztFieldWithConstFace(x, m) => Nil
-    case DeLisztFieldWithConstVertex(x, m) => Nil
+    case DeLisztFieldWithConstCell(x, mesh) => Nil
+    case DeLisztFieldWithConstEdge(x, mesh) => Nil
+    case DeLisztFieldWithConstFace(x, mesh) => Nil
+    case DeLisztFieldWithConstVertex(x, mesh) => Nil
     case FieldApply(a,i) => Nil
     case FieldUpdate(a,i,x) => syms(x)
     case FieldPlusUpdate(a,i,x) => syms(x)
@@ -226,10 +220,10 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   }
 
   override def extractSyms(e: Any): List[Sym[Any]] = e match {
-    case DeLisztFieldWithConstCell(x, m) => Nil
-    case DeLisztFieldWithConstEdge(x, m) => Nil
-    case DeLisztFieldWithConstFace(x, m) => Nil
-    case DeLisztFieldWithConstVertex(x, m) => Nil
+    case DeLisztFieldWithConstCell(x, mesh) => Nil
+    case DeLisztFieldWithConstEdge(x, mesh) => Nil
+    case DeLisztFieldWithConstFace(x, mesh) => Nil
+    case DeLisztFieldWithConstVertex(x, mesh) => Nil
     case FieldApply(a,i) => syms(a)
     case FieldUpdate(a,i,x) => Nil
     case FieldPlusUpdate(a,i,x) => Nil
@@ -240,10 +234,10 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   }
 
   override def copySyms(e: Any): List[Sym[Any]] = e match {
-    case DeLisztFieldWithConstCell(x, m) => Nil
-    case DeLisztFieldWithConstEdge(x, m) => Nil
-    case DeLisztFieldWithConstFace(x, m) => Nil
-    case DeLisztFieldWithConstVertex(x, m) => Nil
+    case DeLisztFieldWithConstCell(x, mesh) => Nil
+    case DeLisztFieldWithConstEdge(x, mesh) => Nil
+    case DeLisztFieldWithConstFace(x, mesh) => Nil
+    case DeLisztFieldWithConstVertex(x, mesh) => Nil
     case FieldApply(a,i) => Nil
     case FieldUpdate(a,i,x) => syms(a)
     case FieldPlusUpdate(a,i,x) => syms(a)
@@ -267,15 +261,15 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(DeLisztFieldWithConstFace(c, mesh))
   def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Exp[T])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(DeLisztFieldWithConstVertex(c, mesh))
 
-  def FieldWithConst[MO<:Cell:Manifest, T:Manifest](c: Exp[T], m: Exp[Mesh])(implicit ev : MO =:= Cell) = reflectMutable(DeLisztFieldWithConstCell(c, m))
-  def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Exp[T], m: Exp[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(DeLisztFieldWithConstEdge(c, m))
-  def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Exp[T], m: Exp[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(DeLisztFieldWithConstFace(c, m))
-  def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Exp[T], m: Exp[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(DeLisztFieldWithConstVertex(c, m))
+  def FieldWithConst[MO<:Cell:Manifest, T:Manifest](c: Exp[T], mesh: Exp[Mesh])(implicit ev : MO =:= Cell) = reflectMutable(DeLisztFieldWithConstCell(c, mesh))
+  def FieldWithConst[MO<:Edge:Manifest, T:Manifest](c: Exp[T], mesh: Exp[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(DeLisztFieldWithConstEdge(c, mesh))
+  def FieldWithConst[MO<:Face:Manifest, T:Manifest](c: Exp[T], mesh: Exp[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(DeLisztFieldWithConstFace(c, mesh))
+  def FieldWithConst[MO<:Vertex:Manifest, T:Manifest](c: Exp[T], mesh: Exp[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(DeLisztFieldWithConstVertex(c, mesh))
 
-  def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Cell) = reflectMutable(LabelFieldNewCell[T](url, m))
-  def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(LabelFieldNewEdge[T](url, m))
-  def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(LabelFieldNewFace[T](url, m))
-  def FieldWithLabel[MO<:Vertex:Manifest, T:Manifest](url : Exp[String], m : Rep[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(LabelFieldNewVertex[T](url, m))
+  def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Exp[String], mesh : Exp[Mesh])(implicit ev : MO =:= Cell) = reflectMutable(LabelFieldNewCell[T](url, mesh))
+  def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Exp[String], mesh : Exp[Mesh])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(LabelFieldNewEdge[T](url, mesh))
+  def FieldWithLabel[MO<:Face:Manifest, T:Manifest](url : Exp[String], mesh : Exp[Mesh])(implicit ev : MO =:= Face, o: Overloaded2) = reflectMutable(LabelFieldNewFace[T](url, mesh))
+  def FieldWithLabel[MO<:Vertex:Manifest, T:Manifest](url : Exp[String], mesh : Exp[Mesh])(implicit ev : MO =:= Vertex, o: Overloaded3) = reflectMutable(LabelFieldNewVertex[T](url, mesh))
 
   def FieldWithLabel[MO<:Cell:Manifest, T:Manifest](url : Exp[String])(implicit ev : MO =:= Cell) = reflectMutable(LabelFieldNewCell[T](url, mesh))
   def FieldWithLabel[MO<:Edge:Manifest, T:Manifest](url : Exp[String])(implicit ev : MO =:= Edge, o: Overloaded1) = reflectMutable(LabelFieldNewEdge[T](url, mesh))
@@ -290,7 +284,7 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
   def checkCorrectness[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int]) {
     val tpField = findDefinition(x.asInstanceOf[Sym[_]]).get
     val mField : Sym[_] = (tpField.rhs match {
-      case Reflect(FieldDef(m: Sym[_]), _, _) => m
+      case Reflect(m:{val mesh : Exp[Mesh]}, _, _) => m.mesh
       case _ => throw new Exception("Can't find mesh corresponding to field")
     }).asInstanceOf[Sym[_]]
     val tpElem = findDefinition(n.asInstanceOf[Sym[_]]).get

@@ -22,9 +22,11 @@ trait MeshSetOps extends DSLType with Variables {
    */
   class meshSetOpsCls[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]]) {
     def foreach(block: Rep[MO] => Rep[Unit]) = meshset_foreach(x, block)
+  //  def filter(block: Rep[MO] => Rep[Boolean]) = meshset_filter(x, block)
   }
 
   def meshset_foreach[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Unit]) : Rep[Unit]
+ // def meshset_filter[MO<:MeshObj:Manifest, T](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Boolean]) : Rep[MeshSet[MO]]
 }
 
 trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
@@ -40,6 +42,18 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     val in = copyTransformedOrElse(_.in)(x)
     val size = copyTransformedOrElse(_.size)(x.size)
   }
+   /*
+  case class MeshSetFilter[MO<:MeshObj:Manifest](in: Exp[MeshSet[MO]], cond: Exp[MO] => Exp[Boolean])
+    extends DeliteOpFilter[MO, MO, MeshSet[MO]] {
+
+    val size = in.size
+    def func = e => e
+    //TODO: expression[CB]
+    def alloc = MeshSetImpl(in.size)
+
+    def m = manifest[MO]
+
+  }  */
   
   // e comes in as an internal id of a face
   case class NestedMeshSetForeach[MO<:MeshObj:Manifest](in: Exp[MeshSet[MO]], crs: Exp[CRS], e: Exp[Int], block: Exp[MO] => Exp[Unit]) extends Def[Unit] {
@@ -126,6 +140,14 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
       case _ => reflectEffect(t, summarizeEffects(t.body.asInstanceOf[DeliteForeachElem[MO]].func).star)
     }
   }
+   /*
+  def meshset_filter[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], block: Exp[MO] => Exp[Boolean]) : Rep[MeshSet[MO]] = {
+    val t = MeshSetFilter(x,block)
+    x match {
+      case _ => reflectEffect(t, summarizeEffects(t.body.asInstanceOf[MeshSetFilter[MO, MO, MeshSet[MO]]].func).star)
+    }
+  }  */
+
   
   def nms_foreach[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], crs: Exp[CRS], e: Exp[Int], block: Exp[MO] => Exp[Unit]) : Exp[Unit] = {
     val t = NestedMeshSetForeach(x, crs, e, block)

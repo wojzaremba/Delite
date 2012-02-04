@@ -73,6 +73,8 @@ trait SimpleMesh {
             builder.setPosition(v, i * step, j * step, k * step)
             if ((i < 1) || (j < 1) || (k < 1) || (i > xs-2) || (j > ys - 2) || (k > zs - 2))
               builder.setBoundarySet("boundary", v)
+            else
+              builder.setBoundarySet("inside", v)
             if (i < (xs - 1) && j < (ys - 1) && k < (zs - 1)) {
               val a0 = Vertex(i + j * xs + k * xs * ys)
               val b0 = Vertex(1 + i + j * xs + k * xs * ys)
@@ -100,8 +102,29 @@ trait SimpleMesh {
       }
       val mesh = builder.build()
       val boundary = BoundarySet[Vertex]("boundary", mesh)
+      val inside = BoundarySet[Vertex]("inside", mesh)
+      ExtendedMesh(mesh, boundary, inside)
+    }
+  }
+
+  object TetrahedronMesh {
+    def apply(): ExtendedMesh = {
+      val builder = new MeshBuilder
+      builder.addCell(Vertex(0), Vertex(1), Vertex(2), Vertex(3))
+      builder.setPosition(Vertex(0), 0., 0., 0.)
+      builder.setPosition(Vertex(1), 1., 0., 0.)
+      builder.setPosition(Vertex(2), 0., 1., 0.)
+      builder.setPosition(Vertex(3), 0., 0., 1.)
+      builder.setBoundarySet("boundary", Vertex(0))
+      val mesh = builder.build()
+      val boundary = BoundarySet[Vertex]("boundary", mesh)
       ExtendedMesh(mesh, boundary)
     }
   }
 
+
+
 }
+
+
+

@@ -7,7 +7,7 @@ import ppl.delite.framework.datastruct.scala.DeliteCollection
  */
 
 //////////////////
-// DeLizst
+// DeLiszt
 
 trait Vec[N<:IntM,T] extends DeliteCollection[T]
 trait Mat[R<:IntM,C<:IntM,T] extends DeliteCollection[T]

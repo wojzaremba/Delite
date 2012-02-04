@@ -42,10 +42,12 @@ class BoundarySetImpl extends BoundarySet {
   def add(start: Int, end: Int) {
     _ranges += start until end
   }
+
 }
 
 
 case class BoundarySetRangeImpl(start: Int, end : Int) extends BoundarySet {
   def apply(i : Int) = start + i
   override def size = end - start
+  override def contains(i : Int) : Boolean = (i >= start) && (i < end)
 }

@@ -347,14 +347,22 @@ class MeshSkeleton(meshId: Int) {
   def renumerate() {
     var pos = 0
     var oldPos = 0
-    for ((name, set) <- boundarySet) {
-      val sortedSet = set.toList.sorted
+    for (name <- boundarySet.keys) {
+      val sortedSet = boundarySet(name).toList.sorted
       oldPos = pos
       Log.log("boundary set " + name + " initially is compound of vertices " + sortedSet)
       for (v <- sortedSet) {
         Log.log("swapping vertex " + v + " to " + pos)
         if (pos < v) {
           swapVertex(v, pos)
+          for {
+            (name2, set2) <- boundarySet
+            if name2 != name
+            if set2 contains pos
+          } {
+            boundarySet(name2) = (set2 - pos) + v
+            Log.log("updated boundary set " + name2 + " to " + boundarySet(name2))
+          }
         } else if (pos > v) {
           throw new Exception("Can't reorder vertices to establish boundary sets")
         }

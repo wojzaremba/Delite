@@ -67,6 +67,8 @@ trait MatOps extends DSLType with Variables {
 
     def t = mat_transpose(x)
 
+    def i(implicit a:Arith[A]) = mat_inverse(x)
+
     // arithmetic operations
     def +(y:Rep[Self])(implicit a:Arith[A]) = mat_plus(x,y)
     def -(y:Rep[Self])(implicit a:Arith[A]) = mat_minus(x,y)
@@ -98,6 +100,8 @@ trait MatOps extends DSLType with Variables {
   def col[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](m:Rep[Mat[R,C,A]],a:Rep[Int]):Rep[Vec[R,A]]
 
   def mat_transpose[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x:Rep[Mat[R,C,A]]):Rep[Mat[R,C,A]]
+
+  def mat_inverse[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Rep[Mat[R,C,A]]):Rep[Mat[R,C,A]]
 
   def mat_plus[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Rep[Mat[R,C,A]],y:Rep[Mat[R,C,A]]):Rep[Mat[R,C,A]]
   def mat_plus_scalar[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Rep[Mat[R,C,A]],y:Rep[A]):Rep[Mat[R,C,A]]
@@ -176,6 +180,16 @@ trait MatOpsExp extends MatOps with VariablesExp with DeliteCollectionOpsExp {
     val c = manifest[C]
     val vc = implicitly[MVal[C]]
     val a = manifest[A]
+  }
+
+  case class MatInverse[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x: Exp[Mat[R,C,A]])
+    extends DeliteOpSingleTask(reifyEffectsHere(mat_inverse_impl(x))) {
+    val r = manifest[R]
+    val vr = implicitly[MVal[R]]
+    val c = manifest[C]
+    val vc = implicitly[MVal[C]]
+    val a = manifest[A]
+    val aa = implicitly[Arith[A]]
   }
   
   case class MatGetRow[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x: Exp[Mat[R,C,A]], i: Exp[Int]) extends Def[MatRow[C,A]] {
@@ -327,6 +341,7 @@ trait MatOpsExp extends MatOps with VariablesExp with DeliteCollectionOpsExp {
       case e@MatMinus(x,y) => reflectPure(new { override val original = Some(f,e) } with MatMinus(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa))(mtype(manifest[A]))
       case e@MatUnaryMinus(x) => reflectPure(new { override val original = Some(f,e) } with MatUnaryMinus(f(x))(e.r, e.vr, e.c, e.vc, e.a, e.aa))(mtype(manifest[A]))
       case e@MatTranspose(x) => reflectPure(new { override val original = Some(f,e) } with MatTranspose(f(x))(e.r, e.vr, e.c, e.vc, e.a))(mtype(manifest[A]))
+      case e@MatInverse(x) => reflectPure(new { override val original = Some(f,e) } with MatInverse(f(x))(e.r, e.vr, e.c, e.vc, e.a, e.aa))(mtype(manifest[A]))
       case Reflect(e@MatMultiply(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatMultiply(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.cc, e.vcc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case Reflect(e@MatTimes(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTimes(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case Reflect(e@MatTimesScalar(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTimesScalar(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
@@ -337,7 +352,8 @@ trait MatOpsExp extends MatOps with VariablesExp with DeliteCollectionOpsExp {
       case Reflect(e@MatPlusScalar(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatPlusScalar(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case Reflect(e@MatMinus(x,y), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatMinus(f(x),f(y))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case Reflect(e@MatUnaryMinus(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatUnaryMinus(f(x))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
-      case Reflect(e@MatTranspose(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTranspose(f(x))(e.r, e.vr, e.c, e.vc, e.a), mapOver(f,u), f(es)))(mtype(manifest[A])) 
+      case Reflect(e@MatTranspose(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatTranspose(f(x))(e.r, e.vr, e.c, e.vc, e.a), mapOver(f,u), f(es)))(mtype(manifest[A]))
+      case Reflect(e@MatInverse(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MatInverse(f(x))(e.r, e.vr, e.c, e.vc, e.a, e.aa), mapOver(f,u), f(es)))(mtype(manifest[A]))
       case MatNumRows(x) => mat_num_rows(f(x))
       case MatNumCols(x) => mat_num_cols(f(x))
       // Read/write effects
@@ -421,6 +437,8 @@ trait MatOpsExp extends MatOps with VariablesExp with DeliteCollectionOpsExp {
   def mat_update[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x:Exp[Mat[R,C,A]],i:Exp[Int],j:Exp[Int],y:Exp[A]) = reflectWrite(x)(MatUpdate(x,i,j,y))
 
   def mat_transpose[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x:Rep[Mat[R,C,A]]) = reflectPure(MatTranspose(x))
+
+  def mat_inverse[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Rep[Mat[R,C,A]]) = reflectPure(MatInverse(x))
 
   def mat_plus[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Exp[Mat[R,C,A]],y:Exp[Mat[R,C,A]]) = reflectPure(MatPlus(x,y))
   def mat_plus_scalar[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x:Exp[Mat[R,C,A]],y:Exp[A]) = reflectPure(MatPlusScalar(x,y))

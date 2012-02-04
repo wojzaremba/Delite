@@ -7,6 +7,7 @@ import ppl.dsl.deliszt.{DeLisztExp, DeLisztCompiler, DeLisztLift, DeLiszt}
 trait MatImplOps { this: DeLisztExp =>
   def mat_apply_impl[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](x: Rep[Mat[R,C,A]], i: Rep[Int], j: Rep[Int]): Rep[A]
   def mat_transpose_impl[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest](m: Rep[Mat[R,C,A]]): Rep[Mat[R,C,A]]
+  def mat_inverse_impl[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](m: Rep[Mat[R,C,A]]): Rep[Mat[R,C,A]]
   def mat_multiply_impl[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,CC<:IntM:Manifest:MVal,A:Manifest:Arith](x: Rep[Mat[R,C,A]], y: Rep[Mat[C,CC,A]]): Rep[Mat[R,CC,A]]
   def mat_times_vector_impl[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](x: Rep[Mat[R,C,A]], y: Rep[Vec[C,A]]): Rep[Vec[C,A]]
 }
@@ -27,6 +28,25 @@ trait MatImplOpsStandard extends MatImplOps {
         out(i,j) = m(j,i)
       }
     }
+    out.unsafeImmutable
+  }
+
+  def mat_inverse_impl[R<:IntM:Manifest:MVal,C<:IntM:Manifest:MVal,A:Manifest:Arith](m: Rep[Mat[R,C,A]]) = {
+    // wz : ill posed, work only for matrixes 3x3
+    val out = Mat[R,C,A](m.numRows,m.numCols)
+    val determinant =    m(0,0)*(m(1,1)*m(2,2)-m(2,1)*m(1,2))-
+      m(0,1)*(m(1,0)*m(2,2)-m(1,2)*m(2,0))+
+      m(0,2)*(m(1,0)*m(2,1)-m(1,1)*m(2,0))
+    val invdet = determinant.one/determinant
+    out(0,0) =  (m(1,1)*m(2,2)-m(2,1)*m(1,2))*invdet
+    out(1,0) = -(m(0,1)*m(2,2)-m(0,2)*m(2,1))*invdet
+    out(2,0) =  (m(0,1)*m(1,2)-m(0,2)*m(1,1))*invdet
+    out(0,1) = -(m(1,0)*m(2,2)-m(1,2)*m(2,0))*invdet
+    out(1,1) =  (m(0,0)*m(2,2)-m(0,2)*m(2,0))*invdet
+    out(2,1) = -(m(0,0)*m(1,2)-m(1,0)*m(0,2))*invdet
+    out(0,2) =  (m(1,0)*m(2,1)-m(2,0)*m(1,1))*invdet
+    out(1,2) = -(m(0,0)*m(2,1)-m(2,0)*m(0,1))*invdet
+    out(2,2) =  (m(0,0)*m(1,1)-m(1,0)*m(0,1))*invdet
     out.unsafeImmutable
   }
   
