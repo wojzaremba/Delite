@@ -8,7 +8,7 @@ var os : String = null
 if (System.getProperty("os.name").startsWith("Windows")) os = "windows"
 else if (System.getProperty("os.name").startsWith("Linux")) os = "linux"
 else if (System.getProperty("os.name").startsWith("Mac OS X")) os = "mac"
-if (os == null) sys.error("operating system %s is not supported".format(System.getProperty("os.name")))
+if (os == null) error("operating em %s is not supported".format(System.getProperty("os.name")))
 val windows = os == "windows"
 val linux = os == "linux"
 val mac = os == "mac"
@@ -266,7 +266,7 @@ def parse_args(args: Args, verbose: Boolean = true, interactive: Boolean = true)
       if ((arg: String) == "-help") { 
         if (interactive) {
           println(help); 
-          sys.exit(0)
+          exit(0)
         } else {
           // do nothing
         }
@@ -276,7 +276,7 @@ def parse_args(args: Args, verbose: Boolean = true, interactive: Boolean = true)
       var is_complex = complex_opts(arg)
       if (is_complex && prev_complex) {
         if (interactive) {
-          sys.error("Bad command-line. %s".format(help))
+          error("Bad command-line. %s".format(help))
         } else {
           throw new Exception("Bad command-line")
         }
@@ -325,7 +325,7 @@ def parse_args_with_runner(args: Args, verbose: Boolean = true, interactive: Boo
         if (runners.length == 0) {
           if (interactive) {
             println("Error: No *Runner.class files found in application classpath.")
-            sys.error("Specify a runner to be used during DSL compilation phase (-R<classname>).")
+            error("Specify a runner to be used during DSL compilation phase (-R<classname>).")
           } else {
             throw new Exception("Error: No *Runner.class files found in application classpath.")
           }
@@ -335,7 +335,7 @@ def parse_args_with_runner(args: Args, verbose: Boolean = true, interactive: Boo
           if (interactive) {
             println("Error: Multiple *Runner.class files found in application classpath:")
             runners foreach println
-            sys.error("Specify a runner to be used during DSL compilation phase (-R<classname>).")
+            error("Specify a runner to be used during DSL compilation phase (-R<classname>).")
           } else {
             throw new Exception("Error: Multiple *Runner.class files found in application classpath:")
           }
@@ -381,7 +381,7 @@ def parse_args_with_deg(args: Args, verbose: Boolean = true, interactive: Boolea
     if (degs.length == 0) {
       if (interactive) {
         println("Error: No *.deg files found in current directory.")
-        sys.error("Specify a DEG to be used during runtime phase (-Xdeg:<path to deg file>).")
+        error("Specify a DEG to be used during runtime phase (-Xdeg:<path to deg file>).")
       } else {
         throw new Exception("Specify a DEG to be used during runtime phase (-Xdeg:<path to deg file>).")
       }
@@ -391,7 +391,7 @@ def parse_args_with_deg(args: Args, verbose: Boolean = true, interactive: Boolea
       if (interactive) {
         println("Error: Multiple *.deg files found in current directory:")
         degs foreach println
-        sys.error("Specify a DEG to be used during runtime phase (-Xdeg:<path to deg file>).")
+        error("Specify a DEG to be used during runtime phase (-Xdeg:<path to deg file>).")
       } else {
         throw new Exception("Specify a DEG to be used during runtime phase (-Xdeg:<path to deg file>).")
       }
@@ -449,7 +449,7 @@ var env = scala.collection.mutable.Map[String, String]()
 def run(what: Path) = {
   val builder = new ProcessBuilder
   builder.redirectErrorStream(true)
-  builder.command(seqAsJavaList((new Arg(what) +: args).map({arg => (arg: String)})))
+  builder.command(((new Arg(what) +: args).map({arg => (arg: String)})))
   builder.environment.put("CLASSPATH", classpath.toString)
   env foreach { _ match { case (k, v) => builder.environment.put(k, v) } }
 
@@ -479,6 +479,6 @@ def run(what: Path) = {
 
 def exec(what: Path) = {
   val (exitValue, _) = run(what)
-  sys.exit(exitValue)
+  exit(exitValue)
 }
 
