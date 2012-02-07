@@ -9,89 +9,115 @@ object FemRunner extends DeLisztApplicationRunner with Fem
 
 trait Fem extends DeLisztApplication with Libs {
 
-  var matrix: Rep[Field[Edge, Double]] = null
-  var matrixV: Rep[Field[Vertex, Double]] = null
-  var values: Rep[Field[Vertex, Double]] = null
-  var m: ExtendedMesh = null
-  var dF: Rep[Field[Vertex, Double]] = null
+  var matrixE: Rep[Field[Edge, Float]] = null
+  var matrixV: Rep[Field[Vertex, Float]] = null
 
-  def f(x: Rep[Double], y: Rep[Double], z: Rep[Double]) =
-    x * (1.- x) * y * (1.- y) * z * (1.- z)
+  var xk: Rep[Field[Vertex, Float]] = null
+  var pk: Rep[Field[Vertex, Float]] = null
+  var rk: Rep[Field[Vertex, Float]] = null
 
-  def deltaF(x: Rep[Double], y: Rep[Double], z: Rep[Double]) =
-    -(x * (1.- x) * y * (1.- y) + y * (1.- y) * z * (1.- z) + x * (1.- x) * z * (1.- z))
+  var dF: Rep[Field[Vertex, Float]] = null
+  val sizex : Float = 10.f
+  val sizey : Float = 10.f
 
-  def integralEdge(cell: Rep[Cell], edge: Rep[Edge]) = {
-    val arr = ((Set[Rep[Int]](0, 1, 2, 3) - ID(edge.head)) - ID(edge.tail)).map(vertex(cell, _)).toArray
-    val from1 = edge.head - arr(0)
-    val to1 = edge.tail - arr(0)
-    val b1 = arr(1) - arr(0)
-    val v1 = cross(from1, b1)
-    val v2 = cross(to1, b1)
-    (dot(v1, v2) * cell.vol / dot(v1, from1)) / dot(v2, from1)
+  def f(x: Rep[Float], y: Rep[Float], z: Rep[Float]) : Rep[Float] =
+    x*(sizex - x) * y * y * (sizey - y) * 10.f
+
+  def deltaF(x: Rep[Float], y: Rep[Float]) : Rep[Float] =
+    y * y * (sizey - y) * 20.f + x * (sizey - x) * (6.f * y - 2.f * sizey) * 10.f
+
+  def lamda(v : Rep[Vertex], face : Rep[Face]) : Rep[Vec[_3, Float]] = {
+    val set = meshset_filter(vertices(face), {(x : Rep[Vertex]) => ID(x) != ID(v)} )
+    val vec = cross((set(1) - set(0)), Vec(0.f, 0.f, 1.f)) / face.det
+    if (ID(v) == ID(vertex(face, 1)))
+      -vec
+    else
+      vec
   }
 
-  /*def infix_filter(l : List[T], f : T => Rep[Boolean]) = {
+  def integralEdge(edge : Rep[Edge], face: Rep[Face]) = {
+    val a = head(edge)
+    val b = tail(edge)
+    if (m.inside.contains(a) || m.inside.contains(b)) {
+      dot(lamda(a, face), lamda(b, face)) / 2.f
+    } else 0.f
+  }
 
-  } */
-
-  def test(x:Int):Rep[Boolean] = unit(true)
-  
-  def integralVertex(a: Rep[Vertex], b: Rep[Vertex], c: Rep[Vertex], d: Rep[Vertex]) = {
+  def integralVertex(a: Rep[Vertex], face: Rep[Face]) = {
     if (m.inside.contains(a)) {
-      val a1 = a - d
-      val b1 = b - d
-      val c1 = c - d
-      val v1 = cross(b1, c1)
-      val s1 = dot(v1, a1)
-      (dot(v1, v1)) / (s1 * s1)
-    } else 0.
+      dot(lamda(a, face), lamda(a, face)) / 2.f
+    } else 0.f
   }
 
+  def printV(mat : Rep[Field[Vertex, Float]]) {
+    println("Vertex Vector : ")
+    for (v <- vertices(m)) 
+      println(ID(v) + " " + mat(v))    
+  }
 
-  //boundary term
+  def printE(mat : Rep[Field[Edge, Float]]) {
+    println("Matrix : ")
+    for (e <- edges(m))
+      println(ID(head(e)) + " " + ID(tail(e)) + " " + mat(e))
+  }
+  
+
   def main(): Unit = {
-    m = CubeMesh(2., 1.)
+    m = RectangularMesh(sizex, sizey, 1.f)
+    pos = FieldWithLabel[Vertex, Vec[_3, Float]]("position", m)
     //m = TetrahedronMesh()
-    matrix = FieldWithConst[Edge, Double](0., m)
-    matrixV = FieldWithConst[Vertex, Double](0., m)
-  /*  values = FieldWithConst[Vertex, Double](0., m)
-    dF = FieldWithConst[Vertex, Double](0., m)
-    for (v <- vertices(m)) dF(v) = deltaF(v.x, v.y, v.z)
-    for (edge <- edges(m))
-      for (cell <- cells(edge))
-        matrix(edge) += integralEdge(cell, edge)
-    */
-    for (cell <- cells(m)) {
-      val (a, b, c, d) = (vertex(cell, 0), vertex(cell, 1), vertex(cell, 2), vertex(cell,3))
-      matrixV(a) += integralVertex(a, b, c, d)*cell.vol
+
+    matrixE = FieldWithConst[Edge, Float](0.f, m)
+    matrixV = FieldWithConst[Vertex, Float](0.f, m)
+    xk = FieldWithConst[Vertex, Float](0.f, m)
+    pk = FieldWithConst[Vertex, Float](0.f, m)
+    rk = FieldWithConst[Vertex, Float](0.f, m)
+    dF = FieldWithConst[Vertex, Float](0.f, m)
+    for (v <- vertices(m)) dF(v) = deltaF(v.x, v.y)
+
+    for (face <- faces(m)) {
+      for (v <- vertices(face)) {
+        matrixV(v) += integralVertex(v, face)
+      }
+      for (e <- edges(face))
+        matrixE(e) += integralEdge(e, face)
+    }
+    
+    printE(matrixE)
+    println()
+    printV(matrixV)
+    OutputMesh.freeFem(m, "freefem.mesh")
+
+    var result : Rep[Float] = 0.f
+   /* for (i <- 1 until 10) {
+      result += i
+      println("iii " + i)
+    }*/
+    println("result " + result)
+    
+  /*
+    for (v <- m.inside) {
+      rk(v) = dF(v)
+      pk(v) = rk(v)
     }
 
-    for (v <- vertices(m)) println(matrixV(v))
 
- /*  println("Matrix(edge)")
-   for (edge <- edges(m)) println("Edge " + ID(edge) + " value = " + matrix(edge))
 
-    println("MatrixV(Vertex)")
-    for (v <- vertices(m)) println("Vertex " + ID(v) + " value = " + matrixV(v))
-
-    var error = 100.
-    while (error < 0.001) {
-      error = 0.
+    for (iter <- 0 until 1000) {
       for (v <- m.inside) {
-        var sum = 0.
+        values2(v) = dF(v)
         for (e <- edges(v)) {
           val e2 = if (ID(e.head) == ID(v)) e.tail else e.head
-          sum += matrix(e) * values(e2)
+          values2(v) -= (matrixE(e) * values(e2))
         }
-        val old = values(v)
-        values(v) = (dF(v) - sum) / matrixV(v)
-        error += abs(values(v) - old)
       }
-      println("error " + error)
+      for (v <- m.inside) {
+        values(v) = values2(v) / matrixV(v)
+      }
     }
+    OutputMesh(m, "values.ply", values)
+    OutputMesh(m, "f.ply", f _)*/
 
-    OutputMesh(m, values)     */
-    //OutputMesh(m, f _)
+
   }
 }

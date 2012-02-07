@@ -67,9 +67,9 @@ final class DeliteProject(info: ProjectInfo) extends DefaultProject(info) with M
   }
   
   // Using OptiQL plugin
-  class OptiQLProject(info: ProjectInfo) extends FlatProject(info) {
+ // class OptiQLProject(info: ProjectInfo) extends FlatProject(info) {
     //override def compileOptions = CompileOption("-Xplugin:dsls/optiql/plugin/querysyntax.jar") :: super.compileOptions.toList    
-  }
+  //}
   
   // Define projects
   lazy val framework = project("framework", "Delite Framework", new FlatProject(_))  
@@ -83,7 +83,7 @@ final class DeliteProject(info: ProjectInfo) extends DefaultProject(info) with M
     /*lazy val optiml = project("optiml", "OptiML", new FlatProject(_){
       override def mainClass = Some("ppl.dsl.tests.SimpleVectorTest")
     }, framework)
-    lazy val optiql = project("optiql", "OptiQL", new OptiQLProject(_), framework)*/
+    //lazy val optiql = project("optiql", "OptiQL", new OptiQLProject(_), framework)*/
     
     class DeLisztProject(info: ProjectInfo) extends FlatProject(info) {
       val lift_json = "net.liftweb" % "lift-json_2.9.0" % "2.4-SNAPSHOT"

@@ -276,13 +276,13 @@ class MeshSkeleton(meshId: Int) {
       ret
     }
 
-    def toMapArray[T:Manifest](m : Map[String, (Map[Int, T], Int)]) : scala.collection.immutable.Map[String, Array[T]] = {
-      m.map(v => (v._1, toArray[T](v._2._1))).toMap
+    def toList[T:Manifest](m : Map[String, (Map[Int, T], Int)]) : List[(String, Array[T])] = {
+      m.map(v => (v._1, toArray[T](v._2._1))).toList
     }
 
 
     def toLabelData(): LabelData = {
-      LabelData(toMapArray[Int](intData), toMapArray[Float](floatData))
+      LabelData(toList[Int](intData), toList[Float](floatData))
     }
 
     def swap[T:Manifest](m : Map[String, (Map[Int, T], Int)], a: Int, b: Int) {

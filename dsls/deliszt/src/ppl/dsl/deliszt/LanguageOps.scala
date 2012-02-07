@@ -164,12 +164,8 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   case class DeLisztFtov(val mesh: Exp[Mesh]) extends Def[CRS]
   case class DeLisztVtov(val mesh: Exp[Mesh]) extends Def[CRS]
   
-<<<<<<< HEAD
   case class DeLisztVertexCell(e: Exp[Int], i: Exp[Int], mesh : Exp[Mesh]) extends Def[Vertex]
   case class DeLisztVertexFace(e: Exp[Int], i: Exp[Int], mesh : Exp[Mesh]) extends Def[Vertex]
-=======
-  case class DeLisztVertex(e: Exp[Int], i: Exp[Int], mesh : Exp[Mesh]) extends Def[Vertex]
->>>>>>> d1ce4f076bf0cac20d476ba073ace18c84a64173
   
   case class DeLisztFaceVerticesCCW(e: Exp[Face], mesh : Exp[Mesh]) extends Def[MeshSet[Vertex]]
   case class DeLisztFaceVerticesCW(e: Exp[Face], mesh : Exp[Mesh]) extends Def[MeshSet[Vertex]]

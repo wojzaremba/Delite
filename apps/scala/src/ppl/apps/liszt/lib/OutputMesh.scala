@@ -10,8 +10,8 @@ import java.nio.ByteBuffer
  * Date: 01/13/11
  */
 
-trait OutputMesh extends DeLisztApplication{
-this: Libs =>
+trait OutputMesh extends DeLisztApplication {
+  this: Libs =>
 
   /*
   ply
@@ -55,17 +55,17 @@ end_header
 3 0 255 255 255
 2 0 0 0 0                         { end with a single black line }
    */
-  
+
   import scala.collection.immutable.{List => UList}
 
   object OutputMesh {
-    def apply(mesh: Rep[Mesh]) = apply[Int](mesh)
-    
-    def apply[T : Numeric : Manifest](mesh: Rep[Mesh], fields: Seq[Function1[Rep[Vertex], Rep[T]]]) =
-      apply[T](mesh, fields:_*)
+    def apply(mesh: Rep[Mesh]) = apply[Int](mesh, "output.ply")
 
-    def apply[T : Numeric : Manifest](mesh: Rep[Mesh], fields: Function1[Rep[Vertex], Rep[T]]*)(implicit o: Overloaded6) : Unit = {
-      val f = SyncedFile("output.ply")
+    def apply[T: Numeric : Manifest](mesh: Rep[Mesh], fields: Seq[Function1[Rep[Vertex], Rep[T]]]) =
+      apply[T](mesh, "output.ply", fields: _*)
+
+    def apply[T: Numeric : Manifest](mesh: Rep[Mesh], name : Rep[String], fields: Function1[Rep[Vertex], Rep[T]]*): Unit = {
+      val f = SyncedFile(name)
       f.writeln("ply")
       f.writeln("format ascii 1.0")
 
@@ -75,16 +75,16 @@ end_header
       for (col <- UList("red", "green", "blue"))
         f.writeln("property uchar ", col)
       f.writeln("element face ", faces(mesh).size)
-      f.writeln("property list uchar int vertex_index")      
+      f.writeln("property list uchar int vertex_index")
       f.writeln("element edge ", edges(mesh).size)
       for (i <- UList("1", "2"))
         f.writeln("property int vertex", i)
       f.writeln("end_header")
       for (v <- vertices(mesh)) {
         f.write(v.x, " ", v.y, " ", v.z)
-	for (field <- fields) 
+        for (field <- fields)
           f.write(" ", field(v).toInt)
-        for (i <- 0 until (3-fields.size))
+        for (i <- 0 until (3 - fields.size))
           f.write(" 0")
         f.writeln()
       }
@@ -93,11 +93,36 @@ end_header
         for (v <- vertices(face)) {
           f.write(" ", ID(v))
         }
-        f.writeln()        
+        f.writeln()
       }
       for (e <- edges(mesh)) {
         f.writeln(ID(head(e)), " ", ID(tail(e)))
       }
+      f.close()
+    }
+
+    def freeFem(mesh: ExtendedMesh, name : Rep[String]): Unit = {
+      val f = SyncedFile(name)
+      f.writeln("MeshVersionFormatted 0")
+      f.writeln("Dimension 2")
+      f.writeln("Vertices ", vertices(mesh).size)
+      for (v <- vertices(mesh)) {
+        f.write(v.x, " ", v.y)
+        if (mesh.boundary.contains(v))
+          f.writeln(" 0")
+        else
+          f.writeln(" 1")
+      }
+      f.writeln("Edges ", edges(mesh).size)
+      for (e <- edges(mesh)) {
+        for (v <- vertices(e))
+          f.write((ID(v)+1), " ")
+        if (mesh.boundary.contains(head(e)) && mesh.boundary.contains(tail(e)))
+          f.writeln(" 0")
+        else
+          f.writeln(" 1")
+      }
+      f.writeln()
       f.close()
     }
   }

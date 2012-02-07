@@ -64,14 +64,14 @@ object Mesh {
 
 case class BoundaryRange(start : Int, end : Int)
 
-case class LabelData(intData : Map[String, Array[Int]], floatData : Map[String, Array[Float]]) {
+//wz : List due to problems with map serialization and deserialization with java 1.6
+case class LabelData(intData : List[(String, Array[Int])], floatData : List[(String, Array[Float])]) {
   def apply[T](name : String)(implicit m: ClassManifest[T]) : Array[T] = {
     (m.toString match {
-      case "int" | "Int" => intData(name)
-      case "float" | "Float" => floatData(name)
-      //wz: we should pass everywhere fields as arrays of primitives
+      case "int" | "Int" => intData.find(_._1 == name).get._2
+      case "float" | "Float" => floatData.find(_._1 == name).get._2
       case "generated.scala.Vec[Float]" =>
-        val arr = floatData(name)
+        val arr = floatData.find(_._1 == name).get._2
         val size = arr.size / 3
         val retArray = new Array[Vec[Float]](size)
         for (i <- 0 until size)

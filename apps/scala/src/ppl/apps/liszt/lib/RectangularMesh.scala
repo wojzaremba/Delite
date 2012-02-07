@@ -13,11 +13,11 @@ trait SimpleMesh {
   this: Libs =>
 
   object SquareMesh {
-    def apply(side: Double, step: Double): ExtendedMesh = RectangularMesh(side, side, step)
+    def apply(side: Float, step: Float): ExtendedMesh = RectangularMesh(side, side, step)
   }
 
   object RectangularMesh {
-    def apply(x: Double, y: Double, step: Double): ExtendedMesh = {
+    def apply(x: Float, y: Float, step: Float): ExtendedMesh = {
       val xs = (x / step).toInt + 1
       val ys = (y / step).toInt + 1
       val builder = new MeshBuilder
@@ -30,7 +30,9 @@ trait SimpleMesh {
           val v = Vertex(i + j * xs)
           if ((i < 1) || (j < 1) || (i > xs-2) || (j > ys - 2))
             builder.setBoundarySet("boundary", v)
-          builder.setPosition(v, i * step, j * step, 0.)
+          else
+            builder.setBoundarySet("inside", v)
+          builder.setPosition(v, i * step, j * step, 0.f)
           if ((i < (xs - 1)) && (j < (ys - 1))) {
             val a = Vertex(i + j * xs)
             val b = Vertex(1 + i + j * xs)
@@ -46,16 +48,17 @@ trait SimpleMesh {
       }
       val mesh = builder.build()
       val boundary = BoundarySet[Vertex]("boundary", mesh)
-      ExtendedMesh(mesh, boundary)
+      val inside = BoundarySet[Vertex]("inside", mesh)
+      ExtendedMesh(mesh, boundary, inside)
     }
   }
   
   object CubeMesh {
-    def apply(side: Double, step: Double): ExtendedMesh = CuboidMesh(side, side, side, step)
+    def apply(side: Float, step: Float): ExtendedMesh = CuboidMesh(side, side, side, step)
   }
 
   object CuboidMesh {
-    def apply(x: Double, y: Double, z: Double, step: Double): ExtendedMesh = {
+    def apply(x: Float, y: Float, z: Float, step: Float): ExtendedMesh = {
       val xs = (x / step).toInt + 1
       val ys = (y / step).toInt + 1
       val zs = (z / step).toInt + 1
@@ -111,10 +114,10 @@ trait SimpleMesh {
     def apply(): ExtendedMesh = {
       val builder = new MeshBuilder
       builder.addCell(Vertex(0), Vertex(1), Vertex(2), Vertex(3))
-      builder.setPosition(Vertex(0), 0., 0., 0.)
-      builder.setPosition(Vertex(1), 1., 0., 0.)
-      builder.setPosition(Vertex(2), 0., 1., 0.)
-      builder.setPosition(Vertex(3), 0., 0., 1.)
+      builder.setPosition(Vertex(0), 0.f, 0.f, 0.f)
+      builder.setPosition(Vertex(1), 1.f, 0.f, 0.f)
+      builder.setPosition(Vertex(2), 0.f, 1.f, 0.f)
+      builder.setPosition(Vertex(3), 0.f, 0.f, 1.f)
       builder.setBoundarySet("boundary", Vertex(0))
       val mesh = builder.build()
       val boundary = BoundarySet[Vertex]("boundary", mesh)

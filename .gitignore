@@ -36,3 +36,6 @@ scripts/deli
 scripts/sbt
 scripts/sbt-launch.jar
 dsls/deliszt/lisztlib/CMakeCache.txt
+scripts/delitec
+scripts/shared
+
