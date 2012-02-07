@@ -6,7 +6,7 @@ import ppl.dsl.deliszt.MetaInteger._
 object SCRRunner extends DeLisztApplicationRunner with SCR
 
 trait SCR extends DeLisztApplication {
-  var position : Rep[Field[Vertex,Vec[_3,Float]]] = null
+  var position : Rep[Field[Vertex,Vec[_3,Double]]] = null
   var interior_set : Rep[BoundarySet[Face]] = null
   var inlet_set : Rep[BoundarySet[Face]] = null
   var outlet_set : Rep[BoundarySet[Face]] = null
@@ -19,20 +19,20 @@ trait SCR extends DeLisztApplication {
   var insideID : Rep[Field[Face,Int]] = null
   var outsideID : Rep[Field[Face,Int]] = null
 
-  var faceCenter : Rep[Field[Face,Vec[_3,Float]]] = null
-  var faceArea : Rep[Field[Face,Float]] = null
+  var faceCenter : Rep[Field[Face,Vec[_3,Double]]] = null
+  var faceArea : Rep[Field[Face,Double]] = null
 
-  var Phi : Rep[Field[Cell,Float]] = null
-  var Flux : Rep[Field[Cell,Float]] = null
+  var Phi : Rep[Field[Cell,Double]] = null
+  var Flux : Rep[Field[Cell,Double]] = null
 
   //some geometry fields
-  var face_centroid : Rep[Field[Face,Vec[_3,Float]]] = null
-  var face_area : Rep[Field[Face,Float]] = null
-  var face_normal : Rep[Field[Face,Vec[_3,Float]]] = null
-  var face_unit_normal : Rep[Field[Face,Vec[_3,Float]]] = null
+  var face_centroid : Rep[Field[Face,Vec[_3,Double]]] = null
+  var face_area : Rep[Field[Face,Double]] = null
+  var face_normal : Rep[Field[Face,Vec[_3,Double]]] = null
+  var face_unit_normal : Rep[Field[Face,Vec[_3,Double]]] = null
 
-  var cell_centroid : Rep[Field[Cell,Vec[_3,Float]]] = null
-  var cell_volume : Rep[Field[Cell,Float]] = null
+  var cell_centroid : Rep[Field[Cell,Vec[_3,Double]]] = null
+  var cell_volume : Rep[Field[Cell,Double]] = null
  
   //some HACK functions
   def determineInclusions() : Unit = {
@@ -55,16 +55,16 @@ trait SCR extends DeLisztApplication {
   }
 
   //some geometry functions
-  def calcFaceCenter(f : Rep[Face]) : Rep[Vec[_3,Float]] = {
-    var center = Vec(0.f,0.f,0.f)
-    val test = Vec(0.f,0.f,0.f,0.f)
+  def calcFaceCenter(f : Rep[Face]) : Rep[Vec[_3,Double]] = {
+    var center = Vec(0.,0.,0.)
+    val test = Vec(0.,0.,0.,0.)
     for(v <- vertices(f)) {
       center += position(v)
     }
     center / size(vertices(f))
   }
-  def calcCellCenter(c : Rep[Cell]) : Rep[Vec[_3,Float]] = {
-    var center = Vec(0.f,0.f,0.f)
+  def calcCellCenter(c : Rep[Cell]) : Rep[Vec[_3,Double]] = {
+    var center = Vec(0.,0.,0.)
     for(v <- vertices(c)) {
       center += position(v)
     }
@@ -72,7 +72,7 @@ trait SCR extends DeLisztApplication {
   }
   def calcFaceGeom(f : Rep[Face]) : Rep[Unit] = {
     val approxCenter = calcFaceCenter(f)
-    var normal = Vec(0.f,0.f,0.f)
+    var normal = Vec(0.,0.,0.)
     for(e <- edgesCCW(f)) {
       val v0 = position(head(e)) - approxCenter
       val v1 = position(tail(e)) - approxCenter
@@ -80,8 +80,8 @@ trait SCR extends DeLisztApplication {
       normal = normal + cross(v1,v0)
     }
     normal = normalize(normal)
-    var center = Vec(0.f,0.f,0.f)
-    var area = 0.f
+    var center = Vec(0.,0.,0.)
+    var area = 0.
     for(e <- edgesCCW(f)) {
       val v0 = position(head(e)) - approxCenter
       val v1 = position(tail(e)) - approxCenter
@@ -90,8 +90,8 @@ trait SCR extends DeLisztApplication {
       // TODO
       center = center + ( approxCenter + position(head(e)) + position(tail(e))) * tmp_area
     }  
-    face_centroid(f) = center / (area * 3.f)
-    val farea = area / 2.f
+    face_centroid(f) = center / (area * 3.)
+    val farea = area / 2.
     face_area(f) = farea
     face_normal(f) = normal*farea
     face_unit_normal(f) = normal
@@ -99,8 +99,8 @@ trait SCR extends DeLisztApplication {
 
   def calcCellGeom(c : Rep[Cell]) : Rep[Unit] = {
     val approxCenter = calcCellCenter(c)
-    var volume = 0.f
-    var center = Vec(0.f,0.f,0.f)
+    var volume = 0.
+    var center = Vec(0.,0.,0.)
     for(f <- faces(c)) {
       val v0 = face_centroid(f) - approxCenter
       for(e <- edgesCCW(towards(f,c))) {
@@ -112,15 +112,15 @@ trait SCR extends DeLisztApplication {
       center = center + ( approxCenter + face_centroid(f) + position(head(e)) + position(tail(e))) * tetVol
       }
     }
-    cell_centroid(c) = center / (volume * 4.f)
-    cell_volume(c) = volume / 6.f
+    cell_centroid(c) = center / (volume * 4.)
+    cell_volume(c) = volume / 6.
   }
-  def phi_sine_function( t : Rep[Float]) : Rep[Float] = {
-    return sinf(t*2.f*MATH_PI.asInstanceOfL[Float]) * 10.f
+  def phi_sine_function( t : Rep[Double]) : Rep[Double] = {
+    return sin(t*2.*MATH_PI.asInstanceOfL[Double]) * 10.
   }
-  def normal_pdf(x : Rep[Float]) : Rep[Float] = expf(- x * x / 2.f) / sqrtf(2.f * MATH_PI.asInstanceOfL[Float])
+  def normal_pdf(x : Rep[Double]) : Rep[Double] = exp(- x * x / 2.) / sqrt(2. * MATH_PI.asInstanceOfL[Double])
   def main() {
-    position = FieldWithLabel[Vertex,Vec[_3,Float]]("position")
+    position = FieldWithLabel[Vertex,Vec[_3,Double]]("position")
     interior_set = BoundarySet[Face]("default-interior")
     inlet_set = BoundarySet[Face]("inlet")
     outlet_set = BoundarySet[Face]("outlet")
@@ -133,24 +133,24 @@ trait SCR extends DeLisztApplication {
     insideID = FieldWithConst[Face,Int](0)
     outsideID = FieldWithConst[Face,Int](0)
 
-    faceCenter = FieldWithConst[Face,Vec[_3,Float]](Vec(0.f,0.f,0.f))
-    faceArea = FieldWithConst[Face,Float](0.f)
+    faceCenter = FieldWithConst[Face,Vec[_3,Double]](Vec(0.,0.,0.))
+    faceArea = FieldWithConst[Face,Double](0.)
 
-    Phi = FieldWithConst[Cell,Float](0.f)
-    Flux = FieldWithConst[Cell,Float](0.f)
+    Phi = FieldWithConst[Cell,Double](0.)
+    Flux = FieldWithConst[Cell,Double](0.)
 
   //some geometry fields
-    face_centroid = FieldWithConst[Face,Vec[_3,Float]](Vec(0.f,0.f,0.f))
-    face_area = FieldWithConst[Face,Float](0.f)
-    face_normal = FieldWithConst[Face,Vec[_3,Float]](Vec(0.f,0.f,0.f))
-    face_unit_normal = FieldWithConst[Face,Vec[_3,Float]](Vec(0.f,0.f,0.f))
+    face_centroid = FieldWithConst[Face,Vec[_3,Double]](Vec(0.,0.,0.))
+    face_area = FieldWithConst[Face,Double](0.)
+    face_normal = FieldWithConst[Face,Vec[_3,Double]](Vec(0.,0.,0.))
+    face_unit_normal = FieldWithConst[Face,Vec[_3,Double]](Vec(0.,0.,0.))
 
-    cell_centroid = FieldWithConst[Cell,Vec[_3,Float]](Vec(0.f,0.f,0.f))
-    cell_volume = FieldWithConst[Cell,Float](0.f)
+    cell_centroid = FieldWithConst[Cell,Vec[_3,Double]](Vec(0.,0.,0.))
+    cell_volume = FieldWithConst[Cell,Double](0.)
   
     determineInclusions()         // Initialize HACK
 
-    val globalVelocity = Vec(1.f,0.f,0.f)
+    val globalVelocity = Vec(1.,0.,0.)
     //initialize geometry fields
     for(f <- faces(mesh)) {
       if(ID(outside(f)) < ID(inside(f))) {
@@ -163,8 +163,8 @@ trait SCR extends DeLisztApplication {
       calcCellGeom(c)
     }
     
-    var ll = Vec(-1.f,-1.f,-1.f) //this needs to become a reduce...
-    var ur = Vec(1.f,1.f,1.f) //probably hard-code it for now?
+    var ll = Vec(-1.,-1.,-1.) //this needs to become a reduce...
+    var ur = Vec(1.,1.,1.) //probably hard-code it for now?
     for(v <- vertices(mesh)) {
       ll = ll min position(v)
       ur = ur max position(v)
@@ -183,8 +183,8 @@ trait SCR extends DeLisztApplication {
     for(c <- cells(mesh)) {
       Print("c: ",ID(c)," ",cell_volume(c)," ",cell_centroid(c))
     }
-    val deltat = .015f
-    var t = 0.f
+    val deltat = .015
+    var t = 0.
     for(c <- cells(mesh)) {
         Print("before cell number: ",ID(c)," -> phi value: ",Phi(c))
     }
@@ -196,8 +196,8 @@ trait SCR extends DeLisztApplication {
             val normal = face_unit_normal(f)
             val vDotN = dot(globalVelocity,normal)
             val area = face_area(f)
-            var flux = 0.f
-            val cell = if(vDotN >= 0.f) inside(f) else outside(f)
+            var flux = 0.
+            val cell = if(vDotN >= 0.) inside(f) else outside(f)
             
             flux = area * vDotN * Phi(cell)
             if(ID(c) == insideID(f))
@@ -235,7 +235,7 @@ trait SCR extends DeLisztApplication {
         Phi(c) += deltat * Flux(c) / cell_volume(c)
       }
       for(c <- cells(mesh)) {
-        Flux(c) = 0.f
+        Flux(c) = 0.
       }
       t += deltat
     }

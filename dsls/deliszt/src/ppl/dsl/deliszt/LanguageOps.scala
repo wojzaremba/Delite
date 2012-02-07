@@ -164,8 +164,12 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   case class DeLisztFtov(val mesh: Exp[Mesh]) extends Def[CRS]
   case class DeLisztVtov(val mesh: Exp[Mesh]) extends Def[CRS]
   
+<<<<<<< HEAD
   case class DeLisztVertexCell(e: Exp[Int], i: Exp[Int], mesh : Exp[Mesh]) extends Def[Vertex]
   case class DeLisztVertexFace(e: Exp[Int], i: Exp[Int], mesh : Exp[Mesh]) extends Def[Vertex]
+=======
+  case class DeLisztVertex(e: Exp[Int], i: Exp[Int], mesh : Exp[Mesh]) extends Def[Vertex]
+>>>>>>> d1ce4f076bf0cac20d476ba073ace18c84a64173
   
   case class DeLisztFaceVerticesCCW(e: Exp[Face], mesh : Exp[Mesh]) extends Def[MeshSet[Vertex]]
   case class DeLisztFaceVerticesCW(e: Exp[Face], mesh : Exp[Mesh]) extends Def[MeshSet[Vertex]]
@@ -527,7 +531,6 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
       case DeLisztFaceVerticesCW(e, mesh) => emitValDef(sym, quote(mesh) + ".verticesCW(" + quote(e) + ")")
       case DeLisztVertexFace(e,i, mesh) => emitValDef(sym, quote(mesh) + ".vertexFace(" + quote(e) + "," + quote(i) + ")")
       case DeLisztVertexCell(e,i, mesh) => emitValDef(sym, quote(mesh) + ".vertexCell(" + quote(e) + "," + quote(i) + ")")
-
       case DeLisztFlipEdge(e) => emitValDef(sym, "generated.scala.Mesh.flip(" + quote(e) + ")")
       case DeLisztFlipFace(e) => emitValDef(sym, "generated.scala.Mesh.flip(" + quote(e) + ")")
       
@@ -614,7 +617,6 @@ trait CudaGenLanguageOps extends CudaGenBase {
     case DeLisztFaceVerticesCW(e, mesh) => emitValDef(sym, quote(mesh) + ".verticesCW(" + quote(e) + ")")
     case DeLisztVertexFace(e,i, mesh) => emitValDef(sym, quote(mesh) + ".vertex(" + quote(e) + "," + quote(i) + ")")
     case DeLisztVertexCell(e,i, mesh) => emitValDef(sym, quote(mesh) + ".vertex(" + quote(e) + "," + quote(i) + ")")
-
     case DeLisztFlipEdge(e) => emitValDef(sym, "flip(" + quote(e) + ")")
     case DeLisztFlipFace(e) => emitValDef(sym, "flip(" + quote(e) + ")")
 

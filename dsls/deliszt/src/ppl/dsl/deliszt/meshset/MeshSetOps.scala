@@ -34,7 +34,6 @@ trait MeshSetOps extends DSLType with Variables {
   def meshset_new[MO<:Vertex:Manifest](size : Rep[Int])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]]
   def meshset_apply[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], i : Rep[Int]) : Rep[MO]
   def meshset_update[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], i : Rep[Int], e : Rep[MO]) : Rep[Unit]
-
 }
 
 trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
@@ -69,7 +68,7 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     def m = manifest[MO]
 
   }
-  
+
   // e comes in as an internal id of a face
   case class NestedMeshSetForeach[MO<:MeshObj:Manifest](in: Exp[MeshSet[MO]], crs: Exp[CRS], e: Exp[Int], block: Exp[MO] => Exp[Unit]) extends Def[Unit] {
     def mm = manifest[MO]
@@ -165,7 +164,6 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     val t = MeshSetFilter(x, mesh, block)
     reflectEffect(t, summarizeEffects(t.body).star)
   }
-
   
   def nms_foreach[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], crs: Exp[CRS], e: Exp[Int], block: Exp[MO] => Exp[Unit]) : Exp[Unit] = {
     val t = NestedMeshSetForeach(x, crs, e, block)

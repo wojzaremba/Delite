@@ -1,4 +1,3 @@
 #!/bin/bash
 script_dir="$(dirname "$0")"
 java -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=4096m -XX:ReservedCodeCacheSize=2048m -Xmx4096M -Xss1024M -Djline.WindowsTerminal.directConsole=false -jar "$script_dir/sbt.jar" "$@"
-
