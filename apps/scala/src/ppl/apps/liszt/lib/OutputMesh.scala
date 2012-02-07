@@ -56,7 +56,7 @@ end_header
 2 0 0 0 0                         { end with a single black line }
    */
   
-  
+  import scala.collection.immutable.{List => UList}
 
   object OutputMesh {
     def apply(mesh: Rep[Mesh]) = apply[Int](mesh)
@@ -70,14 +70,14 @@ end_header
       f.writeln("format ascii 1.0")
 
       f.writeln("element vertex ", vertices(mesh).size)
-      for (cord <- List("x", "y", "z"))
+      for (cord <- UList("x", "y", "z"))
         f.writeln("property float ", cord)
-      for (col <- List("red", "green", "blue"))
+      for (col <- UList("red", "green", "blue"))
         f.writeln("property uchar ", col)
       f.writeln("element face ", faces(mesh).size)
       f.writeln("property list uchar int vertex_index")      
       f.writeln("element edge ", edges(mesh).size)
-      for (i <- List("1", "2"))
+      for (i <- UList("1", "2"))
         f.writeln("property int vertex", i)
       f.writeln("end_header")
       for (v <- vertices(mesh)) {

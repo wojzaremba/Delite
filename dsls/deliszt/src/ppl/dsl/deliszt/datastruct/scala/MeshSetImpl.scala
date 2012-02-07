@@ -19,6 +19,21 @@ class MeshSetImpl(override val size : Int) extends MeshSet {
   }
 }
 
+class MeshSetImpl2(override val size : Int) extends MeshSet {
+  var length = 0                 
+  val data = new Array[Int](size)
+  def apply(i : Int) = {
+    data(i)
+  }
+
+  def insert(i : Int, e : Int) = {
+    length = length max i + 1
+    data(i) = e
+  }
+  
+  
+}
+
 // No zero cell
 class CellSetImpl(val ncells : Int) extends MeshSet {
   override val size = ncells - 1

@@ -19,7 +19,7 @@ trait DynamicMesh extends DeLisztApplication with Libs {
 
   def main(): Unit = {
     val mesh1 = RectangularMesh(15., 5., 5.)
-    val mesh2 = SquareMesh(0.75, 0.75)
+ /*   val mesh2 = SquareMesh(0.75, 0.75)
 
     pos1 = FieldWithLabel[Vertex, Vec[_3, Double]]("position", mesh1)
     pos2 = FieldWithLabel[Vertex, Vec[_3, Double]]("position", mesh2)
@@ -49,8 +49,8 @@ trait DynamicMesh extends DeLisztApplication with Libs {
     }
     for (v <- vertices(mesh1)) {
       vF(v) = (pos1(v).x * 10.).toInt
-    }
-    OutputMesh(mesh1, vF)
+    }*/
+    OutputMesh(mesh1)
 
   }
 }

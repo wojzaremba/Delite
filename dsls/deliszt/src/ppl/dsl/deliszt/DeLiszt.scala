@@ -75,6 +75,7 @@ trait DeLisztCCodeGenPkg extends CGenEqual with CGenVariables with CGenImplicitO
 trait DeLiszt extends DeLisztScalaOpsPkg with LanguageOps with MeshBuilderOps
   with MeshPrivateOps with MeshSetOps
   with IntMOps
+  with SeqOps
   with MathOps
   with ArithOps with FieldOps with MatOps with VecOps with OrderingOps with HasMinMaxOps {
   this: DeLisztApplication =>

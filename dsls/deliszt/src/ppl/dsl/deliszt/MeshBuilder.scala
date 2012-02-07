@@ -48,7 +48,7 @@ trait MeshBuilderOps extends Base with OverloadHack {
 
     def addCell(ids: Face*)(implicit o: Overloaded1): Cell = meshAddCellByFace(meshId, ids: _*)
 
-    def setPosition(v: Int, x: Double, y: Double, z: Double) = setData("position", Vertex(v), x, y, z)
+    def setPosition(v: Int, x: Float, y: Float, z: Float) = setData("position", Vertex(v), x, y, z)
 
     def setData[T:Manifest](name: String, v: Vertex, value: T*) = meshSetData(meshId, name, v, value : _*)
 
@@ -248,7 +248,7 @@ class MeshSkeleton(meshId: Int) {
   class MeshElementData {
 
     val intData = Map.empty[String, (Map[Int, Int], Int)]
-    val doubleData = Map.empty[String, (Map[Int, Double], Int)]
+    val floatData = Map.empty[String, (Map[Int, Float], Int)]
 
     def update[T](t : Tuple2[String, Int], value : T*)(implicit man: Manifest[T]) {
       val (name, id) = t
@@ -257,8 +257,8 @@ class MeshSkeleton(meshId: Int) {
       val m = (man.toString) match {
         case "int" => intData
         case "Int" => intData
-        case "double" => doubleData
-        case "Double" => doubleData
+        case "float" => floatData
+        case "Float" => floatData
         case _ => throw new Exception("Not supported format for mesh element data " + man.toString)
       }
       val map = m.asInstanceOf[Map[String, Tuple2[Map[Int, T], Int]]].getOrElseUpdate(name, (Map.empty[Int, T], size))
@@ -282,7 +282,7 @@ class MeshSkeleton(meshId: Int) {
 
 
     def toLabelData(): LabelData = {
-      LabelData(toMapArray[Int](intData), toMapArray[Double](doubleData))
+      LabelData(toMapArray[Int](intData), toMapArray[Float](floatData))
     }
 
     def swap[T:Manifest](m : Map[String, (Map[Int, T], Int)], a: Int, b: Int) {
@@ -298,7 +298,7 @@ class MeshSkeleton(meshId: Int) {
 
     def swap(a : Int, b : Int) {
       swap(intData, a, b)
-      swap(doubleData, a, b)
+      swap(floatData, a, b)
     }
   }
 
@@ -347,14 +347,22 @@ class MeshSkeleton(meshId: Int) {
   def renumerate() {
     var pos = 0
     var oldPos = 0
-    for ((name, set) <- boundarySet) {
-      val sortedSet = set.toList.sorted
+    for (name <- boundarySet.keys) {
+      val sortedSet = boundarySet(name).toList.sorted
       oldPos = pos
       Log.log("boundary set " + name + " initially is compound of vertices " + sortedSet)
       for (v <- sortedSet) {
         Log.log("swapping vertex " + v + " to " + pos)
         if (pos < v) {
           swapVertex(v, pos)
+          for {
+            (name2, set2) <- boundarySet
+            if name2 != name
+            if set2 contains pos
+          } {
+            boundarySet(name2) = (set2 - pos) + v
+            Log.log("updated boundary set " + name2 + " to " + boundarySet(name2))
+          }
         } else if (pos > v) {
           throw new Exception("Can't reorder vertices to establish boundary sets")
         }

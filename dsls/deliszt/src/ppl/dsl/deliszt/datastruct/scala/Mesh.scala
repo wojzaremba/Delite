@@ -64,18 +64,18 @@ object Mesh {
 
 case class BoundaryRange(start : Int, end : Int)
 
-case class LabelData(intData : Map[String, Array[Int]], doubleData : Map[String, Array[Double]]) {
+case class LabelData(intData : Map[String, Array[Int]], floatData : Map[String, Array[Float]]) {
   def apply[T](name : String)(implicit m: ClassManifest[T]) : Array[T] = {
     (m.toString match {
       case "int" | "Int" => intData(name)
-      case "double" | "Double" => doubleData(name)
+      case "float" | "Float" => floatData(name)
       //wz: we should pass everywhere fields as arrays of primitives
-      case "generated.scala.Vec[Double]" =>
-        val arr = doubleData(name)
+      case "generated.scala.Vec[Float]" =>
+        val arr = floatData(name)
         val size = arr.size / 3
-        val retArray = new Array[Vec[Double]](size)
+        val retArray = new Array[Vec[Float]](size)
         for (i <- 0 until size)
-          retArray(i) = new VecImpl[Double](Array[Double](arr(3*i), arr(3*i+1), arr(3*i+2)))
+          retArray(i) = new VecImpl[Float](Array[Float](arr(3*i), arr(3*i+1), arr(3*i+2)))
         retArray
       case x => throw new Exception("not supported type " + x)
     }).asInstanceOf[Array[T]]
@@ -83,7 +83,7 @@ case class LabelData(intData : Map[String, Array[Int]], doubleData : Map[String,
   
   override def toString() = {
     val s = new StringBuilder
-    for (m <- List(intData, doubleData))
+    for (m <- List(intData, floatData))
     for ((k, array) <- m)
       s.append(k + " -> " + array.toList.toString + "\n")
     s.toString()
@@ -150,9 +150,8 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
     }
   }
 
-  def vertex(e: Int, i: Int): Int = {
-    ctov.apply(e, i)
-  }
+  def vertexFace(e: Int, i: Int): Int = ftov.apply(e, i)
+  def vertexCell(e: Int, i: Int): Int = ctov.apply(e, i)
 
   def cellsMesh: MeshSet = new CellSetImpl(ncells)
 

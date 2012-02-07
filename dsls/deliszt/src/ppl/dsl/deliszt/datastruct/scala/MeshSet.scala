@@ -17,11 +17,25 @@ trait MeshSet extends DeliteCollection[Int] with Traversable[Int] {
   def dcUpdate(idx: Int, x: Int) = {} // Read only, bitches
   def dcSize : Int = size
   
-  def foreach[U](f: Int => U) = {
+  def foreach[U](f: Int => U) : Unit = {
      var i = 0
      while(i < size) {
         f(this(i))
         i += 1
      }
   }
+
+  def contains(i : Int) : Boolean = throw new Exception("Only implemented for BoundarySetRangeImpl")
+
+  //wz: just for small collections, not sure if it's good idea
+  /*def map[U](f: Int => U) : Traversable[U] = {
+    val arr = new Array[U](size)
+    var i = 0
+    while(i < size) {
+      arr(i) = f(this(i))
+      i += 1
+    }
+    arr
+  } */
+
 }

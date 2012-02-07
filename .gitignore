@@ -24,3 +24,15 @@ benchmark/times
 test-out/*/*-log
 test-out/*/*-skel
 test-out/*/*-src
+dsls/deliszt/lisztlib/CMakeFiles/*
+dsls/deliszt/lisztlib/client/*
+dsls/deliszt/lisztlib/Makefile
+dsls/deliszt/lisztlib/lib/CMakeFiles/*
+dsls/deliszt/lisztlib/lib/Makefile
+dsls/deliszt/lisztlib/lib/cmake_install.cmake
+dsls/deliszt/lisztlib/cmake_install.cmake
+dsls/deliszt/lisztlib/lib/libMeshLoader.so
+scripts/deli
+scripts/sbt
+scripts/sbt-launch.jar
+dsls/deliszt/lisztlib/CMakeCache.txt

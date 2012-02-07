@@ -42,6 +42,42 @@ trait VecOps extends DSLType with Variables {
 		def apply[A:Manifest](a : Rep[A], b : Rep[A], c : Rep[A], d : Rep[A], e : Rep[A], f: Rep[A], g: Rep[A], h: Rep[A], i: Rep[A], j: Rep[A], k: Rep[A], l: Rep[A], m: Rep[A], n: Rep[A], o: Rep[A], p: Rep[A], q: Rep[A], r: Rep[A], s: Rep[A], t: Rep[A], u: Rep[A], v: Rep[A]) = vec_obj_new[_22,A](a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v)
   }
 
+/*  //wz: revrote it like that, to avoid implicit conversion (vertex is implicitly converted to vector and implicit can't be composed)
+  def infix_x[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]])(implicit f : EnsureSize[_0,N]) = vec_apply(u, 0)
+  def infix_y[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]])(implicit f : EnsureSize[_1,N]) = vec_apply(u, 1)
+  def infix_z[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]])(implicit f : EnsureSize[_2,N]) = vec_apply(u, 2)
+  def infix_w[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]])(implicit f : EnsureSize[_3,N]) = vec_apply(u, 3)
+
+  def infix_apply[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]], n: Rep[Int]) = vec_apply(u, n)
+  def infix_update[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]], n: Rep[Int], c: Rep[A]) = vec_update(u,n,c)
+
+  def apply[N<:IntM:Manifest:MVal, A:Manifest, TT<:IntM:Manifest:MVal](u : Rep[Vec[N, A]], n:TT)(implicit f:EnsureSize[TT,N]) : Rep[A] = vec_apply(u,MIntDepth[TT])
+  def update[N<:IntM:Manifest:MVal, A:Manifest, TT<:IntM:Manifest:MVal](u : Rep[Vec[N, A]], n:TT, v:Rep[A])(implicit f:EnsureSize[TT,N]) : Rep[A] = vec_update(u,MIntDepth[TT],v)
+
+  def infix_+[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_plus(u,vt)
+  def infix_-[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_minus(u,vt)
+  def infix_*[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_times(u,vt)
+  def infix_/[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_divide(u,vt)
+
+
+  def infix_*[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]], vt : Rep[A])(implicit o: Overloaded1) = vec_times_scalar(u,vt)
+  def infix_/[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]], vt : Rep[A])(implicit o: Overloaded1) = vec_divide_scalar(u,vt)
+
+  def unary_-[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]]) = vec_negate(u)
+  def infix_length[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]]) = vec_size[N, A](u)
+  def infix_sum[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]]) = vec_sum(u)
+  def infix_abs[N<:IntM:Manifest:MVal, A:Manifest:Arith](u : Rep[Vec[N, A]]) = vec_abs(u)
+
+  def infix_min[N<:IntM:Manifest:MVal, A:Manifest:Ordering](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_zip_min(u, vt)
+  def infix_max[N<:IntM:Manifest:MVal, A:Manifest:Ordering](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_zip_max(u, vt)
+
+  def *<*[N<:IntM:Manifest:MVal, A:Manifest:Ordering](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_zip_min(u, vt)
+  def *>*[N<:IntM:Manifest:MVal, A:Manifest:Ordering](u : Rep[Vec[N, A]], vt : Rep[Vec[N, A]]) = vec_zip_min(u, vt)
+
+  def infix_cloneL[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]]) = vec_clone(u)
+  def infix_mutable[N<:IntM:Manifest:MVal, A:Manifest](u : Rep[Vec[N, A]]) = vec_mutable_clone(u)       */
+
+
   implicit def repVecToVecOps[N<:IntM:Manifest:MVal, A:Manifest](x: Rep[Vec[N, A]]) = new vecOpsCls(x)
   implicit def varToVecOps[N<:IntM:Manifest:MVal, A:Manifest](x: Var[Vec[N, A]]) = new vecOpsCls(readVar(x))
 
@@ -55,7 +91,7 @@ trait VecOps extends DSLType with Variables {
 
     def apply(n: Rep[Int]) = vec_apply(u, n)
     def update(n: Rep[Int], c: Rep[A]) = vec_update(u,n,c)
-    
+
     def apply[TT<:IntM:Manifest:MVal](n:TT)(implicit f:EnsureSize[TT,N]) : Rep[A] = vec_apply(u,MIntDepth[TT])
     def update[TT<:IntM:Manifest:MVal](n:TT, v:Rep[A])(implicit f:EnsureSize[TT,N]) : Rep[Unit] = vec_update(u,MIntDepth[TT],v)
 
@@ -64,11 +100,12 @@ trait VecOps extends DSLType with Variables {
     def *(vt : Rep[Self])(implicit n: Arith[A]) = vec_times(u,vt)
     def /(vt : Rep[Self])(implicit n: Arith[A]) = vec_divide(u,vt)
 
+    //def x[A : Arith](vt : Rep[Vec[_3,A]]) = cross(u, vt)
     def *(vt : Rep[A])(implicit n: Arith[A], o: Overloaded1) = vec_times_scalar(u,vt)
     def /(vt : Rep[A])(implicit n: Arith[A], o: Overloaded1) = vec_divide_scalar(u,vt)
 
     def unary_-(implicit o : Arith[A]) : Rep[Vec[N,A]] = vec_negate(u)
-    
+
     def size() : Rep[Int] = MIntDepth[N]
     def length(implicit v: MVal[N] = null) : Rep[Int] = size()
     def sum(implicit a: Arith[A]) = vec_sum(u)
@@ -76,10 +113,10 @@ trait VecOps extends DSLType with Variables {
 
     def min(vt: Rep[Self])(implicit n: Ordering[A]) = vec_zip_min(u, vt)
     def max(vt: Rep[Self])(implicit n: Ordering[A]) = vec_zip_max(u, vt)
-    
+
     def *<*(vt: Rep[Self])(implicit n: Ordering[A]) = vec_zip_min(u, vt)
     def *>*(vt: Rep[Self])(implicit n: Ordering[A]) = vec_zip_max(u, vt)
-    
+
     //def map[B:Manifest](f: Rep[A] => Rep[B]) = vec_map(x,f)
 
     //def &[M<:IntM:Manifest:MVal](rhs : Rep[Vec[M,A]]) = vec_concat[N,M,N+M,A](u, rhs)
@@ -89,28 +126,29 @@ trait VecOps extends DSLType with Variables {
 
   // Language ops
   def cross[A:Manifest:Arith](a: Rep[Vec[_3,A]], b: Rep[Vec[_3,A]]) : Rep[Vec[_3,A]]
-  def dot[N<:IntM:Manifest:MVal, A:Manifest:Arith](a: Rep[Vec[N,A]],b: Rep[Vec[N,A]]) = {val v = a * b; v.sum}
+  def dot[N<:IntM:Manifest:MVal, A:Manifest:Arith](a: Rep[Vec[N,A]],b: Rep[Vec[N,A]]) = vec_sum(a*b)
   def normalize[N<:IntM:Manifest:MVal, A:Manifest:Arith](a: Rep[Vec[N,A]]) : Rep[Vec[N,A]]
   def length[N<:IntM:Manifest:MVal, A:Manifest](a: Rep[Vec[N,A]]) = vec_size(a)
   def outer[R<:IntM:Manifest:MVal, C<:IntM:Manifest:MVal, A:Manifest:Arith](a: Rep[Vec[R,A]], b: Rep[Vec[C,A]]) : Rep[Mat[R,C,A]]
-  
+
   def vec_obj_new[N<:IntM:Manifest:MVal, A:Manifest](xs: Rep[A]*): Rep[Vec[N,A]]
   def vec_obj_n_new[N<:IntM:Manifest:MVal, A:Manifest](i : Rep[Int]): Rep[Vec[N,A]]
 
-  def vec_apply[N<:IntM:Manifest:MVal, A:Manifest](x: Rep[Vec[N, A]], i: Rep[Int]): Rep[A]
-  def vec_update[N<:IntM:Manifest:MVal, A:Manifest](x: Rep[Vec[N, A]], i: Rep[Int], v: Rep[A]): Rep[Unit]
-  
-  def vec_plus[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
-  def vec_plus_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
-  def vec_minus[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
-  def vec_minus_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
-  def vec_times[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
-  def vec_times_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
-  def vec_divide[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
-  def vec_divide_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
 
-  def vec_map[N<:IntM:Manifest:MVal,A:Manifest,B:Manifest](x: Rep[Vec[N,A]], f: Rep[A] => Rep[B]): Rep[Vec[N,B]]
-  
+   def vec_apply[N<:IntM:Manifest:MVal, A:Manifest](x: Rep[Vec[N, A]], i: Rep[Int]): Rep[A]
+   def vec_update[N<:IntM:Manifest:MVal, A:Manifest](x: Rep[Vec[N, A]], i: Rep[Int], v: Rep[A]): Rep[Unit]
+
+   def vec_plus[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
+   def vec_plus_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
+   def vec_minus[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
+   def vec_minus_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
+   def vec_times[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
+   def vec_times_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
+   def vec_divide[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[Vec[N,A]]): Rep[Vec[N,A]]
+   def vec_divide_scalar[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]], y: Rep[A]): Rep[Vec[N,A]]
+
+   def vec_map[N<:IntM:Manifest:MVal,A:Manifest,B:Manifest](x: Rep[Vec[N,A]], f: Rep[A] => Rep[B]): Rep[Vec[N,B]]
+
   def vec_size[N<:IntM:Manifest:MVal, A:Manifest](x: Rep[Vec[N,A]]): Rep[Int]
 
   def vec_sum[N<:IntM:Manifest:MVal, A:Manifest:Arith](x: Rep[Vec[N,A]]): Rep[A]
@@ -497,7 +535,7 @@ trait VecOpsExp extends VecOps with VariablesExp with BaseFatExp {
   def normalize[N<:IntM:Manifest:MVal, A:Manifest:Arith](a: Exp[Vec[N,A]]) = reflectPure(VecNormalize(a))
   def outer[R<:IntM:Manifest:MVal, C<:IntM:Manifest:MVal, A:Manifest:Arith](a: Exp[Vec[R,A]], b: Exp[Vec[C,A]]) = reflectPure(VecOuter(a,b))
   
-  def vec_mutable_clone[N<:IntM:Manifest:MVal, A:Manifest](x: Exp[Vec[N,A]]) = reflectMutable(VecClone(x))
+  def vec_mutable_clone[N<:IntM:Manifest:MVal, A:Manifest](x: Exp[Vec[N,A]]) = (VecClone(x))
   def vec_clone[N<:IntM:Manifest:MVal, A:Manifest](x: Exp[Vec[N,A]]) = reflectPure(VecClone(x))
 }
 

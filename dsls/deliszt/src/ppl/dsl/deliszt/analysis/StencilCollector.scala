@@ -194,7 +194,8 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
       case DeLisztVerticesVertex(e, m) => multiset(e, (mo:Int) => Mesh.mesh.verticesVertex(mo))
       case DeLisztVerticesMesh(e) => multiset(e, (mo:Int) => Mesh.mesh.verticesMesh)
 
-      case DeLisztVertex(e, i, m) => multiobj(e, (mo:Int) => Mesh.mesh.vertex(mo, value(i)))
+      case DeLisztVertexFace(e, i, m) => multiobj(e, (mo:Int) => Mesh.mesh.vertexFace(mo, value(i)))
+      case DeLisztVertexCell(e, i, m) => multiobj(e, (mo:Int) => Mesh.mesh.vertexCell(mo, value(i)))
 
       case DeLisztFaceVerticesCCW(e, m) => multiset(e, (mo:Int) => Mesh.mesh.verticesCCW(mo))
       case DeLisztFaceVerticesCW(e, m) => multiset(e, (mo:Int) => Mesh.mesh.verticesCW(mo))
@@ -603,7 +604,8 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
           case DeLisztVerticesFace(e, m) =>
           case DeLisztVerticesVertex(e, m) =>
           case DeLisztVerticesMesh(e) =>
-          case DeLisztVertex(e, i, m) =>
+          case DeLisztVertexFace(e, i, m) =>
+          case DeLisztVertexCell(e, i, m) =>
           case DeLisztFaceVerticesCCW(e, m) =>
           case DeLisztFaceVerticesCW(e, m) =>
           case DeLisztCellsCell(e, m) =>

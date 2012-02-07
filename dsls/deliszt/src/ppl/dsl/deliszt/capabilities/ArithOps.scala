@@ -60,6 +60,7 @@ trait ArithOps extends Variables with OverloadHack {
     
     def empty: Rep[T] = arith.empty
     def zero: Rep[T] = arith.zero(lhs)
+    def one: Rep[T] = arith.one(lhs)
   }
 
 
@@ -92,6 +93,7 @@ trait ArithOps extends Variables with OverloadHack {
     
     def empty : Rep[Vec[N,T]] = Vec[N,T]()
     def zero(a: Rep[Vec[N,T]]) = Vec[N,T]()
+    def one(a: Rep[Vec[N,T]]) = throw new Exception("not supported")
   }
 
 
@@ -111,6 +113,7 @@ trait ArithOps extends Variables with OverloadHack {
     
     def empty : Rep[Mat[R,C,T]] = Mat[R,C,T]()
     def zero(a: Rep[Mat[R,C,T]]) = Mat[R,C,T]()
+    def one(a: Rep[Mat[R,C,T]]) = throw new Exception("not supported")
   }
 
   /**
@@ -131,6 +134,7 @@ trait ArithOps extends Variables with OverloadHack {
     def unary_-(a: Rep[Double]) = arith_negate(a)
     def empty = unit(0.0)
     def zero(a: Rep[Double]) = empty
+    def one(a: Rep[Double]) = unit(1.)
   }
 
   implicit val floatArith: Arith[Float] = new Arith[Float] {
@@ -144,6 +148,7 @@ trait ArithOps extends Variables with OverloadHack {
     def unary_-(a: Rep[Float]) = arith_negate(a)
     def empty = unit(0f)
     def zero(a: Rep[Float]) = empty
+    def one(a: Rep[Float]) = unit(1f)
   }
 
   implicit val intArith: Arith[Int] = new Arith[Int] {
@@ -157,6 +162,7 @@ trait ArithOps extends Variables with OverloadHack {
     def unary_-(a: Rep[Int]) = arith_negate(a)
     def empty = unit(0)
     def zero(a: Rep[Int]) = empty
+    def one(a: Rep[Int]) = unit(1)
   }
 
   def arith_plus[T: Manifest : Numeric](lhs: Rep[T], rhs: Rep[T]): Rep[T]

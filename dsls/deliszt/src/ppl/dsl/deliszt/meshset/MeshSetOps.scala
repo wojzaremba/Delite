@@ -20,18 +20,36 @@ trait MeshSetOps extends DSLType with Variables {
   /**
    * This class defines the public interface for the Field[T] class.
    */
+
   class meshSetOpsCls[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]]) {
     def foreach(block: Rep[MO] => Rep[Unit]) = meshset_foreach(x, block)
+    def apply(i : Rep[Int]) = meshset_apply(x, i)
+    def update(i : Rep[Int], e : Rep[MO]) = meshset_update(x, i, e)
   }
 
+
   def meshset_foreach[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Unit]) : Rep[Unit]
+  def meshset_filter[MO<:Vertex:Manifest](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Boolean])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]]
+
+  def meshset_new[MO<:Vertex:Manifest](size : Rep[Int])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]]
+  def meshset_apply[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], i : Rep[Int]) : Rep[MO]
+  def meshset_update[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], i : Rep[Int], e : Rep[MO]) : Rep[Unit]
+
 }
 
 trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
   this: DeLisztExp =>
 
+  case class MeshSetVertexNew[MO<:Vertex:Manifest](size : Exp[Int]) extends Def[MeshSet[MO]]
+  case class MeshSetApply[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int]) extends Def[MO]
+  case class MeshSetUpdate[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int], e : Rep[MO]) extends Def[Unit]
+
   ////////////////////////////////
   // implemented via delite ops
+
+  def meshset_new[MO<:Vertex:Manifest](size : Exp[Int])(implicit ev : MO =:= Vertex) = reflectMutable(MeshSetVertexNew(size))
+  def meshset_apply[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int]) = reflectPure(MeshSetApply(x, i))
+  def meshset_update[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int], e : Exp[MO]) = reflectWrite(x)(MeshSetUpdate(x, i, e))
 
   case class MeshSetForeach[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], func: Exp[MO] => Exp[Unit])
     extends DeliteOpForeach[MO] {
@@ -39,6 +57,17 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     def sync = n => List()
     val in = copyTransformedOrElse(_.in)(x)
     val size = copyTransformedOrElse(_.size)(x.size)
+  }
+
+  case class MeshSetFilter[MO<:Vertex:Manifest](in: Exp[MeshSet[MO]], mesh : Exp[Mesh],   cond: Exp[MO] => Exp[Boolean])(implicit ev : MO =:= Vertex)
+    extends DeliteOpFilter[MO, MO, MeshSet[MO]] {
+
+    val size = in.size
+    def func = e => e
+    def alloc = meshset_new(in.size)
+
+    def m = manifest[MO]
+
   }
   
   // e comes in as an internal id of a face
@@ -126,6 +155,17 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
       case _ => reflectEffect(t, summarizeEffects(t.body.asInstanceOf[DeliteForeachElem[MO]].func).star)
     }
   }
+
+  def meshset_filter[MO<:Vertex:Manifest](x: Exp[MeshSet[MO]], block: Exp[MO] => Exp[Boolean])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]] = {
+    val tp2 = findDefinition(x.asInstanceOf[Sym[_]]).get
+    val mesh = tp2.rhs match {
+      case m:{val mesh : Exp[Mesh]} => m.mesh
+      case _ => throw new Exception("Can't find corresponding mesh " + tp2.rhs.toString() + " " )
+    }
+    val t = MeshSetFilter(x, mesh, block)
+    reflectEffect(t, summarizeEffects(t.body).star)
+  }
+
   
   def nms_foreach[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], crs: Exp[CRS], e: Exp[Int], block: Exp[MO] => Exp[Unit]) : Exp[Unit] = {
     val t = NestedMeshSetForeach(x, crs, e, block)
@@ -150,6 +190,12 @@ trait ScalaGenMeshSetOps extends ScalaGenBase {
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
+
+      case MeshSetVertexNew(size) => emitValDef(sym, "new MeshSetImpl2(" + quote(size) + ")" )
+      case MeshSetApply(x, i) => emitValDef(sym, quote(x) + "(" + quote(i) + ")" )
+      case MeshSetUpdate(x, i, e) => emitValDef(sym, "{" + quote(x) + "(" + quote(i) + ") = " + quote(e) + "}")
+
+
       case f@NestedMeshSetForeach(m,crs,i,body) => {
         stream.println("val " + quote(sym) + " = { // Begin nested foreach " + sym.id)
           stream.println("var i = " + quote(crs) + ".row(" + quote(i) + ")")
