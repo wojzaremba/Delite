@@ -16,6 +16,9 @@ trait Fem extends DeLisztApplication with Libs {
   var rk: Rep[Field[Vertex, Float]] = null
   var temp: Rep[Field[Vertex, Float]] = null
 
+  var values: Rep[Field[Vertex, Float]] = null
+  var values2: Rep[Field[Vertex, Float]] = null  
+  
   var dF: Rep[Field[Vertex, Float]] = null
   val sizex: Float = 10.f
   val sizey: Float = 10.f
@@ -60,7 +63,7 @@ trait Fem extends DeLisztApplication with Libs {
     for (e <- edges(m))
       println(ID(head(e)) + " " + ID(tail(e)) + " " + mat(e))
   }
-
+  
   def main(): Unit = {
     m = RectangularMesh(sizex, sizey, 1.f)
     pos = FieldWithLabel[Vertex, Vec[_3, Float]]("position", m)
@@ -73,6 +76,10 @@ trait Fem extends DeLisztApplication with Libs {
     rk = FieldWithConst[Vertex, Float](0.f, m)
     dF = FieldWithConst[Vertex, Float](0.f, m)
     temp = FieldWithConst[Vertex, Float](0.f, m)
+    
+    values = FieldWithConst[Vertex, Float](0.f, m)
+    values2 = FieldWithConst[Vertex, Float](0.f, m)
+    
     for (v <- vertices(m)) dF(v) = deltaF(v.x, v.y)
 
     for (face <- faces(m)) {
@@ -88,24 +95,24 @@ trait Fem extends DeLisztApplication with Libs {
     printV(matrixV)
     OutputMesh.freeFem(m, "freefem.mesh")
 
-    val result: Rep[Int] = vertices(m).mapReduce((v: Rep[Vertex]) => ID(v))
+    /*val result: Rep[Int] = vertices(m).mapReduce((v: Rep[Vertex]) => ID(v))
 
     println("result " + result)
 
     for (v <- m.inside) {
       rk(v) = dF(v)
       pk(v) = dF(v)
-    }
+    }*/
 
-    //var error: Rep[Float] = 100.f
+  /*  //var error: Rep[Float] = 100.f
     //while (error > 0.00001f)
     //for (i <- 1 until 10)
-    {
+  //  {
       //println("iter " + i)
-      val alphaNominator: Rep[Float] = vertices(m).mapReduce((v: Rep[Vertex]) => rk(v) * rk(v))
+      val alphaNominator: Rep[Float] = m.inside.mapReduce((v: Rep[Vertex]) => rk(v) * rk(v))
       println("alphaNominator " + alphaNominator)
 
-      for (v <- vertices(m)) {
+      for (v <- m.inside) {
         temp(v) = matrixV(v) * pk(v)
         for (e <- edges(v)) {
           val e2 = if (ID(head(e)) == ID(v)) tail(e) else head(e)
@@ -113,28 +120,40 @@ trait Fem extends DeLisztApplication with Libs {
         }
       }
 
-      for (v <- vertices(m)) println(ID(v) + " pk " + pk(v) + ", temp " + temp(v))
       
-      val alphaDenominator: Rep[Float] = vertices(m).mapReduce((v: Rep[Vertex]) => pk(v) * temp(v))
+      val alphaDenominator: Rep[Float] = m.inside.mapReduce((v: Rep[Vertex]) => pk(v) * temp(v))
       println("alphaDenominator " + alphaDenominator)
       val alpha: Rep[Float] = alphaNominator / alphaDenominator
       println("alpha " + alphaNominator)
-      for (v <- vertices(m)) xk(v) += alpha * pk(v)
-      for (v <- vertices(m)) rk(v) -= alpha * temp(v)
-      val lenrk1 = vertices(m).mapReduce((v: Rep[Vertex]) => rk(v) * rk(v))
+      for (v <- m.inside) xk(v) += alpha * pk(v)
+      for (v <- m.inside) rk(v) -= alpha * temp(v)
+      val lenrk1 = m.inside.mapReduce((v: Rep[Vertex]) => rk(v) * rk(v))
       println("lenrk1 " + lenrk1)
       val beta: Rep[Float] = lenrk1 / alphaNominator
       println("beta " + beta)
-      for (v <- vertices(m)) pk(v) *= beta
-      for (v <- vertices(m)) pk(v) += rk(v)      
+      for (v <- m.inside) pk(v) *= beta
+      for (v <- m.inside) pk(v) += rk(v)      
 
       println()
       //error = alphaNominator
       
-    }
-
-    OutputMesh(m, "values.ply", xk)
+//    }*/
+      
+    for (iter <- 0 until 1000) {
+      for (v <- m.inside) {
+        values2(v) = dF(v)
+        for (e <- edges(v)) {
+          val e2 = if (ID(e.head) == ID(v)) e.tail else e.head
+          values2(v) -= (matrixE(e) * values(e2))
+        }   
+      }   
+      for (v <- m.inside) {
+        values(v) = values2(v) / matrixV(v)
+      }
+    }      
+    OutputMesh(m, "values.ply", values)
     OutputMesh(m, "f.ply", f _)
+    
 
   }
 }
