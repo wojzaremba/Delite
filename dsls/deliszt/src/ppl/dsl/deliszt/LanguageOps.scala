@@ -96,6 +96,8 @@ trait LanguageOps extends Base { this: DeLiszt with MathOps =>
   def towards(e: Rep[Edge],v: Rep[Vertex])(implicit x: Overloaded1) : Rep[Edge]
   def towards(e: Rep[Face],c: Rep[Cell])(implicit x: Overloaded2) : Rep[Face]
   def size[MO<:MeshObj:Manifest](s: Rep[MeshSet[MO]]) : Rep[Int]
+  
+  def infix_length[MO<:MeshObj:Manifest](s: Rep[MeshSet[MO]]) : Rep[Int] = size(s)
 
   def ID[MO<:MeshObj:Manifest](x: Rep[MO]) : Rep[Int]
 
@@ -455,7 +457,6 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
 
       case NumericToInt(e) => emitValDef(sym, quote(e) + ".toInt" )
 
-      //woj.zaremba : This file is faulty implement - currently do not take care of concurent accesss (it is mine temporary impl.)
       case DeLisztFile(name) => emitValDef(sym, "new SyncedFile(" + quote(name) + ")" )
       case DeLisztWrite(f, str) => emitValDef(sym, quote(f) + ".write(" + quote(str) + ")" )
 

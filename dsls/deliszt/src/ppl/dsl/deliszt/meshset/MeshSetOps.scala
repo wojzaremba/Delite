@@ -23,30 +23,35 @@ trait MeshSetOps extends DSLType with Variables {
 
   class meshSetOpsCls[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]]) {
     def foreach(block: Rep[MO] => Rep[Unit]) = meshset_foreach(x, block)
+    def filter(block: Rep[MO] => Rep[Boolean]) = meshset_filter(x, block)
+    def mapReduce[A:Manifest:Arith](block: Rep[MO] => Rep[A]) = meshset_mapReduce(x, block)    
     def apply(i : Rep[Int]) = meshset_apply(x, i)
     def update(i : Rep[Int], e : Rep[MO]) = meshset_update(x, i, e)
   }
 
 
   def meshset_foreach[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Unit]) : Rep[Unit]
-  def meshset_filter[MO<:Vertex:Manifest](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Boolean])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]]
+  def meshset_filter[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[Boolean]) : Rep[MeshSet[MO]]
+  def meshset_mapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[A]) : Rep[A]
 
-  def meshset_new[MO<:Vertex:Manifest](size : Rep[Int])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]]
+  def meshset_new[MO<:MeshObj:Manifest](size : Rep[Int]) : Rep[MeshSet[MO]]
   def meshset_apply[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], i : Rep[Int]) : Rep[MO]
   def meshset_update[MO<:MeshObj:Manifest](x: Rep[MeshSet[MO]], i : Rep[Int], e : Rep[MO]) : Rep[Unit]
 }
 
 trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
   this: DeLisztExp =>
-
-  case class MeshSetVertexNew[MO<:Vertex:Manifest](size : Exp[Int]) extends Def[MeshSet[MO]]
+  
+  //wz: I've got to merge it with mergeset
+  case class MeshSetNew2[MO<:MeshObj:Manifest](size : Exp[Int]) extends Def[MeshSet[MO]]
   case class MeshSetApply[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int]) extends Def[MO]
   case class MeshSetUpdate[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int], e : Rep[MO]) extends Def[Unit]
-
+  
+  
   ////////////////////////////////
   // implemented via delite ops
 
-  def meshset_new[MO<:Vertex:Manifest](size : Exp[Int])(implicit ev : MO =:= Vertex) = reflectMutable(MeshSetVertexNew(size))
+  def meshset_new[MO<:MeshObj:Manifest](size : Exp[Int]) = reflectMutable(MeshSetNew2[MO](size))
   def meshset_apply[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int]) = reflectPure(MeshSetApply(x, i))
   def meshset_update[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], i : Exp[Int], e : Exp[MO]) = reflectWrite(x)(MeshSetUpdate(x, i, e))
 
@@ -58,7 +63,7 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     val size = copyTransformedOrElse(_.size)(x.size)
   }
 
-  case class MeshSetFilter[MO<:Vertex:Manifest](in: Exp[MeshSet[MO]], mesh : Exp[Mesh],   cond: Exp[MO] => Exp[Boolean])(implicit ev : MO =:= Vertex)
+  case class MeshSetFilter[MO<:MeshObj:Manifest](in: Exp[MeshSet[MO]], mesh : Exp[Mesh],   cond: Exp[MO] => Exp[Boolean])
     extends DeliteOpFilter[MO, MO, MeshSet[MO]] {
 
     val size = in.size
@@ -68,6 +73,15 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     def m = manifest[MO]
 
   }
+  
+  case class MeshSetMapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](in: Exp[MeshSet[MO]], map : Rep[MO] => Rep[A])
+    extends DeliteOpMapReduce[MO, A] {
+    def reduce = (a, b) => a + b
+    def m = manifest[A]
+    def a = implicitly[Arith[A]]   
+    val size = copyTransformedOrElse(_.size)(in.length)
+    val zero = a.empty
+  }  
 
   // e comes in as an internal id of a face
   case class NestedMeshSetForeach[MO<:MeshObj:Manifest](in: Exp[MeshSet[MO]], crs: Exp[CRS], e: Exp[Int], block: Exp[MO] => Exp[Unit]) extends Def[Unit] {
@@ -124,7 +138,6 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
   
   def meshset_foreach[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], block: Exp[MO] => Exp[Unit]) : Exp[Unit] = {
     val t = MeshSetForeach(x,block)
-  
     x match {
       // Why do I have to cast? I hate you
       /*
@@ -154,8 +167,13 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
       case _ => reflectEffect(t, summarizeEffects(t.body.asInstanceOf[DeliteForeachElem[MO]].func).star)
     }
   }
+  
+  def meshset_mapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[A]) = {
+    val t = MeshSetMapReduce(x, block) 
+    reflectEffect(t, summarizeEffects(t.body).star)
+  }
 
-  def meshset_filter[MO<:Vertex:Manifest](x: Exp[MeshSet[MO]], block: Exp[MO] => Exp[Boolean])(implicit ev : MO =:= Vertex) : Rep[MeshSet[MO]] = {
+  def meshset_filter[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], block: Exp[MO] => Exp[Boolean]) : Rep[MeshSet[MO]] = {
     val tp2 = findDefinition(x.asInstanceOf[Sym[_]]).get
     val mesh = tp2.rhs match {
       case m:{val mesh : Exp[Mesh]} => m.mesh
@@ -189,7 +207,7 @@ trait ScalaGenMeshSetOps extends ScalaGenBase {
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
 
-      case MeshSetVertexNew(size) => emitValDef(sym, "new MeshSetImpl2(" + quote(size) + ")" )
+      case MeshSetNew2(size) => emitValDef(sym, "new MeshSetImpl2(" + quote(size) + ")" )
       case MeshSetApply(x, i) => emitValDef(sym, quote(x) + "(" + quote(i) + ")" )
       case MeshSetUpdate(x, i, e) => emitValDef(sym, "{" + quote(x) + "(" + quote(i) + ") = " + quote(e) + "}")
 

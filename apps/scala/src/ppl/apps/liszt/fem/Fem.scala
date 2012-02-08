@@ -6,7 +6,6 @@ import ppl.dsl.deliszt.MetaInteger._
 
 object FemRunner extends DeLisztApplicationRunner with Fem
 
-
 trait Fem extends DeLisztApplication with Libs {
 
   var matrixE: Rep[Field[Edge, Float]] = null
@@ -15,19 +14,20 @@ trait Fem extends DeLisztApplication with Libs {
   var xk: Rep[Field[Vertex, Float]] = null
   var pk: Rep[Field[Vertex, Float]] = null
   var rk: Rep[Field[Vertex, Float]] = null
+  var temp: Rep[Field[Vertex, Float]] = null
 
   var dF: Rep[Field[Vertex, Float]] = null
-  val sizex : Float = 10.f
-  val sizey : Float = 10.f
+  val sizex: Float = 10.f
+  val sizey: Float = 10.f
 
-  def f(x: Rep[Float], y: Rep[Float], z: Rep[Float]) : Rep[Float] =
-    x*(sizex - x) * y * y * (sizey - y) * 10.f
+  def f(x: Rep[Float], y: Rep[Float], z: Rep[Float]): Rep[Float] =
+    x * (sizex - x) * y * y * (sizey - y)
 
-  def deltaF(x: Rep[Float], y: Rep[Float]) : Rep[Float] =
-    y * y * (sizey - y) * 20.f + x * (sizey - x) * (6.f * y - 2.f * sizey) * 10.f
+  def deltaF(x: Rep[Float], y: Rep[Float]): Rep[Float] =
+    y * y * (sizey - y) * 2.f + x * (sizey - x) * (6.f * y - 2.f * sizey)
 
-  def lamda(v : Rep[Vertex], face : Rep[Face]) : Rep[Vec[_3, Float]] = {
-    val set = meshset_filter(vertices(face), {(x : Rep[Vertex]) => ID(x) != ID(v)} )
+  def lamda(v: Rep[Vertex], face: Rep[Face]): Rep[Vec[_3, Float]] = {
+    val set = vertices(face).filter((x: Rep[Vertex]) => ID(x) != ID(v))
     val vec = cross((set(1) - set(0)), Vec(0.f, 0.f, 1.f)) / face.det
     if (ID(v) == ID(vertex(face, 1)))
       -vec
@@ -35,7 +35,7 @@ trait Fem extends DeLisztApplication with Libs {
       vec
   }
 
-  def integralEdge(edge : Rep[Edge], face: Rep[Face]) = {
+  def integralEdge(edge: Rep[Edge], face: Rep[Face]) = {
     val a = head(edge)
     val b = tail(edge)
     if (m.inside.contains(a) || m.inside.contains(b)) {
@@ -49,18 +49,17 @@ trait Fem extends DeLisztApplication with Libs {
     } else 0.f
   }
 
-  def printV(mat : Rep[Field[Vertex, Float]]) {
+  def printV(mat: Rep[Field[Vertex, Float]]) {
     println("Vertex Vector : ")
-    for (v <- vertices(m)) 
-      println(ID(v) + " " + mat(v))    
+    for (v <- vertices(m))
+      println(ID(v) + " " + mat(v))
   }
 
-  def printE(mat : Rep[Field[Edge, Float]]) {
+  def printE(mat: Rep[Field[Edge, Float]]) {
     println("Matrix : ")
     for (e <- edges(m))
       println(ID(head(e)) + " " + ID(tail(e)) + " " + mat(e))
   }
-  
 
   def main(): Unit = {
     m = RectangularMesh(sizex, sizey, 1.f)
@@ -73,6 +72,7 @@ trait Fem extends DeLisztApplication with Libs {
     pk = FieldWithConst[Vertex, Float](0.f, m)
     rk = FieldWithConst[Vertex, Float](0.f, m)
     dF = FieldWithConst[Vertex, Float](0.f, m)
+    temp = FieldWithConst[Vertex, Float](0.f, m)
     for (v <- vertices(m)) dF(v) = deltaF(v.x, v.y)
 
     for (face <- faces(m)) {
@@ -82,42 +82,59 @@ trait Fem extends DeLisztApplication with Libs {
       for (e <- edges(face))
         matrixE(e) += integralEdge(e, face)
     }
-    
+
     printE(matrixE)
     println()
     printV(matrixV)
     OutputMesh.freeFem(m, "freefem.mesh")
 
-    var result : Rep[Float] = 0.f
-   /* for (i <- 1 until 10) {
-      result += i
-      println("iii " + i)
-    }*/
+    val result: Rep[Int] = vertices(m).mapReduce((v: Rep[Vertex]) => ID(v))
+
     println("result " + result)
-    
-  /*
+
     for (v <- m.inside) {
       rk(v) = dF(v)
-      pk(v) = rk(v)
+      pk(v) = dF(v)
     }
 
+    //var error: Rep[Float] = 100.f
+    //while (error > 0.00001f)
+    //for (i <- 1 until 10)
+    {
+      //println("iter " + i)
+      val alphaNominator: Rep[Float] = vertices(m).mapReduce((v: Rep[Vertex]) => rk(v) * rk(v))
+      println("alphaNominator " + alphaNominator)
 
-
-    for (iter <- 0 until 1000) {
-      for (v <- m.inside) {
-        values2(v) = dF(v)
+      for (v <- vertices(m)) {
+        temp(v) = matrixV(v) * pk(v)
         for (e <- edges(v)) {
-          val e2 = if (ID(e.head) == ID(v)) e.tail else e.head
-          values2(v) -= (matrixE(e) * values(e2))
+          val e2 = if (ID(head(e)) == ID(v)) tail(e) else head(e)
+          temp(v) += matrixE(e) * pk(e2)
         }
       }
-      for (v <- m.inside) {
-        values(v) = values2(v) / matrixV(v)
-      }
-    }
-    OutputMesh(m, "values.ply", values)
-    OutputMesh(m, "f.ply", f _)*/
 
+      for (v <- vertices(m)) println(ID(v) + " pk " + pk(v) + ", temp " + temp(v))
+      
+      val alphaDenominator: Rep[Float] = vertices(m).mapReduce((v: Rep[Vertex]) => pk(v) * temp(v))
+      println("alphaDenominator " + alphaDenominator)
+      val alpha: Rep[Float] = alphaNominator / alphaDenominator
+      println("alpha " + alphaNominator)
+      for (v <- vertices(m)) xk(v) += alpha * pk(v)
+      for (v <- vertices(m)) rk(v) -= alpha * temp(v)
+      val lenrk1 = vertices(m).mapReduce((v: Rep[Vertex]) => rk(v) * rk(v))
+      println("lenrk1 " + lenrk1)
+      val beta: Rep[Float] = lenrk1 / alphaNominator
+      println("beta " + beta)
+      for (v <- vertices(m)) pk(v) *= beta
+      for (v <- vertices(m)) pk(v) += rk(v)      
+
+      println()
+      //error = alphaNominator
+      
+    }
+
+    OutputMesh(m, "values.ply", xk)
+    OutputMesh(m, "f.ply", f _)
 
   }
 }
