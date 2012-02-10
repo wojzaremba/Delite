@@ -5,6 +5,12 @@
  *      Author: zd
  */
 
+#ifdef DEBUG
+#define DEBUG_PRINT(msg) std::cerr << msg << std::endl;
+#else
+#define DEBUG_PRINT(msg)
+#endif
+
 
 typedef MeshIterator<Vertex> Mesh_vertex_it;
 typedef MeshIterator<Edge> Mesh_edge_it;

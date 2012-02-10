@@ -13,12 +13,6 @@
 #ifndef MESHLOADER_H_
 #define MESHLOADER_H_
 
-#ifdef DEBUG
-#define DEBUG_PRINT(msg) std::cerr << msg << std::endl;
-#else
-#define DEBUG_PRINT(msg)
-#endif
-
 using namespace std;
 
 namespace System {
