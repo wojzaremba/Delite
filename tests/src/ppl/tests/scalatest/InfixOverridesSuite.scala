@@ -1,12 +1,11 @@
 package ppl.tests.scalatest
 
-import ppl.dsl.optiml.datastruct.scala.{Vector,RangeVector}
+import ppl.dsl.optiml.{Vector,RangeVector}
 import ppl.dsl.optiml.{OptiMLApplication, OptiMLApplicationRunner}
 
 object InfixOverridesRunner extends DeliteTestRunner with OptiMLApplicationRunner with InfixOverrides
 trait InfixOverrides extends DeliteTestModule with OptiMLApplication {
   def main() {
-    implicit val collector = ArrayBuffer[Boolean]()
 
     val a = unit(1.0)
 
@@ -16,7 +15,7 @@ trait InfixOverrides extends DeliteTestModule with OptiMLApplication {
     /* THIS DOES */
     //collect(infix_toString(a) == "1.0")
     /* THIS DOES TOO */
-    collect(a.toStringL == "1.0")
+    collect(a.ToString == "1.0")
 
     // clone
     //val b = a.clone

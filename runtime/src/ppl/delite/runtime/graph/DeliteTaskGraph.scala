@@ -412,6 +412,7 @@ object DeliteTaskGraph {
    */
   def processEOPTask(op: Map[Any, Any])(implicit graph: DeliteTaskGraph) {
     val result = graph._result._1
+    val EOP = new EOP
     EOP.addDependency(result) //EOP depends on result of application
     result.addConsumer(EOP)
     graph.registerOp(EOP)
@@ -476,12 +477,31 @@ object DeliteTaskGraph {
       }
       //output copy
       output.funcReturn = outList.tail.tail.tail.head
+
+      //Added for new GPU execution model
+      val loopConfig = outList.tail.tail.tail.tail
+      output.loopType = loopConfig.head
+      output.hasCond = java.lang.Boolean.parseBoolean(loopConfig.tail.head)
+      output.loopFuncInputs = loopConfig.tail.tail.head.asInstanceOf[List[String]]
+      output.loopFuncInputs_2 = loopConfig.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopFuncOutputType = loopConfig.tail.tail.tail.tail.head
+      output.loopFuncOutputType_2 = loopConfig.tail.tail.tail.tail.tail.head
+      output.loopCondInputs = loopConfig.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopReduceInputs = loopConfig.tail.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopReduceInputs_2 = loopConfig.tail.tail.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopReduceParInputs = loopConfig.tail.tail.tail.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopReduceParInputs_2 = loopConfig.tail.tail.tail.tail.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopZeroInputs = loopConfig.tail.tail.tail.tail.tail.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+      output.loopZeroInputs_2 = loopConfig.tail.tail.tail.tail.tail.tail.tail.tail.tail.tail.tail.tail.head.asInstanceOf[List[String]]
+
       tgt match {
         case Targets.OpenCL => output.objFields = outList.tail.tail.tail.tail.head.asInstanceOf[Map[String,String]]
         case _ =>
       }
+
     }
 
+    /*
     def fill(field: String) {
       val list = getFieldList(metadataMap, field)
       val data = metadata(field)
@@ -496,6 +516,7 @@ object DeliteTaskGraph {
       fill("gpuDimSizeX") //blocks in grid - x
       fill("gpuDimSizeY") //blocks in grid - y
     }
+    */
 
   }
 

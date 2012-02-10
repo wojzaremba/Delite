@@ -43,16 +43,13 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
   // generators created by getCodeGenPkg will use the 'current' scope of the deliteGenerator as global scope
   val deliteGenerator = new DeliteCodeGenPkg { val IR : DeliteApplication.this.type = DeliteApplication.this;
                                                val generators = DeliteApplication.this.generators }
-
-  lazy val analyses: List[TraversalAnalysis{ val IR: DeliteApplication.this.type }] = List()
-  
-  // Store and retrieve
-  val analysisResults = MMap[String,Any]()
-
   var args: Rep[Array[String]] = _
+
+  var staticDataMap: Map[String,_] = _
+
   
   final def main(args: Array[String]) {
-    println("Delite Application Being Staged:[" + this.getClass.getSimpleName + "]")
+    println("Delite Application Being Staged:[" + this.getClass.getName + "]")
 
     println("******Generating the program******")
 
@@ -99,18 +96,17 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
       g.emitDataStructures(baseDir + "datastructures" + File.separator)
       g.initializeGenerator(baseDir + "kernels" + File.separator, args, analysisResults)
     }
-    
-    if (Config.degFilename.endsWith(".deg")) {
-      val streamScala = new PrintWriter(new FileWriter(Config.degFilename.replace(".deg",".scala")))
-      val baseDir = Config.buildDir + File.separator + codegen.toString + File.separator
-      codegen.initializeGenerator(baseDir + "kernels" + File.separator, args, analysisResults) // whole scala application (for testing)
-      codegen.emitSource(liftedMain, "Application", streamScala) // whole scala application (for testing)
-      // TODO: dot output
-      reset
+
+    if (Config.debug) {
+      if (Config.degFilename.endsWith(".deg")) {
+        val streamScala = new PrintWriter(new FileWriter(Config.degFilename.replace(".deg",".scala")))
+        codegen.emitSource(liftedMain, "Application", streamScala) // whole scala application (for testing)
+        // TODO: dot output
+        reset
+      }
     }
-    
-    deliteGenerator.initializeGenerator(Config.buildDir, args, analysisResults)
-    deliteGenerator.emitSource(liftedMain, "Application", stream)
+    deliteGenerator.initializeGenerator(Config.buildDir)
+    val sd = deliteGenerator.emitSource(liftedMain, "Application", stream)    
     deliteGenerator.finalizeGenerator()
 
     if(Config.printGlobals) {
@@ -121,6 +117,8 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
     }
 
     generators foreach { _.finalizeGenerator()}
+    
+    staticDataMap = Map() ++ sd map { case (s,d) => (deliteGenerator.quote(s), d) }
   }
 
   final def generateScalaSource(name: String, stream: PrintWriter) = {
@@ -137,15 +135,13 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
 
 
   final def execute(args: Array[String]) {
-    println("Delite Application Being Executed:[" + this.getClass.getSimpleName + "]")
+    println("Delite Application Being Executed:[" + this.getClass.getName + "]")
 
     println("******Executing the program*********")
     globalDefs = List()
     val g = compile(liftedMain)
     g(args)
   }
-
-  def registerDSLType(name: String): DSLTypeRepresentation = nop
 
   /**
    * this is the entry method for our applications, user implement this method. Note, that it is missing the

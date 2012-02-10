@@ -53,15 +53,12 @@ def main():
         parser.error("incorrect number of arguments")
     
 
-
     loadOptions(opts)
     loadProps(options)
     loadParams(options)
     loadClasses(options)
     
     launchApps(options)
-    
-
 
 def loadOptions(opts):
     options['verbose'] = opts.verbose
@@ -127,8 +124,6 @@ def loadOptions(opts):
 
 def loadProps(options):
     #load and check all the required environment variables
-    
-    
     config = ConfigParser.ConfigParser()
     config.readfp(open(props["delite.home"] + '/delite.properties'))
     items = config.items('delite')
@@ -162,17 +157,13 @@ def launchApps(options):
         build_dir = props["delite.home"] + "/generated/"
         opts = " -Ddelite.home.dir=" + props["delite.home"] + " -Ddelite.build.dir=" + build_dir + " -Ddelite.deg.filename=" + app + ".deg" + " -Dlms.verbosity=1"
         if options['blas'] == True:
-            opts = opts + " -Dblas.enabled"
+            opts = opts + " -Ddelite.extern.blas"
         if options['run']['gpu'] == True:
-            opts = opts + " -Ddelite.generation.cuda"
+            opts = opts + " -Ddelite.generate.cuda"
         if options['variants'] == False:
             opts = opts + " -Dnested.variants.level=0"
-        if options['fusion'] == True:
-            opts = opts + " -Ddelite.opfusion.enabled=true"
-        if options['stencil'] == True:
-            opts = opts + " -Dliszt.stencil.enabled=true"
-        if options['print_globals'] == True:
-            opts = opts + " -Ddelite.print_globals.enabled=true"
+        if options['fusion'] == False:
+            opts = opts + " -Ddelite.enable.fusion=false"
         opts = opts + " " + java_opts
         os.putenv("JAVA_OPTS", opts)
         os.putenv("GEN_OPTS", opts)

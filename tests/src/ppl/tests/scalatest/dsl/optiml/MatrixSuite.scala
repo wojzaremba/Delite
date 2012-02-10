@@ -10,14 +10,13 @@
 
 package ppl.tests.scalatest.dsl.optiml
 
-import ppl.dsl.optiml.datastruct.scala.{Vector,RangeVector}
+import ppl.dsl.optiml.{Vector,RangeVector}
 import ppl.dsl.optiml.{OptiMLApplication, OptiMLApplicationRunner}
 import ppl.tests.scalatest._
 
 object MatrixAccessorsRunner extends DeliteTestRunner with OptiMLApplicationRunner with MatrixAccessors
 trait MatrixAccessors extends DeliteTestModule with OptiMLApplication {
   def main() {
-    implicit val collector = ArrayBuffer[Boolean]()
     val m = Matrix.rand(100,100)
 
     collect(m.numRows == 100)
@@ -63,7 +62,6 @@ trait MatrixAccessors extends DeliteTestModule with OptiMLApplication {
 object MatrixOperatorsRunner extends DeliteTestRunner with OptiMLApplicationRunner with MatrixOperators
 trait MatrixOperators extends DeliteTestModule with OptiMLApplication {
   def main() {
-    implicit val collector = ArrayBuffer[Boolean]()
     val m_rand = Matrix.rand(2,2)
     collect(m_rand(0,0) != m_rand(0,1))
     collect(m_rand(0,0) != m_rand(1,0))
@@ -76,12 +74,11 @@ trait MatrixOperators extends DeliteTestModule with OptiMLApplication {
 object MatrixUpdatesRunner extends DeliteTestRunner with OptiMLApplicationRunner with MatrixUpdates
 trait MatrixUpdates extends DeliteTestModule with OptiMLApplication {
   def main() {
-    implicit val collector = ArrayBuffer[Boolean]()
     val v = Vector.rand(100)
     val m = Matrix.rand(100,100).mutable
     val mb = Matrix.rand(100,100).mutable
 
-    val init_m = m.cloneL
+    val init_m = m.Clone
 
     m(72,5) = 3.14
     collect(m(72,5) == 3.14)
@@ -141,13 +138,13 @@ trait MatrixUpdates extends DeliteTestModule with OptiMLApplication {
     }
     cols += mb.numCols
 
-    val s_row = m2(20).cloneL
+    val s_row = m2(20).Clone
     m2.removeRows(10,10)
     collect(m2.numRows == rows-10)
     //collect(s_row.cmp(m(10)).value == true)
     rows -= 10
 
-    val s_col = m2.getCol(23).cloneL
+    val s_col = m2.getCol(23).Clone
     m2.removeCols(13,10)
     collect(m2.numCols == cols-10)
     //collect(s_col.cmp(m.getCol(13)).value == true)
@@ -160,7 +157,6 @@ trait MatrixUpdates extends DeliteTestModule with OptiMLApplication {
 object GroupRowsByRunner extends DeliteTestRunner with OptiMLApplicationRunner with GroupRowsBy
 trait GroupRowsBy extends DeliteTestModule with OptiMLApplication {
   def main() = {
-    implicit val collector = ArrayBuffer[Boolean]()
 
     val m = Matrix(Vector(1,2,3,4),
                    Vector(2,-2,-3,-4),
@@ -179,8 +175,8 @@ trait GroupRowsBy extends DeliteTestModule with OptiMLApplication {
 }
 
 class MatrixSuite extends DeliteSuite {
-  // def testAccessors() { compileAndTest(MatrixAccessorsRunner) }
-  //  def testOperators() { compileAndTest(MatrixOperatorsRunner) }
-  //  def testUpdates() { compileAndTest(MatrixUpdatesRunner) }
+  def testAccessors() { compileAndTest(MatrixAccessorsRunner) }
+  def testOperators() { compileAndTest(MatrixOperatorsRunner) }
+  def testUpdates() { compileAndTest(MatrixUpdatesRunner) }
   def testGroupRowsBy() { compileAndTest(GroupRowsByRunner) }
 }
