@@ -83,7 +83,8 @@ end_header
       for (v <- vertices(mesh)) {
         f.write(v.x, " ", v.y, " ", v.z)
         for (field <- fields)
-          f.write(" ", field(v).toInt)
+          f.write(" ", field(v))
+          //f.write(" ", field(v).toInt)
         for (i <- 0 until (3 - fields.size))
           f.write(" 0")
         f.writeln()

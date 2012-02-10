@@ -10,24 +10,24 @@ trait Fem extends DeLisztApplication with Libs {
 
   var matrixE: Rep[Field[Edge, Float]] = null
   var matrixV: Rep[Field[Vertex, Float]] = null
-
+/*
   var xk: Rep[Field[Vertex, Float]] = null
   var pk: Rep[Field[Vertex, Float]] = null
   var rk: Rep[Field[Vertex, Float]] = null
-  var temp: Rep[Field[Vertex, Float]] = null
+  var temp: Rep[Field[Vertex, Float]] = null*/
 
   var values: Rep[Field[Vertex, Float]] = null
   var values2: Rep[Field[Vertex, Float]] = null  
   
   var dF: Rep[Field[Vertex, Float]] = null
-  val sizex: Float = 10.f
-  val sizey: Float = 10.f
+  val sizex: Float = 4.f
+  val sizey: Float = 4.f
 
-  def f(x: Rep[Float], y: Rep[Float], z: Rep[Float]): Rep[Float] =
-    x * (sizex - x) * y * y * (sizey - y)
+  def f(x: Rep[Float], y: Rep[Float], z: Rep[Float]): Rep[Float] = x * (sizex - x) * y * (sizey - y) * 100.f 
+    //x * (sizex - x) * y * y * (sizey - y) * 10.f
 
-  def deltaF(x: Rep[Float], y: Rep[Float]): Rep[Float] =
-    y * y * (sizey - y) * 2.f + x * (sizey - x) * (6.f * y - 2.f * sizey)
+  def deltaF(x: Rep[Float], y: Rep[Float]): Rep[Float] = ( y * (sizey - y) + x * (sizex - x) ) * 200.f
+    //y * y * (sizey - y) * 20.f + x * (sizex - x) * (60.f * y - 20.f * sizey)
 
   def lamda(v: Rep[Vertex], face: Rep[Face]): Rep[Vec[_3, Float]] = {
     val set = vertices(face).filter((x: Rep[Vertex]) => ID(x) != ID(v))
@@ -41,14 +41,14 @@ trait Fem extends DeLisztApplication with Libs {
   def integralEdge(edge: Rep[Edge], face: Rep[Face]) = {
     val a = head(edge)
     val b = tail(edge)
-    if (m.inside.contains(a) || m.inside.contains(b)) {
-      dot(lamda(a, face), lamda(b, face)) / 2.f
+    if (m.inside.contains(a) && m.inside.contains(b)) {
+      dot(lamda(a, face), lamda(b, face))
     } else 0.f
   }
 
   def integralVertex(a: Rep[Vertex], face: Rep[Face]) = {
     if (m.inside.contains(a)) {
-      dot(lamda(a, face), lamda(a, face)) / 2.f
+      dot(lamda(a, face), lamda(a, face))
     } else 0.f
   }
 
@@ -71,11 +71,11 @@ trait Fem extends DeLisztApplication with Libs {
 
     matrixE = FieldWithConst[Edge, Float](0.f, m)
     matrixV = FieldWithConst[Vertex, Float](0.f, m)
-    xk = FieldWithConst[Vertex, Float](0.f, m)
-    pk = FieldWithConst[Vertex, Float](0.f, m)
-    rk = FieldWithConst[Vertex, Float](0.f, m)
+//    xk = FieldWithConst[Vertex, Float](0.f, m)
+//    pk = FieldWithConst[Vertex, Float](0.f, m)
+//    rk = FieldWithConst[Vertex, Float](0.f, m)
     dF = FieldWithConst[Vertex, Float](0.f, m)
-    temp = FieldWithConst[Vertex, Float](0.f, m)
+//    temp = FieldWithConst[Vertex, Float](0.f, m)
     
     values = FieldWithConst[Vertex, Float](0.f, m)
     values2 = FieldWithConst[Vertex, Float](0.f, m)
@@ -94,6 +94,8 @@ trait Fem extends DeLisztApplication with Libs {
     println()
     printV(matrixV)
     OutputMesh.freeFem(m, "freefem.mesh")
+
+
 
     /*val result: Rep[Int] = vertices(m).mapReduce((v: Rep[Vertex]) => ID(v))
 
@@ -138,8 +140,27 @@ trait Fem extends DeLisztApplication with Libs {
       //error = alphaNominator
       
 //    }*/
+    
+    
+    var error = 100.f
+    while (error > 0.0001f) 
+    {      
+      for (v <- m.inside) {
+        values2(v) = edges(v).mapReduce(
+           (e : Rep[Edge]) => (matrixE(e) * values(if (ID(e.head) == ID(v)) e.tail else e.head))
+          )        
+      }
+      for (v <- m.inside) {
+        values2(v) = (dF(v) - values2(v)) / matrixV(v)
+      }      
+      val error = vertices(m).mapReduce((v : Rep[Vertex]) => ( values2(v)-values(v) ) * ( values2(v)-values(v) ) )      
+      println("error " + error)     
+      for (v <- m.inside) {
+        values(v) = values2(v)
+      }
       
-    for (iter <- 0 until 1000) {
+      
+      /*
       for (v <- m.inside) {
         values2(v) = dF(v)
         for (e <- edges(v)) {
@@ -149,10 +170,10 @@ trait Fem extends DeLisztApplication with Libs {
       }   
       for (v <- m.inside) {
         values(v) = values2(v) / matrixV(v)
-      }
+      }*/
     }      
-    OutputMesh(m, "values.ply", values)
-    OutputMesh(m, "f.ply", f _)
+ //   OutputMesh(m, "values.ply", values)
+   // OutputMesh(m, "f.ply", f _)
     
 
   }

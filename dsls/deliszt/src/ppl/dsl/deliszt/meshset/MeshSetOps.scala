@@ -127,6 +127,8 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
     // case f@NestedMeshSetForeach(crs,e,func) => reflectPure(NestedMeshSetForeach(f(crs),f(e),f(func))(f.m))(mtype(manifest[A]))
     case Reflect(e@NestedMeshSetForeach(m,crs,i,func), u, es) => reflectMirrored(Reflect(NestedMeshSetForeach(f(m),f(crs),f(i),f(func)), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(e@MeshSetForeach(a,b), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetForeach(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+    case Reflect(e@MeshSetFilter(a,b,c), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetFilter(f(a),f(b),f(c)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+    //case Reflect(e@MeshSetMapReduce(a,b), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetMapReduce(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))    
     case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]] // why??
   
