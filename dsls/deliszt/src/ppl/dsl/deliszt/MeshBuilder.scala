@@ -250,18 +250,22 @@ class MeshSkeleton(meshId: Int) {
 
   class MeshElementData {
 
+    val booleanData = Map.empty[String, (Map[Int, Boolean], Int)]
     val intData = Map.empty[String, (Map[Int, Int], Int)]
     val floatData = Map.empty[String, (Map[Int, Float], Int)]
+    val doubleData = Map.empty[String, (Map[Int, Double], Int)]
+    val longData = Map.empty[String, (Map[Int, Long], Int)]
 
     def update[T](t : Tuple2[String, Int], value : T*)(implicit man: Manifest[T]) {
       val (name, id) = t
       Log.log("Setting vertex data for " + name + " for id " + id)
       val size = value.size
       val m = (man.toString) match {
-        case "int" => intData
-        case "Int" => intData
-        case "float" => floatData
-        case "Float" => floatData
+        case "int" | "Int" => intData
+        case "float" | "Float" => floatData
+        case "double" | "Double" => floatData
+        case "long" | "Long" => longData
+        case "boolean" | "Boolean" => booleanData
         case _ => throw new Exception("Not supported format for mesh element data " + man.toString)
       }
       val map = m.asInstanceOf[Map[String, Tuple2[Map[Int, T], Int]]].getOrElseUpdate(name, (Map.empty[Int, T], size))
@@ -285,7 +289,7 @@ class MeshSkeleton(meshId: Int) {
 
 
     def toLabelData(): LabelData = {
-      LabelData(toList[Int](intData), toList[Float](floatData))
+      LabelData(toList[Boolean](booleanData), toList[Int](intData), toList[Float](floatData), toList[Double](doubleData), toList[Long](longData))
     }
 
     def swap[T:Manifest](m : Map[String, (Map[Int, T], Int)], a: Int, b: Int) {

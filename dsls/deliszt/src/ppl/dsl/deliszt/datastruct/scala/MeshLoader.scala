@@ -23,7 +23,6 @@ object MeshLoader {
   var loadedLibrary = false
 
   def init(): Unit = {
-    Global.wall_start = System.currentTimeMillis
     if (!loadedLibrary) {
       try {
         System.loadLibrary("MeshLoader")

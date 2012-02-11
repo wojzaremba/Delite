@@ -188,6 +188,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
   
   override def specmap(line: String, t: String) : String = {
     var res = line.replaceAll("object ", "object " + t)
+    res = res.replaceAll("getGenericArray\\[T\\]", "get" + t + "Array")
     res = res.replaceAll("@specialized T: ClassManifest", t)
     res = res.replaceAll("\\bT:Manifest\\b", t)
     res = res.replaceAll("\\bT\\b", t)
@@ -199,8 +200,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.getT\\(this, 16 \\+ n\\*UNSAFE_SIZE\\)\\*\\/ v0", "unsafe.UnsafeAccessor.unsafe.get"+t+"\\(this, 16 \\+ n\\*"+size+"\\)")    
     res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.putT\\(this, 16 \\+ n\\*UNSAFE_SIZE, v\\)\\*\\/", "unsafe.UnsafeAccessor.unsafe.put"+t+"\\(this, 16 \\+ n\\*"+size+", v\\)")
     res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.getT\\(this, 16 \\+ idx\\*UNSAFE_SIZE\\)\\*\\/ v00", "unsafe.UnsafeAccessor.unsafe.get"+t+"\\(this, 16 \\+ idx\\*"+size+"\\)")
-    res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.putT\\(this, 16 \\+ idx\\*UNSAFE_SIZE, x\\)\\*\\/","unsafe.UnsafeAccessor.unsafe.put"+t+"\\(this, 16 \\+ idx\\*"+size+", x\\)")
-    res = res.replaceAll("getGenericArray[" + t + "]", "get" + t + "Array")  
+    res = res.replaceAll("\\/\\*unsafe.UnsafeAccessor.unsafe.putT\\(this, 16 \\+ idx\\*UNSAFE_SIZE, x\\)\\*\\/","unsafe.UnsafeAccessor.unsafe.put"+t+"\\(this, 16 \\+ idx\\*"+size+", x\\)")  
     parmap(res)
   }
 

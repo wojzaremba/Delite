@@ -65,8 +65,11 @@ object Mesh {
 case class BoundaryRange(start : Int, end : Int)
 
 //wz : List due to problems with map serialization and deserialization with java 1.6
-case class LabelData(intData : List[(String, Array[Int])], floatData : List[(String, Array[Float])]) {
+case class LabelData(booleanData : List[(String, Array[Boolean])], intData : List[(String, Array[Int])], floatData : List[(String, Array[Float])], doubleData : List[(String, Array[Double])], longData : List[(String, Array[Long])]) {
   def getIntArray(name : String) : Array[Int] = intData.find(_._1 == name).get._2
+  def getDoubleArray(name : String) : Array[Double] = doubleData.find(_._1 == name).get._2
+  def getLongArray(name : String) : Array[Long] = longData.find(_._1 == name).get._2
+  def getBooleanArray(name : String) : Array[Boolean] = booleanData.find(_._1 == name).get._2
   def getFloatArray(name : String) : Array[Float] = floatData.find(_._1 == name).get._2
   def getGenericArray[T : ClassManifest](name : String) : Array[T] = throw new Exception("unrechable")
 
