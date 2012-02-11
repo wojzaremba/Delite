@@ -6,14 +6,12 @@ import scala.virtualization.lms.common._
 import scala.virtualization.lms.util.OverloadHack
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
 
-import ppl.delite.framework.DSLType
 import ppl.delite.framework.datastruct.scala.DeliteCollection
+import ppl.dsl.optila.capabilities._
 
-import ppl.dsl.deliszt.capabilities._
 import ppl.dsl.deliszt._
-import ppl.dsl.deliszt.vec.VecOpsExpOpt
 
-trait FieldOps extends DSLType with Variables with OverloadHack {
+trait FieldOps extends Base with Variables with OverloadHack {
   this: DeLiszt =>
 
   implicit def repFieldToFieldOps[MO <: MeshObj:Manifest, T : Manifest](x: Rep[Field[MO, T]]) = new fieldOpsCls[MO,T](x)
@@ -311,7 +309,7 @@ trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
 }
 
 trait FieldOpsExpOpt extends FieldOpsExp {
-  this: DeLisztExp with ArithOpsExp =>
+  this: DeLisztExp =>
   
   override def field_mo_update[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], mo: Rep[MO], v: Exp[T]) = v match {
     case Def(ArithPlus(a, b)) => (a, b) match {
@@ -326,24 +324,50 @@ trait FieldOpsExpOpt extends FieldOpsExp {
     }
     case Def(ArithMinus(Def(FieldApply(x, mo)), b)) => FieldMinusUpdate(x, mo, b)
     case Def(ArithFractionalDivide(Def(FieldApply(x, mo)), b)) => FieldDivideUpdate(x, mo, b)
-    case Def(Vec3New(a,b,c)) => field_raw_update(x,ID(mo),0,a); field_raw_update(x,ID(mo),1,b); field_raw_update(x,ID(mo),2,c)
+    //case Def(Vector(a,b,c)) => field_raw_update(x,ID(mo),unit(0),a); field_raw_update(x,ID(mo),unit(1),b); field_raw_update(x,ID(mo),unit(2),c)
     //case Def(Reify(Def(Reflect(Vec3New(a,b,c), u, es)),_,_)) => field_raw_update(x,ID(mo),0,a); field_raw_update(x,ID(mo),1,b); field_raw_update(x,ID(mo),2,c)
     case _ => super.field_mo_update(x, mo, v)
   }
   override def field_update[MO<:MeshObj:Manifest,T:Manifest](x: Exp[Field[MO,T]], n: Exp[Int], v: Exp[T]) = v match {
-    case Def(Vec3New(a,b,c)) => field_raw_update(x,n,0,a); field_raw_update(x,n,1,b); field_raw_update(x,n,2,c)
+    //FIXME : wz
+//    case Def(Vector(a,b,c)) => field_raw_update(x,n,unit(0),a); field_raw_update(x,n,unit(1),b); field_raw_update(x,n,unit(2),c)
     //case Def(Reify(Def(Reflect(Vec3New(a,b,c), u, es)),_,_)) => field_raw_update(x,n,0,a); field_raw_update(x,n,1,b); field_raw_update(x,n,2,c)
     case _ => super.field_update(x, n, v)
   }
 }
 
 trait ScalaGenFieldOps extends ScalaGenBase {
-  val IR: FieldOpsExp with VecOpsExpOpt
+  val IR: FieldOpsExp
   import IR._
 
-  val fieldImplPath = "ppl.dsl.deliszt.datastruct.scala.FieldImpl"
-  val labelImplPath = "ppl.dsl.deliszt.datastruct.scala.LabelFieldImpl"
-  val vec3FieldImplPath = "ppl.dsl.deliszt.datastruct.scala.Vec3FieldImpl"
+  val generated = "generated.scala."
+  val fieldImplPath = "FieldImpl"
+  val labelImplPath = "LabelFieldImpl"
+  val vec3FieldImplPath = "Vec3FieldImpl"
+    
+  //FIXME  
+  def isVec3[A](x: Exp[Any]) : Boolean = false 
+     /*x match {
+    case Def(Vec3New(a,b,c)) => true
+    case Def(Reify(Def(Reflect(Vec3New(a,b,c),u,es)),_,_)) => true
+    case Def(e: DeliteOpMap[A,_,_]) => e.body match {
+      case ce: DeliteCollectElem[_,_] => ce.alloc match {
+        case Def(Vec3New(a,b,c)) => true
+        case Def(Reify(Def(Reflect(Vec3New(a,b,c),u,es)),_,_)) => true
+        case _ => false
+      }   
+      case _ => false
+    }   
+    case Def(e: DeliteOpZipWith[A,A,_,_]) => e.body match {
+      case ce: DeliteCollectElem[_,_] => ce.alloc match {
+        case Def(Vec3New(a,b,c)) => true
+        case Def(Reify(Def(Reflect(Vec3New(a,b,c),u,es)),_,_)) => true
+        case _ => false
+      }   
+      case _ => false
+    }   
+    case _ => false
+  }  */
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
@@ -359,42 +383,42 @@ trait ScalaGenFieldOps extends ScalaGenBase {
 
       case f@DeLisztFieldWithConstCell(x, m) => {
          if (isVec3(x)) {
-           emitValDef(sym, remap(vec3FieldImplPath, ".cellWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+           emitValDef(sym, generated + remap(f.t) + vec3FieldImplPath + ".cellWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-           emitValDef(sym, remap(fieldImplPath, ".cellWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+           emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".cellWithConst(" + quote(x) + ", " + quote(m) +  ")")
          }
       }
       case f@DeLisztFieldWithConstEdge(x, m) => {
          if (isVec3(x)) {
-             emitValDef(sym, remap(vec3FieldImplPath, ".edgeWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, generated + remap(f.t) + vec3FieldImplPath + ".edgeWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-             emitValDef(sym, remap(fieldImplPath, ".edgeWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".edgeWithConst(" + quote(x) + ", " + quote(m) +  ")")
          }
       }
 
       case f@DeLisztFieldWithConstFace(x, m) => {
          if (isVec3(x)) {
-             emitValDef(sym, remap(vec3FieldImplPath, ".faceWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, generated + remap(f.t) + vec3FieldImplPath + ".faceWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-             emitValDef(sym, remap(fieldImplPath, ".faceWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".faceWithConst(" + quote(x) + ", " + quote(m) +  ")")
          }
       }
       case f@DeLisztFieldWithConstVertex(x, m) => {
          if (isVec3(x)) {
-             emitValDef(sym, remap(vec3FieldImplPath, ".vertexWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, generated + remap(f.t) + vec3FieldImplPath + ".vertexWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-             emitValDef(sym, remap(fieldImplPath, ".vertexWithConst", f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".vertexWithConst(" + quote(x) + ", " + quote(m) +  ")")
          }
       }
-      case f@FieldObjectNewCell() => emitValDef(sym, remap(fieldImplPath, ".ofCell", f.t) + "()")
-      case f@FieldObjectNewEdge() => emitValDef(sym, remap(fieldImplPath, ".ofEdge", f.t) + "()")
-      case f@FieldObjectNewFace() => emitValDef(sym, remap(fieldImplPath, ".ofFace", f.t) + "()")
-      case f@FieldObjectNewVertex() => emitValDef(sym, remap(fieldImplPath, ".ofVertex", f.t) + "()")
+      case f@FieldObjectNewCell() => emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".ofCell()")
+      case f@FieldObjectNewEdge() => emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".ofEdge()")
+      case f@FieldObjectNewFace() => emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".ofFace()")
+      case f@FieldObjectNewVertex() => emitValDef(sym, generated + remap(f.t) + fieldImplPath + ".ofVertex()")
       
-      case f@LabelFieldNewCell(url, m) => emitValDef(sym, remap(labelImplPath, ".ofCell", f.t) + "(" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewEdge(url, m) => emitValDef(sym, remap(labelImplPath, ".ofEdge", f.t) + "(" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewFace(url, m) => emitValDef(sym, remap(labelImplPath, ".ofFace", f.t) + "(" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, remap(labelImplPath, ".ofVertex", f.t) + "(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewCell(url, m) => emitValDef(sym, generated + remap(f.t) + labelImplPath + ".ofCell(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewEdge(url, m) => emitValDef(sym, generated + remap(f.t) + labelImplPath + ".ofEdge(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewFace(url, m) => emitValDef(sym, generated + remap(f.t) + labelImplPath + ".ofFace(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, generated + remap(f.t) + labelImplPath + ".ofVertex(" + quote(m) + "," + quote(url) + ")")
       
       //case FieldIntApply(x,n) => emitValDef(sym, quote(x) + "(" + quote(n) + ")")
       //case FieldIntUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") = " + quote(v))

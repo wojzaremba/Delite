@@ -2,7 +2,6 @@ package ppl.dsl.deliszt.mesh
 
 import java.io.PrintWriter
 
-import ppl.delite.framework.DSLType
 import scala.virtualization.lms.common._
 import ppl.dsl.deliszt.{DeLisztExp, DeLiszt}
 import ppl.dsl.deliszt._
@@ -15,7 +14,7 @@ import ppl.dsl.deliszt._
  * Stanford University
  */
 
-trait MeshPrivateOps extends DSLType with Variables {
+trait MeshPrivateOps extends Base with Variables {
   this: DeLiszt =>
 
   def meshSet[MO<:MeshObj:Manifest] : Rep[MeshSet[MO]]

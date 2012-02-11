@@ -488,16 +488,10 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
     val y = x.labels
     val theta = Vector.zeros(x.numFeatures).mutable
     untilconverged(theta, thresh, maxIter, unit(true)) { theta =>
-<<<<<<< HEAD
-      for (i <- range_until(0, x.numSamples)) {
-        for (j <- range_until(0, x.numFeatures) ) {
-          theta(j) = theta(j) + alpha*(y(i) - hyp(x(i)))*x(i)(j)
-=======
       for (i <- unit(0) until x.numSamples) {
         for (j <- unit(0) until x.numFeatures ) {
           val tmp = x(i) // SourceContext hack
           theta(j) = theta(j) + alpha*(y(i) - hyp(x(i)))*tmp(j)          
->>>>>>> upstream/optiml-alpha
         }
       }
       theta
@@ -510,16 +504,10 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
     val y = x.labels
     val theta = Vector.zeros(x.numFeatures).mutable
     untilconverged(theta, thresh, maxIter, unit(true)) { theta =>
-<<<<<<< HEAD
-      for (j <- range_until(0, x.numFeatures)) {
-        val acc = sum(0, x.numSamples) { i =>
-          (y(i) - hyp(x(i))*x(i)(j))   // parallel work
-=======
       for (j <- unit(0) until x.numFeatures) {        
         val acc = sum(unit(0), x.numSamples) { i =>
           val tmp = x(i) // SourceContext hack
           (y(i) - hyp(x(i))*tmp(j))   // parallel work
->>>>>>> upstream/optiml-alpha
         }
         theta(j) = theta(j) + alpha*acc
       }

@@ -62,14 +62,19 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
   var indexSym : Sym[Any] = null
   var moSyms : ISet[Int] = null
   
-  override def initializeGenerator(buildDir:String, args: Array[String], _analysisResults: MMap[String,Any]): Unit = {
+  override def initializeGenerator(buildDir:String) : Unit = {
+		  throw new Exception("This code shouldn't be rechable (temporary off)")
+  }
+  
+  
+ /* override def initializeGenerator(buildDir:String, args: Array[String], _analysisResults: MMap[String,Any]): Unit = {
     super.initializeGenerator(buildDir, args, _analysisResults)
     
     analysisResults("StencilCollectorStencils") = forMap
     analysisResults("StencilCollectorMeshsets") = msMap
   
     MeshLoader.init()
-  }
+  }*/
   
   // Mark accesses
   def markRead[T](f: Exp[_], i: Exp[Int]) {
@@ -314,7 +319,7 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
   def blockValue[T:Manifest](b: Exp[Any]) = value[T](getBlockResult(b))
   
   def runSchedule(tps: Seq[TP[Any]]) {
-    for(TP(sym, rhs) <- tps) {
+    /*for(TP(sym, rhs) <- tps) {
       // printlog("RUNNING SCHEDULE " + sym.id)
       // printlog(rhs)
       rhs match {
@@ -429,16 +434,19 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
         }
         case None => {}
       }
-    }
+    }*/
   }
   
-  var level = 0
+  var level : Int = 0
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     // printlog("EMITTING NODE " + sym.id)
     // printlog(rhs)
     
-    if(Config.collectStencil) {
+    //FIXME
+    //if(Config.collectStencil)
+    throw new Exception("This code shouldn't be rechable (temporary off)")
+    {
       if(collectingSchedule) {
         // printlog("COLLECTING SCHEDULE " + sym.id)
         // printlog(rhs)
@@ -480,11 +488,11 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
             val parentFor = currentFor
             currentFor = Some(sym.id)
 
-            level += 1
+            level = level + 1
             
             emitBlock(f.body)
             
-            level -= 1
+            level = level - 1
             
             // Restore
             currentFor = parentFor
@@ -496,11 +504,11 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
             val parentFor = currentFor
             currentFor = Some(sym.id)
 
-            level += 1
+            level = level + 1
             
             emitBlock(f.body)
             
-            level -= 1
+            level = level - 1
             
             // Restore
             currentFor = parentFor
@@ -513,13 +521,13 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
             // Set current
             currentFor = Some(sym.id)
 
-            level += 1
+            level = level + 1
             
             f.body match {
               case DeliteForeachElem(func, sync) => emitBlock(func)
             }
             
-            level -= 1
+            level = level - 1
             
             // Restore
             currentFor = parentFor
@@ -696,7 +704,7 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
               
               // Definitely not a top level foreach
               // Run foreach over mesh set
-              var i = 0
+              var i : Int = 0
               
               currentFor = Some(sym.id)
               for(mo <- ms) {
@@ -709,7 +717,7 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
                 // Re "emit" block
                 runSchedule(schedules(sym.id).result)
                 
-                i += 1
+                i = i + 1
               }
             }
             

@@ -33,8 +33,7 @@ trait MeshBuilderOps extends Base with OverloadHack {
   }
 
   class MeshBuilder() {
-    val meshId: Int = MeshBuilder.maxId
-    MeshBuilder.maxId += 1
+    val meshId: Int = MeshBuilder.incId()
 
     newMeshBuilder(meshId)
 
@@ -58,7 +57,11 @@ trait MeshBuilderOps extends Base with OverloadHack {
   }
 
   private object MeshBuilder {
-    var maxId = 0
+    var maxId : Int = 0
+    def incId() : Int = {
+     maxId = maxId + 1
+     maxId
+    } 
   }
 
   def newMeshBuilder(meshId: Int): Unit

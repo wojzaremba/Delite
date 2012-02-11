@@ -15,7 +15,7 @@ import scala.virtualization.lms.common._
  * Stanford University
  */
 
-trait LanguageOps extends Base { this: DeLiszt with MathOps =>
+trait LanguageOps extends Base { this: DeLiszt =>
   def _init(args: Rep[Array[String]]) : Unit
 
   //should be part of LMS
@@ -100,30 +100,6 @@ trait LanguageOps extends Base { this: DeLiszt with MathOps =>
   def infix_length[MO<:MeshObj:Manifest](s: Rep[MeshSet[MO]]) : Rep[Int] = size(s)
 
   def ID[MO<:MeshObj:Manifest](x: Rep[MO]) : Rep[Int]
-
-  def MATH_PI(): Rep[Double]
-  def MIN_FLOAT(): Rep[Float]
-  def MAX_FLOAT(): Rep[Float]
-  def MIN_DOUBLE(): Rep[Double]
-  def MAX_DOUBLE(): Rep[Double]
-  def min[A:Manifest:Numeric](x: Rep[A], y: Rep[A]) = math_min(x, y)
-  def max[A:Manifest:Numeric](x: Rep[A], y: Rep[A]) = math_max(x, y)
-  def sqrt(a: Rep[Double]) = math_sqrt(a)
-  def sqrtf(a: Rep[Float]) = math_sqrt(a).asInstanceOfL[Float]
-  def exp(a: Rep[Double]) = math_exp(a)
-  def expf(a: Rep[Float]) = math_exp(a).asInstanceOfL[Float]
-  def sin(a: Rep[Double]) = math_sin(a)
-  def sinf(a: Rep[Float]) = math_sin(a).asInstanceOfL[Float]
-  def cos(a: Rep[Double]) = math_cos(a)
-  def cosf(a: Rep[Float]) = math_cos(a).asInstanceOfL[Float]
-  def acos(a: Rep[Double]) = math_acos(a)
-  def acosf(a: Rep[Float]) = math_acos(a).asInstanceOfL[Float]
-  def atan2(a: Rep[Double], b: Rep[Double]) = math_atan2(a,b)
-  def atan2f(a: Rep[Float], b: Rep[Float]) = math_atan2(a,b).asInstanceOfL[Float]
-  def pow(a: Rep[Double], b: Rep[Double]) = math_pow(a,b)
-  def powf(a: Rep[Float], b: Rep[Float]) = math_pow(a,b).asInstanceOfL[Float]
-  def abs(a: Rep[Double]) = math_abs(a)
-  def fabs(a: Rep[Float]) = math_abs(a).asInstanceOfL[Float]
   
   def wall_time() : Rep[Double]
   def processor_time() : Rep[Double]
@@ -270,7 +246,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
 
   def _init(args: Exp[Array[String]]) = {
     reflectEffect(DeLisztInit(args))
-    findOrCreateDefinition(DeLisztLoadCfgMesh(args))
+    reflectPure(DeLisztLoadCfgMesh(args))
   }
 
   def infix_toInt[T : Numeric : Manifest](d: Exp[T]) = reflectPure(NumericToInt(d))
@@ -381,7 +357,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
 
   def ID[MO<:MeshObj:Manifest](x: Exp[MO]) = reflectPure(DeLisztID(x))
 
-  def MATH_PI() = reflectPure(MathPi())
   def MIN_FLOAT() = reflectPure(MinFloat())
   def MAX_FLOAT() = reflectPure(MaxFloat())
   def MIN_DOUBLE() = reflectPure(MinDouble())

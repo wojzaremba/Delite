@@ -1,3 +1,4 @@
 #!/bin/bash
 
 sbt "; project deliszt; compile; project deliszt-apps; compile; project runtime; compile"
+(mplayer /sound/beep.mp3 >/dev/null 2>&1)

@@ -15,7 +15,9 @@ trait LoopColoringOpsExp extends BaseFatExp with EffectExp { this: DeLisztExp =>
   case class ColorIndexSetNew(indices: Exp[Array[Int]], start: Exp[Int], end: Exp[Int], mo: Manifest[MeshSet[MeshObj]]) extends Def[MeshSet[MeshObj]]    
   
   def color_index_set_new(indices: Array[Int], start: Int, end: Int)(implicit mo: Manifest[MeshSet[MeshObj]]): Exp[MeshSet[MeshObj]] = {
-    ColorIndexSetNew(Array(indices: _*),unit(start),unit(end),mo)
+    //FIXME
+    throw new Exception("unreachable")
+    //ColorIndexSetNew(unit(Array(indices: _*)),unit(start),unit(end),mo)
   }
   def color_lift(x: Int) = Const(x)
 
@@ -116,7 +118,10 @@ trait LoopColoringOpt extends GenericFatCodegen with SimplifyTransform {
     var result: List[Exp[Any]] = result0
     var currentScope = currentScope0
     
-    if(Config.collectStencil) {
+    //FIXME
+    throw new Exception("unreachable code")
+    //if(Config.collectStencil)
+    /*{
       // Get the map of for loops to Stencil
       val forMap = analysisResults("StencilCollectorStencils").asInstanceOf[ForMap]
       val msMap = analysisResults("StencilCollectorMeshsets").asInstanceOf[MeshSetMap]
@@ -338,7 +343,7 @@ trait LoopColoringOpt extends GenericFatCodegen with SimplifyTransform {
 	}
       } // end loop foreach
       
-    } // end if Config.collectStencil
+    }*/ // end if Config.collectStencil
         
     // do what super does ...
     // result0 does not depend on any of our newly introduced loops...    

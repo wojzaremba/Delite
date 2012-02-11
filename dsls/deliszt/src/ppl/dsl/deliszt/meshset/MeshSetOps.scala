@@ -3,15 +3,17 @@ package ppl.dsl.deliszt.meshset
 import java.io.PrintWriter
 import ppl.dsl.deliszt._
 
-import ppl.delite.framework.DSLType
+
 import reflect.Manifest
 import scala.virtualization.lms.common._
 import scala.virtualization.lms.internal.GenericFatCodegen
 import ppl.dsl.deliszt.{DeLisztExp, DeLiszt}
+import _root_.ppl.dsl.optila.capabilities._
+import scala.virtualization.lms.common._
 
 import ppl.dsl.deliszt.datastruct.scala.Mesh
 
-trait MeshSetOps extends DSLType with Variables {
+trait MeshSetOps extends Base with Variables {
   this: DeLiszt =>
 
   implicit def repMeshSetToMeshSetOps[MO <: MeshObj:Manifest](x: Rep[MeshSet[MO]]) = new meshSetOpsCls[MO](x)
@@ -74,7 +76,7 @@ trait MeshSetOpsExp extends MeshSetOps with VariablesExp with BaseFatExp {
 
   }
   
-  case class MeshSetMapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](in: Exp[MeshSet[MO]], map : Rep[MO] => Rep[A])
+  case class MeshSetMapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](in: Exp[MeshSet[MO]], map : Exp[MO] => Exp[A])
     extends DeliteOpMapReduce[MO, A] {
     def reduce = (a, b) => a + b
     def m = manifest[A]
@@ -206,7 +208,7 @@ trait ScalaGenMeshSetOps extends ScalaGenBase {
   val IR: MeshSetOpsExp
   import IR._
 
-  override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
+  override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = 
     rhs match {
 
       case MeshSetNew2(size) => emitValDef(sym, "new MeshSetImpl2(" + quote(size) + ")" )
@@ -250,7 +252,6 @@ trait ScalaGenMeshSetOps extends ScalaGenBase {
       // these are the ops that call through to the underlying real data structure
       case _ => super.emitNode(sym, rhs)
     }
-  }
 }
 
 

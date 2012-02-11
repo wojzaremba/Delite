@@ -10,22 +10,22 @@ package ppl.dsl.deliszt.datastruct.scala
 
 object LabelFieldImpl {
   def ofCell[T:ClassManifest](mesh: Mesh, url: String) : Field[T] = {  
-    val data = mesh.labelCell[T](url)
+    val data = mesh.cellData.getGenericArray[T](url)
     new FieldImpl[T](data)
   }
   
   def ofEdge[T:ClassManifest](mesh: Mesh, url: String) : Field[T] = {  
-    val data = mesh.labelEdge[T](url)
+    val data = mesh.edgeData.getGenericArray[T](url)
     new FieldImpl[T](data)
   }
   
   def ofFace[T:ClassManifest](mesh: Mesh, url: String) : Field[T] = {  
-    val data = mesh.labelFace[T](url)
+    val data = mesh.faceData.getGenericArray[T](url) 
     new FieldImpl[T](data)
   }
   
   def ofVertex[T:ClassManifest](mesh: Mesh, url: String) : Field[T] = {  
-    val data = mesh.labelVertex[T](url)
+    val data = mesh.vertexData.getGenericArray[T](url)
     new FieldImpl[T](data)
   }
 }

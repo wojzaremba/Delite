@@ -40,3 +40,4 @@ dsls/deliszt/lisztlib/CMakeCache.txt
 scripts/delitec
 scripts/shared
 .settings
+apps/liszt/src/ppl/apps/

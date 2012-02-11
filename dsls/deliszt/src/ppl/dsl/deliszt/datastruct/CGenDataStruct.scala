@@ -10,7 +10,7 @@ trait CGenDataStruct extends CCodegen {
   val IR: Expressions
   import IR._
 
-  def refCopyInputHtoD(sym: Sym[Any]): String = { 
+  /*def refCopyInputHtoD(sym: Sym[Any]): String = { 
     val out = new StringBuilder
     val typeStr = remap(sym.Type.typeArguments(0))
 
@@ -28,7 +28,7 @@ trait CGenDataStruct extends CCodegen {
     out.append("\tenv->DeleteLocalRef(cls);\n")
     out.append("\treturn %s;\n".format(quote(sym)))
     out.toString
-  }
+  }*/
 
   def refCopyOutputDtoH(sym: Sym[Any]): String = { 
     //TODO: Implement this!

@@ -7,6 +7,7 @@ object DeliteBuild extends Build {
   // FIXME: custom-built scalatest
   val dropboxScalaTestRepo = "Dropbox" at "http://dl.dropbox.com/u/12870350/scala-virtualized"
   val scalatest = "org.scalatest" % "scalatest_2.10.0-virtualized-SNAPSHOT" % "1.6.1-SNAPSHOT" //% "test"
+  val liftjson = "net.liftweb" % "lift-json_2.9.0" % "2.4" 
 
   val virtScala = "2.10.0-M1-virtualized"//"2.10.0-virtualized-SNAPSHOT"
   val virtBuildSettingsBase = Defaults.defaultSettings ++ Seq(
@@ -26,8 +27,13 @@ object DeliteBuild extends Build {
     scalacOptions += "-Yvirtualize"
   )
 
+
   val virtBuildSettings = virtBuildSettingsBase ++ Seq(
     scalaSource in Compile <<= baseDirectory(_ / "src")
+  )
+
+  val virtBuildSettingsDeliszt = virtBuildSettings ++ Seq(
+    libraryDependencies += liftjson
   )
 
 
@@ -62,13 +68,15 @@ object DeliteBuild extends Build {
   lazy val optila = Project("optila", file("dsls/optila"), settings = virtBuildSettings) dependsOn(framework)
   lazy val optiml = Project("optiml", file("dsls/optiml"), settings = virtBuildSettings) dependsOn(optila)
   lazy val optiql = Project("optiql", file("dsls/optiql"), settings = virtBuildSettings) dependsOn(framework)
+  lazy val deliszt = Project("deliszt", file("dsls/deliszt"), settings = virtBuildSettingsDeliszt) dependsOn(optila)
 
-  lazy val apps = Project("apps", file("apps"), settings = virtBuildSettings) aggregate(optimlApps, optiqlApps, interopApps)
+  lazy val apps = Project("apps", file("apps"), settings = virtBuildSettings) aggregate(optimlApps, optiqlApps, delisztApps, interopApps)
   lazy val optimlApps = Project("optiml-apps", file("apps/optiml"), settings = virtBuildSettings) dependsOn(optiml)
   lazy val optiqlApps = Project("optiql-apps", file("apps/optiql"), settings = virtBuildSettings) dependsOn(optiql)
-  lazy val interopApps = Project("interop-apps", file("apps/multi-dsl"), settings = virtBuildSettings) dependsOn(optiml, optiql) // dependsOn(dsls) not working
+  lazy val delisztApps = Project("deliszt-apps", file("apps/deliszt"), settings = virtBuildSettingsDeliszt) dependsOn(deliszt)
+  lazy val interopApps = Project("interop-apps", file("apps/multi-dsl"), settings = virtBuildSettings) dependsOn(optiml, optiql, deliszt) // dependsOn(dsls) not working
 
-  lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettings)
+  lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettingsDeliszt)
 
   lazy val tests = Project("tests", file("tests"), settings = virtBuildSettingsBase ++ Seq(
     scalaSource := file("tests/main-src"),
@@ -76,7 +84,6 @@ object DeliteBuild extends Build {
     libraryDependencies += scalatest,
     parallelExecution in Test := false
     // don't appear to be able to depend on a different scala version simultaneously, so just using scala-virtualized for everything
-  )) dependsOn(framework, runtime, optiml, optimlApps, runtime)
+  )) dependsOn(framework, runtime, optiml, optimlApps, deliszt, runtime)
   
-  //dependsOn(framework % "test->compile;compile->compile", optiml % "test->compile;compile->compile", optiql % "test", optimlApps % "test->compile;compile->compile", runtime % "test->compile;compile->compile")
 }

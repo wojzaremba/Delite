@@ -66,20 +66,10 @@ case class BoundaryRange(start : Int, end : Int)
 
 //wz : List due to problems with map serialization and deserialization with java 1.6
 case class LabelData(intData : List[(String, Array[Int])], floatData : List[(String, Array[Float])]) {
-  def apply[T](name : String)(implicit m: ClassManifest[T]) : Array[T] = {
-    (m.toString match {
-      case "int" | "Int" => intData.find(_._1 == name).get._2
-      case "float" | "Float" => floatData.find(_._1 == name).get._2
-      case "generated.scala.Vec[Float]" =>
-        val arr = floatData.find(_._1 == name).get._2
-        val size = arr.size / 3
-        val retArray = new Array[Vec[Float]](size)
-        for (i <- 0 until size)
-          retArray(i) = new VecImpl[Float](Array[Float](arr(3*i), arr(3*i+1), arr(3*i+2)))
-        retArray
-      case x => throw new Exception("not supported type " + x)
-    }).asInstanceOf[Array[T]]
-  }
+  def getIntArray(name : String) : Array[Int] = intData.find(_._1 == name).get._2
+  def getFloatArray(name : String) : Array[Float] = floatData.find(_._1 == name).get._2
+  def getGenericArray[T : ClassManifest](name : String) : Array[T] = throw new Exception("unrechable")
+
   
   override def toString() = {
     val s = new StringBuilder
@@ -95,7 +85,11 @@ case class MeshSize(nvertices : Int, nedges : Int, nfaces : Int, ncells : Int)
 case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vtoc: CRSImpl, etov: CRSImpl, etof: CRSImpl,
                           etoc: CRSImpl, ftov: CRSImpl, ftoe: CRSImpl, ftoc: CRSImpl, ctov: CRSImpl, ctoe: CRSImpl, ctof: CRSImpl, ctoc: CRSImpl, vertexData: LabelData, edgeData: LabelData,
                           faceData: LabelData, cellData: LabelData, vboundaries : Map[String, BoundaryRange]) {
-  val (nvertices, nedges, nfaces, ncells) = (size.nvertices, size.nedges, size.nfaces, size.ncells)
+  val nvertices : Int = size.nvertices
+  val nedges : Int = size.nedges
+  val nfaces : Int = size.nfaces
+  val ncells : Int = size.ncells
+  
   def typeName = "Mesh"
 
   val id = Mesh.maxId
@@ -253,14 +247,6 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
     if (facing) e else Mesh.flip(e)
   }
 
-  def labelCell[T: ClassManifest](url: String): Array[T] = cellData[T](url)
-
-  def labelEdge[T: ClassManifest](url: String): Array[T] = edgeData[T](url)
-
-  def labelFace[T: ClassManifest](url: String): Array[T] = faceData[T](url)
-
-  def labelVertex[T: ClassManifest](url: String): Array[T] = vertexData[T](url)
-
   // Use special CellSetImpl, don't expose 0 cell
   val cells: MeshSet = new CellSetImpl(ncells - 1)
   val edges: MeshSet = new MeshSetImpl(nedges)
@@ -269,7 +255,8 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
 
 
   //Coloring hack: remove this!
-  def coloredIndexSet(filename: String): MeshSet = {
+  //FIXME:
+ /* def coloredIndexSet(filename: String): MeshSet = {
     //File READ
     val ab = new ArrayBuffer[Int]()
     val xfs = new BufferedReader(new FileReader(filename))
@@ -284,7 +271,7 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
 
     val arr = ab.toArray
     new IndexSetImpl(arr, arr.size, 0, arr.size, Mesh.FORWARD)
-  }
+  }*/
 
   def getFileName() = {
     (new File("mesh" + id + ".xml")).getAbsolutePath
