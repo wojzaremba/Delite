@@ -95,9 +95,6 @@ trait LanguageOps extends Base { this: DeLiszt =>
 
   def towards(e: Rep[Edge],v: Rep[Vertex])(implicit x: Overloaded1) : Rep[Edge]
   def towards(e: Rep[Face],c: Rep[Cell])(implicit x: Overloaded2) : Rep[Face]
-  def size[MO<:MeshObj:Manifest](s: Rep[MeshSet[MO]]) : Rep[Int]
-  
-  def infix_length[MO<:MeshObj:Manifest](s: Rep[MeshSet[MO]]) : Rep[Int] = size(s)
 
   def ID[MO<:MeshObj:Manifest](x: Rep[MO]) : Rep[Int]
   
@@ -199,8 +196,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
 
   case class DeLisztTowardsEdgeVertex(e: Exp[Edge], v: Exp[Vertex], mesh : Exp[Mesh]) extends Def[Edge]
   case class DeLisztTowardsFaceCell(e: Exp[Face], c: Exp[Cell], mesh : Exp[Mesh]) extends Def[Face]
-
-  case class DeLisztSize[MO<:MeshObj:Manifest](s: Exp[MeshSet[MO]]) extends Def[Int]
   
   case class DeLisztID[MO<:MeshObj:Manifest](x: Exp[MO]) extends Def[Int]
 
@@ -352,8 +347,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
 
   def towards(e: Exp[Edge], v: Exp[Vertex])(implicit x: Overloaded1) = reflectPure(DeLisztTowardsEdgeVertex(e,v, findMesh(e)))
   def towards(e: Exp[Face], c: Exp[Cell])(implicit x: Overloaded2) = reflectPure(DeLisztTowardsFaceCell(e,c, findMesh(e)))
-  
-  def size[MO<:MeshObj:Manifest](s: Exp[MeshSet[MO]]) = reflectPure(DeLisztSize(s))
 
   def ID[MO<:MeshObj:Manifest](x: Exp[MO]) = reflectPure(DeLisztID(x))
 
@@ -402,8 +395,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
     case DeLisztFlipEdge(e) => reflectPure(DeLisztFlipEdge(f(e)))
     case DeLisztFlipFace(e) => reflectPure(DeLisztFlipFace(f(e)))
     case DeLisztTowardsEdgeVertex(e,v, mesh) => reflectPure(DeLisztTowardsEdgeVertex(f(e),f(v),f(mesh)))
-    case DeLisztTowardsFaceCell(e,c, mesh) => reflectPure(DeLisztTowardsFaceCell(f(e),f(c),f(mesh)))
-    case DeLisztSize(s) => size(f(s))    
+    case DeLisztTowardsFaceCell(e,c, mesh) => reflectPure(DeLisztTowardsFaceCell(f(e),f(c),f(mesh)))   
     case DeLisztID(e) => ID(f(e))
     case Reflect(e@DeLisztPrint(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with DeLisztPrint(f(x))(f(e.block)), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(WallTime(), u, es) => reflectMirrored(Reflect(WallTime(), mapOver(f,u), f(es)))(mtype(manifest[A]))
@@ -509,9 +501,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
       case DeLisztTowardsEdgeVertex(e,v, mesh) => emitValDef(sym, quote(mesh) + ".towardsEdgeVertex(" + quote(e) + "," + quote(v) + ")")
       case DeLisztTowardsFaceCell(e,c, mesh) => emitValDef(sym, quote(mesh) + ".towardsFaceCell(" + quote(e) + "," + quote(c) + ")")
       
-      case DeLisztID(x) => emitValDef(sym, "generated.scala.Mesh.internal(" + quote(x) + ")")
-      
-      case DeLisztSize(s) => emitValDef(sym, quote(s) + ".size")
+      case DeLisztID(x) => emitValDef(sym, "generated.scala.Mesh.internal(" + quote(x) + ")")      
 
       case MinFloat() => emitValDef(sym, "scala.Float.MinValue")
       case MaxFloat() => emitValDef(sym, "scala.Float.MaxValue")
@@ -598,7 +588,6 @@ trait CudaGenLanguageOps extends CudaGenBase {
     case DeLisztID(x) => emitValDef(sym, "internal(" + quote(x) + ")")
 
     //TODO: Why is this node here?
-    case DeLisztSize(s) => emitValDef(sym, quote(s) + ".dcSize()")
 
     case _ => super.emitNode(sym, rhs)
   }

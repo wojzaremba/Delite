@@ -66,12 +66,14 @@ case class BoundaryRange(start : Int, end : Int)
 
 //wz : List due to problems with map serialization and deserialization with java 1.6
 case class LabelData(booleanData : List[(String, Array[Boolean])], intData : List[(String, Array[Int])], floatData : List[(String, Array[Float])], doubleData : List[(String, Array[Double])], longData : List[(String, Array[Long])]) {
-  def getIntArray(name : String) : Array[Int] = intData.find(_._1 == name).get._2
-  def getDoubleArray(name : String) : Array[Double] = doubleData.find(_._1 == name).get._2
-  def getLongArray(name : String) : Array[Long] = longData.find(_._1 == name).get._2
-  def getBooleanArray(name : String) : Array[Boolean] = booleanData.find(_._1 == name).get._2
-  def getFloatArray(name : String) : Array[Float] = floatData.find(_._1 == name).get._2
-  def getGenericArray[T : ClassManifest](name : String) : Array[T] = throw new Exception("unrechable")
+
+  def apply[T](name : String)(implicit m: Manifest[T]) : Array[T] = (m match {
+    case Manifest.Int => intData.find(_._1 == name).get._2
+    case Manifest.Double => doubleData.find(_._1 == name).get._2
+    case Manifest.Long => longData.find(_._1 == name).get._2
+    case Manifest.Boolean => booleanData.find(_._1 == name).get._2
+    case Manifest.Float => floatData.find(_._1 == name).get._2
+  }).asInstanceOf[Array[T]]	 
 
   
   override def toString() = {
@@ -250,6 +252,15 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
     if (facing) e else Mesh.flip(e)
   }
 
+  def labelCell[T: Manifest](url: String): Array[T] = cellData[T](url)
+
+  def labelEdge[T: Manifest](url: String): Array[T] = edgeData[T](url)
+
+  def labelFace[T: Manifest](url: String): Array[T] = faceData[T](url)
+
+  def labelVertex[T: Manifest](url: String): Array[T] = vertexData[T](url)
+  
+  
   // Use special CellSetImpl, don't expose 0 cell
   val cells: MeshSet = new CellSetImpl(ncells - 1)
   val edges: MeshSet = new MeshSetImpl(nedges)

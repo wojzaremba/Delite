@@ -2,21 +2,19 @@ import sbt._
 import Keys._
 
 object DeliteBuild extends Build {
-  val virtualization_lms_core = "EPFL" % "lms_2.10.0-M1-virtualized" % "0.1"
+  //val virtualization_lms_core = "EPFL" % "lms_2.10" % "0.1" % "2.10.0-virtualized-SNAPSHOT" 
+  val virtualization_lms_core = "EPFL" % "lms" % "0.1" 
   
   // FIXME: custom-built scalatest
   val dropboxScalaTestRepo = "Dropbox" at "http://dl.dropbox.com/u/12870350/scala-virtualized"
   val scalatest = "org.scalatest" % "scalatest_2.10.0-virtualized-SNAPSHOT" % "1.6.1-SNAPSHOT" //% "test"
-  val liftjson = "net.liftweb" % "lift-json_2.9.0" % "2.4" 
 
-  val virtScala = "2.10.0-M1-virtualized"//"2.10.0-virtualized-SNAPSHOT"
-  val virtBuildSettingsBase = Defaults.defaultSettings ++ Seq(
+  val virtScala = "2.10.0-virtualized-SNAPSHOT"
+  val virtBuildSettings = Defaults.defaultSettings ++ Seq(
+    scalaSource in Compile <<= baseDirectory(_ / "src"),
     resolvers += ScalaToolsSnapshots, 
-    organization := "stanford-ppl",
     resolvers += dropboxScalaTestRepo,
     scalaVersion := virtScala,
-    scalaBinaryVersion := virtScala,
-    publishArtifact in (Compile, packageDoc) := false,
     libraryDependencies += virtualization_lms_core,
     // needed for scala.tools, which is apparently not included in sbt's built in version
     libraryDependencies += "org.scala-lang" % "scala-library" % virtScala,
@@ -24,16 +22,14 @@ object DeliteBuild extends Build {
     // used in delitec to access jars
     retrieveManaged := true,
     scalacOptions += "-Yno-generic-signatures",
-    scalacOptions += "-Yvirtualize"
+    scalacOptions += "-Yvirtualize", 
+    unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
+    unmanagedSourceDirectories in Test := Nil
   )
 
-
-  val virtBuildSettings = virtBuildSettingsBase ++ Seq(
-    scalaSource in Compile <<= baseDirectory(_ / "src")
-  )
-
-  val virtBuildSettingsDeliszt = virtBuildSettings ++ Seq(
-    libraryDependencies += liftjson
+  val virtBuildSettingsDeliszt = virtBuildSettings ++ Seq(       
+    libraryDependencies += "net.liftweb" % "lift-json_2.9.0" % "2.4",
+    libraryDependencies += "com.thoughtworks.paranamer" % "paranamer" % "2.3"
   )
 
 
@@ -76,14 +72,14 @@ object DeliteBuild extends Build {
   lazy val delisztApps = Project("deliszt-apps", file("apps/deliszt"), settings = virtBuildSettingsDeliszt) dependsOn(deliszt)
   lazy val interopApps = Project("interop-apps", file("apps/multi-dsl"), settings = virtBuildSettings) dependsOn(optiml, optiql, deliszt) // dependsOn(dsls) not working
 
-  lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettingsDeliszt)
+  lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettings)
 
-  lazy val tests = Project("tests", file("tests"), settings = virtBuildSettingsBase ++ Seq(
+  lazy val tests = Project("tests", file("tests"), settings = virtBuildSettings ++ Seq(
     scalaSource := file("tests/main-src"),
     scalaSource in Test := file("tests/src"),
     libraryDependencies += scalatest,
     parallelExecution in Test := false
     // don't appear to be able to depend on a different scala version simultaneously, so just using scala-virtualized for everything
   )) dependsOn(framework, runtime, optiml, optimlApps, deliszt, runtime)
-  
+
 }

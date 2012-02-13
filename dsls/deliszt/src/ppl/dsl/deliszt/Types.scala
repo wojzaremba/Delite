@@ -33,7 +33,7 @@ case class Face(override val id : Int) extends MeshObj
 case class Vertex(override val id : Int) extends MeshObj
 
 // Mesh set
-trait MeshSet[MO <: MeshObj] extends DeliteCollection[MO]
+trait MeshSet[MO<:MeshObj] extends DeliteCollection[MO]
 trait BoundarySet[MO<:MeshObj] extends MeshSet[MO]
 
 // Fields

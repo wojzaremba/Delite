@@ -1,11 +1,9 @@
 package ppl.dsl.deliszt
 
-import datastruct.scala.BoundaryRange._
-import datastruct.scala.LabelData._
 import datastruct.scala.Mesh._
-import datastruct.scala.MeshSize._
 import datastruct.scala.{BoundaryRange, LabelData, CRSImpl, Log}
 import reflect.Manifest
+import scala.virtualization.lms.common.Base
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
 import scala.virtualization.lms.util.OverloadHack
 import scala.virtualization.lms.common._

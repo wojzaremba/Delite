@@ -230,7 +230,11 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
       "[" + m.group(1) + "]"
     }
     
-    // Vec, Mat, Field, anything with that final parameter of some value type
+    for(tpe <- List("Int","Long","Double","Float","Boolean")) {
+      res = expr.replaceAll("generated\\.scala\\.Vec\\[.*" + tpse + ".*\\]LabelFieldImpl", tpse + "LabelFieldImpl")
+    }
+    
+    // Vec, Mat, Field, anything with that final parameter of some value type        
     for(s <- List("Vec", "Mat", "Field")) {
       val expr = ("\\b" + s + "\\[.*,\\s*([^\\s]+)\\s*\\]").r  
       res = expr.replaceAllIn(res, m => s + moSub(m))
@@ -261,11 +265,6 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
         else {
           fun
         }
-      }
-
-      for (s <- List("Vec3Impl", "Mat3x3ColImpl", "Mat3x3RowImpl", "Mat3x3Impl")) {
-        // should probably parse and trim whitespace, this is fragile
-        res = res.replaceAll(s+"\\["+tpe1+"\\]", tpe1+s)
       }
 
 
