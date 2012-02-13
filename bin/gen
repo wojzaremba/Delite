@@ -1,5 +1,0 @@
-#!/bin/bash
-
-$JAVA_HOME/bin/java -server $JAVA_OPTS -Ddelite.usefsc="true" -cp $LMS_HOME/target/scala-2.10.0-M1-virtualized/classes:$LMS_HOME/*:$DELITE_HOME/lib_managed/jars/net.liftweb/lift-json_2.9.0/lift-json_2.9.0-2.4.jar:$DELITE_HOME/lib_managed/jars/com.thoughtworks.paranamer/paranamer/paranamer-2.3.jar:$DELITE_HOME/framework/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/dsls/optiml/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/dsls/optila/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/dsls/deliszt/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/apps/optiml/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/apps/optila/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/apps/optiql/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/apps/deliszt/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/tests/target/scala-2.10.0-M1-virtualized/classes:$DELITE_HOME/target/scala-2.10.0-M1-virtualized/test-classes/:$SCALA_VIRT_HOME/lib/scala-library.jar:$SCALA_VIRT_HOME/lib/scala-compiler.jar:$SCALA_VIRT_HOME/* "$@"
-
-(mplayer /sound/beep.mp3 >/dev/null 2>&1)
