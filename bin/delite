@@ -60,7 +60,8 @@ def run(deg, params, opts):
 
     #add classpaths
     cp = " -cp "
-    cp = cp + delitecommon.DELITE_HOME + "/runtime/target/" + delitecommon.scala_virt_version + "/classes" + os.pathsep
+    cp = cp + delitecommon.DELITE_HOME + "/runtime/target/scala-2.10.0-virtualized-SNAPSHOT/classes" + os.pathsep
+#+ delitecommon.scala_virt_version + "/classes" + os.pathsep
     cp = cp + delitecommon.SCALA_VIRT_HOME + "/scala-library.jar" + os.pathsep
     cp = cp + delitecommon.SCALA_VIRT_HOME + "/scala-compiler.jar"
 

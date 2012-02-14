@@ -228,11 +228,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     
     val moSub = (m: Regex.Match) => {
       "[" + m.group(1) + "]"
-    }
-    
-    for(tpe <- List("Int","Long","Double","Float","Boolean")) {
-      res = expr.replaceAll("generated\\.scala\\.Vec\\[.*" + tpse + ".*\\]LabelFieldImpl", tpse + "LabelFieldImpl")
-    }
+    }    
     
     // Vec, Mat, Field, anything with that final parameter of some value type        
     for(s <- List("Vec", "Mat", "Field")) {

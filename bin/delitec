@@ -20,6 +20,25 @@ def err(s):
 def warn(s):
     print("warn: " + s)
 
+def preparePath(dirname): 
+    scala_virt_version = delitecommon.scala_virt_version
+    if not ("SCALA" in dirname):
+        if not os.path.exists(dirname):
+            warn("File or dir " + dirname + " doesn't exists")
+            return ""
+        return dirname
+    path=dirname.split("SCALA")
+    if not os.path.isdir(path[0]):
+        warn("couldn't find :" + dirname)
+        return ""
+    for filename in os.listdir(path[0]):
+        root, ext = os.path.splitext(filename)
+        if root.startswith(scala_virt_version) :
+            ret=path[0] + "/" + filename + "/" + path[1]
+            return ret.replace("//", "/")
+    warn("Couldn't find any " + scala_virt_version + "* directory in " + path[0])
+    return ""
+
 def main():
     usage = "usage: %prog <application runner> [options]"
     parser = OptionParser(usage)
@@ -67,34 +86,37 @@ def stage(runner, opts):
         java_opts = java_opts + " -Ddelite.enable.fusion=false"
     java_opts = java_opts + " -Dnested.variants.level=0"
     
-    scala_virt_version = delitecommon.scala_virt_version
     DELITE_HOME = delitecommon.DELITE_HOME
     SCALA_VIRT_HOME = delitecommon.SCALA_VIRT_HOME
     
     #add classpaths for Delite
     cp = " -cp "
     cp = cp + LMS_HOME + "/*" + os.pathsep
-    cp = cp + DELITE_HOME + "/framework/target/" + scala_virt_version + "/classes" + os.pathsep
-    
+    cp = cp + preparePath(LMS_HOME + "/target/SCALA/classes") + os.pathsep
+
     #OptiLA cp
-    cp = cp + DELITE_HOME + "/dsls/optila/target/" + scala_virt_version + "/classes" + os.pathsep
-    cp = cp + DELITE_HOME + "/apps/optila/target/" + scala_virt_version + "/classes" + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/dsls/optila/target/SCALA/classes") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/apps/optila/target/SCALA/classes") + os.pathsep
 
     #OptiML cp
-    cp = cp + DELITE_HOME + "/dsls/optiml/target/" + scala_virt_version + "/classes" + os.pathsep
-    cp = cp + DELITE_HOME + "/apps/optiml/target/" + scala_virt_version + "/classes" + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/dsls/optiml/target/SCALA/classes") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/apps/optiml/target/SCALA/classes") + os.pathsep
 
     #OptiQL cp
-    cp = cp + DELITE_HOME + "/dsls/optiql/target/" + scala_virt_version + "/classes" + os.pathsep
-    cp = cp + DELITE_HOME + "/apps/optiql/target/" + scala_virt_version + "/classes" + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/dsls/optiql/target/SCALA/classes") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/apps/optiql/target/SCALA/classes") + os.pathsep
+
+    #OptiQL cp
+    cp = cp + preparePath(DELITE_HOME + "/dsls/deliszt/target/SCALA/classes") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/apps/deliszt/target/SCALA/classes") + os.pathsep
 
     #test cp
-    cp = cp + DELITE_HOME + "/tests/target/" + scala_virt_version + "/classes" + os.pathsep
-    cp = cp + DELITE_HOME + "/target/" + scala_virt_version + "/test-classes" + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/tests/target/SCALA/classes") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/target/SCALA/test-classes") + os.pathsep
 
     #scala-virt cp
-    cp = cp + SCALA_VIRT_HOME + "/scala-library.jar" + os.pathsep
-    cp = cp + SCALA_VIRT_HOME + "/scala-compiler.jar"
+    cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-library.jar") + os.pathsep
+    cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-compiler.jar")
 
     java_opts = java_opts + cp
     #os.putenv("JAVA_OPTS", java_opts)
@@ -105,6 +127,7 @@ def stage(runner, opts):
     if opts.verbose:
        delitecommon.printEnv()
        print("LMS_HOME = " + LMS_HOME)
+       print("java_opts = " + java_opts)
 
     print "==  Generating DEG file with options: " + str(opts)
     java_cmd = delitecommon.JAVA_HOME + "/bin/java " + java_opts + " " + runner
