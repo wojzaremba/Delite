@@ -73,6 +73,14 @@ case class LabelData(booleanData : List[(String, Array[Boolean])], intData : Lis
     case Manifest.Long => longData.find(_._1 == name).get._2
     case Manifest.Boolean => booleanData.find(_._1 == name).get._2
     case Manifest.Float => floatData.find(_._1 == name).get._2
+    case _ => m.toString match {
+      case "generated.scala.DenseVector[Float]" => floatData.find(_._1 == name).get._2.grouped(3).map{
+	x=>
+	val v = new ppl.dsl.optila.datastruct.scala.DenseVector[Float](3, false)
+	v.unsafeSetData(Array[Float](x.head, x.tail.head, x.tail.tail.head), 3)
+        v 
+      }.toArray
+    } 
   }).asInstanceOf[Array[T]]	 
 
   
@@ -117,7 +125,7 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
   def boundarySetVertices(name: String): BoundarySet = {
     if (vboundaries != null) {
       val a = vboundaries(name)
-      ppl.dsl.deliszt.datastruct.scala.BoundarySetRangeImpl(a.start, a.end)
+      new BoundarySetRangeImpl(a.start, a.end)
     } else {
       Mesh.loader.loadBoundarySet(this, name, MeshObj.VERTEX_TYPE)
     }

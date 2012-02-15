@@ -42,6 +42,8 @@ def parseBuildDir(deg):
     return build_dir
 
 def run(deg, params, opts):
+    DELITE_HOME = delitecommon.DELITE_HOME
+    SCALA_VIRT_HOME = delitecommon.SCALA_VIRT_HOME
     java_opts = os.getenv("JAVA_OPTS", "")
 
     if not os.path.isfile(deg):
@@ -56,14 +58,15 @@ def run(deg, params, opts):
     os.putenv("LD_LIBRARY_PATH", ":".join(ld_library_path))
 
 
-    java_opts = java_opts + " -Ddelite.home=" + delitecommon.DELITE_HOME + " -Ddelite.threads=" + str(opts.num_threads) + " -Ddelite.gpus=" + opts.num_gpus + " -Ddelite.runs=" + opts.num_runs
+    java_opts = java_opts + " -Ddelite.home=" + DELITE_HOME + " -Ddelite.threads=" + str(opts.num_threads) + " -Ddelite.gpus=" + opts.num_gpus + " -Ddelite.runs=" + opts.num_runs + " -Xbootclasspath/p:" + DELITE_HOME + "/unsafe_classes/unsafe.jar" #+ " -Ddelite.usefsc=true"
 
     #add classpaths
     cp = " -cp "
-    cp = cp + delitecommon.DELITE_HOME + "/runtime/target/scala-2.10.0-virtualized-SNAPSHOT/classes" + os.pathsep
-#+ delitecommon.scala_virt_version + "/classes" + os.pathsep
-    cp = cp + delitecommon.SCALA_VIRT_HOME + "/scala-library.jar" + os.pathsep
-    cp = cp + delitecommon.SCALA_VIRT_HOME + "/scala-compiler.jar"
+    cp = cp + preparePath(DELITE_HOME + "/runtime/target/SCALA/classes") + os.pathsep
+    cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-library.jar") + os.pathsep
+    cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-compiler.jar") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/net.liftweb/lift-json_2.9.0/lift-json_2.9.0-2.4.jar") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/com.thoughtworks.paranamer/paranamer/paranamer-2.3.jar") + os.pathsep
 
     java_opts = java_opts + cp
     #os.putenv("JAVA_OPTS", java_opts)
@@ -80,6 +83,7 @@ def run(deg, params, opts):
     java_cmd = delitecommon.JAVA_HOME + "/bin/java " + java_opts + " ppl.delite.runtime.Delite " + deg + " " + ' '.join(params)
     #print java_cmd
     ecode = os.system(java_cmd)
+    os.system("(mplayer /sound/beep.mp3 >/dev/null 2>&1)")
     if ecode != 0:
         err("Delite execution failed")
 

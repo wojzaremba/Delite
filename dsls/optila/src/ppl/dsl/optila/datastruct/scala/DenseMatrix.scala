@@ -4,7 +4,9 @@ class DenseMatrix[@specialized T: Manifest](nRows: Int, nCols: Int) {
   var _numRows = nRows
   var _numCols = nCols
   var _data: Array[T] = new Array[T](nRows*nCols)
-    
+ 
+  override def toString() = "DenseMatrix:\n" + _data.grouped(nRows).toList.toString
+   
   /**
    * These are temporarily needed because they are hard-coded into DeliteOp code gen. 
    */

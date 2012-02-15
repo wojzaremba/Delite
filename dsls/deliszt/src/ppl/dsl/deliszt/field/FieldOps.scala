@@ -415,10 +415,10 @@ trait ScalaGenFieldOps extends ScalaGenBase {
       case f@FieldObjectNewFace() => emitValDef(sym, remap(f.t) + fieldImplPath + ".ofFace()")
       case f@FieldObjectNewVertex() => emitValDef(sym, remap(f.t) + fieldImplPath + ".ofVertex()")
       
-      case f@LabelFieldNewCell(url, m) => emitValDef(sym, remap(f.t) + labelImplPath + ".ofCell(" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewEdge(url, m) => emitValDef(sym, remap(f.t) + labelImplPath + ".ofEdge(" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewFace(url, m) => emitValDef(sym, remap(f.t) + labelImplPath + ".ofFace(" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, labelImplPath + "[" + remap(f.t) + "]" + ".ofVertex(" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewCell(url, m) => emitValDef(sym, labelImplPath + ".ofCell[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewEdge(url, m) => emitValDef(sym, labelImplPath + ".ofEdge[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewFace(url, m) => emitValDef(sym, labelImplPath + ".ofFace[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, labelImplPath + ".ofVertex[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
       
       //case FieldIntApply(x,n) => emitValDef(sym, quote(x) + "(" + quote(n) + ")")
       //case FieldIntUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") = " + quote(v))

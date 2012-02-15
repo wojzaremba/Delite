@@ -91,6 +91,7 @@ def stage(runner, opts):
     if opts.xdebug == True:
         java_opts = java_opts + " -Dlms.verbosity=3"
     java_opts = java_opts + " -Dnested.variants.level=0"
+    java_opts = java_opts + " -Ddelite.usefsc=true"
     
     DELITE_HOME = delitecommon.DELITE_HOME
     SCALA_VIRT_HOME = delitecommon.SCALA_VIRT_HOME
@@ -120,6 +121,13 @@ def stage(runner, opts):
     cp = cp + preparePath(DELITE_HOME + "/tests/target/SCALA/classes") + os.pathsep
     cp = cp + preparePath(DELITE_HOME + "/target/SCALA/test-classes") + os.pathsep
 
+    #framework
+    cp = cp + preparePath(DELITE_HOME + "/framework/target/SCALA/classes") + os.pathsep
+
+    cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/net.liftweb/lift-json_2.9.0/lift-json_2.9.0-2.4.jar") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/com.thoughtworks.paranamer/paranamer/paranamer-2.3.jar") + os.pathsep
+
+
     #scala-virt cp
     cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-library.jar") + os.pathsep
     cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-compiler.jar")
@@ -141,6 +149,7 @@ def stage(runner, opts):
     ecode = os.system(java_cmd)
     if ecode != 0:
         err("Delite compilation failed")
+    os.system("(mplayer /sound/beep.mp3 >/dev/null 2>&1)")
 
 if __name__ == "__main__":
     main()

@@ -3,12 +3,14 @@
 import os, sys
 import ConfigParser
 
+
+
 USER_HOME = os.getenv("HOME")
 DELITE_HOME = os.getenv("DELITE_HOME")
 JAVA_HOME = os.getenv("JAVA_HOME")
 SCALA_VIRT_HOME = os.getenv("SCALA_VIRT_HOME")
-
 scala_virt_version = "scala"
+
 props = {}
 
 def err(s):
@@ -21,6 +23,24 @@ def initialize():
     checkDeliteEnv()
     loadProps()
     checkCommonEnv()
+
+def preparePath(dirname): 
+    if not ("SCALA" in dirname):
+        if not os.path.exists(dirname):
+            warn("File or dir " + dirname + " doesn't exists")
+            return ""
+        return dirname
+    path=dirname.split("SCALA")
+    if not os.path.isdir(path[0]):
+        warn("couldn't find :" + dirname)
+        return ""
+    for filename in os.listdir(path[0]):
+        root, ext = os.path.splitext(filename)
+        if root.startswith(scala_virt_version) :
+            ret=path[0] + "/" + filename + "/" + path[1]
+            return ret.replace("//", "/")
+    warn("Couldn't find any " + scala_virt_version + "* directory in " + path[0])
+    return ""
 
 def checkDeliteEnv():
     global DELITE_HOME

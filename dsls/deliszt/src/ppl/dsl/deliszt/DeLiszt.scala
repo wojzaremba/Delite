@@ -130,7 +130,11 @@ trait DeLisztCodeGenBase extends OptiLACodeGenBase {
     val outDir = new File(path)
     outDir.mkdirs()
 
-    for (f <- dsDir.listFiles) {
+    for {
+	f <- dsDir.listFiles
+	if f.getName()(0) != '.' //don't care about hidden files
+        }
+    {
       if(f.getName.indexOf(".") > -1) {
         if (specialize contains (f.getName.substring(0, f.getName.indexOf(".")))) {
           genSpec(f, path)
@@ -159,7 +163,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
   
   val IR: DeliteApplication with DeLisztExp
 
-  override val specialize = Set("FieldImpl", "LabelFieldImpl")
+  override val specialize = Set("FieldImpl", "LabelFieldImpl", "Vec3Impl", "VecImpl", "VecViewImpl")
 
   override def genSpec(f: File, dsOut: String) {
     for (s <- List("Double","Int","Float","Long","Boolean")) {
@@ -187,12 +191,16 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
 
   
   override def specmap(line: String, t: String) : String = {
-    var res = line.replaceAll("object ", "object " + t)
-    res = res.replaceAll("getGenericArray\\[T\\]", "get" + t + "Array")
-    res = res.replaceAll("@specialized T: ClassManifest", t)
-    res = res.replaceAll("\\bT:Manifest\\b", t)
+    var res = line.replaceAll("class ", "class " + t)
+    res = res.replaceAll("object ", "object " + t)
+    //in case class A[T] (bla : T) we want to generate IntA ( bla : Int) - not IntA[Int](bla:Int), because then [Int] will mean any type
+    res = res.replaceAll("\\[\\s*@specialized\\s*T\\s*:\\s*ClassManifest\\s*\\]", "")
+    res = res.replaceAll("\\[\\s*T\\s*:\\s*ClassManifest\\s*\\]", "")    
+    res = res.replaceAll("\\[\\s*@specialized\\s*T\\s*:\\s*Manifest\\s*\\]", "")
+    res = res.replaceAll("\\[\\s*T\\s*:\\s*Manifest\\s*\\]", "")
+    //res = res.replaceAll("\\bT:Manifest\\b", t)
     res = res.replaceAll("\\bT\\b", t)
-    res = res.replaceAll("\\bT: ClassManifest, V: ClassManifest\\b", "\\b" + t + ",V\\b")
+    //res = res.replaceAll("\\bT: ClassManifest, V: ClassManifest\\b", "\\b" + t + ",V\\b")
     val size = t match {
     	case "Double" => 8
 	case _ => 4
@@ -300,7 +308,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     var res = line.replaceAll("ppl.dsl.deliszt.datastruct", "generated")
     res = res.replaceAll("ppl.delite.framework.datastruct", "generated")
     res = res.replaceAll("ppl.dsl.deliszt", "generated.scala")    
-    res
+    super.dsmap(res)
   }
 }
 

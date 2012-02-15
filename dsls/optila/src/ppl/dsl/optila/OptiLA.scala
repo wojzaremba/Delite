@@ -196,7 +196,9 @@ trait OptiLACodeGenBase extends GenericFatCodegen {
       if (f.isDirectory){
         emitDataStructures(f.getPath())
       }
-      else {
+      else 
+        if (f.getName()(0) != '.') //don't care about hidden files 
+        {        
         if (specialize contains (f.getName.substring(0, f.getName.indexOf(".")))) {
           genSpec(f, path)
         }

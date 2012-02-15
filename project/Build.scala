@@ -14,6 +14,7 @@ object DeliteBuild extends Build {
     resolvers += ScalaToolsSnapshots, 
     resolvers += dropboxScalaTestRepo,
     scalaVersion := virtScala,
+    scalaBinaryVersion := virtScala,
     libraryDependencies += virtualization_lms_core,
     // needed for scala.tools, which is apparently not included in sbt's built in version
     libraryDependencies += "org.scala-lang" % "scala-library" % virtScala,

@@ -13,6 +13,8 @@ class DenseVector[@specialized T: Manifest](__length: Int, __isRow: Boolean) {
   var _isRow = __isRow
   var _data: Array[T] = new Array[T](_length)
 
+  override def toString() = "DenseVector : " + _data.toList.toString
+
   /**
    * These are temporarily needed because they are hard-coded into DeliteOp code gen. 
    */    
