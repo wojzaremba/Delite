@@ -141,8 +141,9 @@ trait OptiLAExp extends OptiLACompiler with OptiLAScalaOpsPkgExp with DeliteOpsE
     }
   }
   
-  abstract class DefWithManifest[A:Manifest,R] extends Def[R] {
-    val m = manifest[A]
+  abstract class DefWithManifest[A:Manifest,R:Manifest] extends Def[R] {
+    val mA = manifest[A]
+    val mR = manifest[R]
   }  
 }
 
@@ -291,11 +292,16 @@ trait OptiLACodeGenCuda extends OptiLACodeGenBase with OptiLACudaCodeGenPkg with
       case "ppl.dsl.optila.DenseMatrix[Float]" => "DenseMatrix<float>"
       case "ppl.dsl.optila.DenseMatrix[Double]" => "DenseMatrix<double>"
       case "ppl.dsl.optila.DenseMatrix[Boolean]" => "DenseMatrix<bool>"
-      case "ppl.dsl.optila.MatrixRow[Int]" => "VectorView<int>"
-      case "ppl.dsl.optila.MatrixRow[Long]" => "VectorView<long>"
-      case "ppl.dsl.optila.MatrixRow[Float]" => "VectorView<float>"
-      case "ppl.dsl.optila.MatrixRow[Double]" => "VectorView<double>"
-      case "ppl.dsl.optila.MatrixRow[Boolean]" => "VectorView<bool>"
+      case "ppl.dsl.optila.VectorView[Int]" => "VectorView<int>"
+      case "ppl.dsl.optila.VectorView[Long]" => "VectorView<long>"
+      case "ppl.dsl.optila.VectorView[Float]" => "VectorView<float>"
+      case "ppl.dsl.optila.VectorView[Double]" => "VectorView<double>"
+      case "ppl.dsl.optila.VectorView[Boolean]" => "VectorView<bool>"
+      //case "ppl.dsl.optila.MatrixRow[Int]" => "VectorView<int>"
+      //case "ppl.dsl.optila.MatrixRow[Long]" => "VectorView<long>"
+      //case "ppl.dsl.optila.MatrixRow[Float]" => "VectorView<float>"
+      //case "ppl.dsl.optila.MatrixRow[Double]" => "VectorView<double>"
+      //case "ppl.dsl.optila.MatrixRow[Boolean]" => "VectorView<bool>"
       case "Array[Int]" => "DeliteArray<int>"
       case "Array[Long]" => "DeliteArray<long>"
       case "Array[Float]" => "DeliteArray<float>"
