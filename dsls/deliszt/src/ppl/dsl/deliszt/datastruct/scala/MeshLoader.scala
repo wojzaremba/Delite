@@ -20,22 +20,6 @@ object MeshLoader {
 
   object Log extends Log("MeshLoader")
 
-  var loadedLibrary = false
-
-  def init(): Unit = {
-    if (!loadedLibrary) {
-      try {
-        System.loadLibrary("MeshLoader")
-      }
-      catch {
-        case e: java.lang.UnsatisfiedLinkError => if (e.getMessage.indexOf("already loaded") < 0) throw e
-      }
-      loadedLibrary = true
-    }
-  }
-  
-  
-  
   def loadMesh(filepath: String): Mesh= {
     val file = new File(filepath)
     if (!file.exists()) 
@@ -49,31 +33,20 @@ object MeshLoader {
         val meshFilename = json.extract[MeshFilename].`mesh-file`
         loadMesh(meshFilename)
       } else {
-        val start = System.currentTimeMillis
-        val m = json.extract[ppl.dsl.deliszt.datastruct.scala.Mesh]
-        Log.log("Mesh loading time " + (System.currentTimeMillis - start))
+        val m = json.extract[ppl.dsl.deliszt.datastruct.scala.Mesh]	
         m
       }
     } else {
-
-      Mesh.loader.loadMesh(filepath)
+      throw new RuntimeException("XML is only supported mesh file format")
     }
   }
 
-}
-
-class MeshLoader {
-  @native
-  def loadMesh(file: String): Mesh = null
-
   def loadBoundarySet(mesh : Mesh, name: String, mo_type: Int) = {
-    val bs = _loadBoundarySet(mesh, name, mo_type)
+    val bs: BoundarySet = null// _loadBoundarySet(mesh, name, mo_type)
     if (bs == null) {
       throw new RuntimeException("Loading boundary set " + name + " of type " + mo_type + " failed!")
     }
     bs
   }
 
-  @native
-  def _loadBoundarySet(mesh: Mesh, name: String, mo_type: Int): BoundarySet = null
 }

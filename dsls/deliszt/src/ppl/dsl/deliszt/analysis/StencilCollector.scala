@@ -73,7 +73,6 @@ trait DeLisztCodeGenAnalysis extends TraversalAnalysis {
     analysisResults("StencilCollectorStencils") = forMap
     analysisResults("StencilCollectorMeshsets") = msMap
   
-    MeshLoader.init()
   }*/
   
   // Mark accesses

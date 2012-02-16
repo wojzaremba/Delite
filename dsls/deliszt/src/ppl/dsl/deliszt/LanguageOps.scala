@@ -26,6 +26,9 @@ trait LanguageOps extends Base { this: DeLiszt =>
   def infix_write(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
   def infix_writeln(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
   def infix_close(f: Rep[SyncedFile]) : Unit
+  
+  
+
 
   def Print(as: Rep[Any]*) : Unit
   //Boundary set without mesh parameter reference to default mesh from cfg file (to keep programs working)
@@ -110,7 +113,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   case class NumericToInt[T:Numeric:Manifest](e: Exp[T]) extends Def[Int]
 
   /******* Ops *********/
-  case class DeLisztInit(args: Exp[Array[String]]) extends Def[Unit]
   case class DeLisztLoadCfgMesh(args: Exp[Array[String]]) extends Def[Mesh]
   case class DeLisztFile(name: Exp[String]) extends Def[SyncedFile]
   case class DeLisztCloseFile(file: Exp[SyncedFile]) extends Def[Unit]
@@ -240,7 +242,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   /******* Language functions *********/
 
   def _init(args: Exp[Array[String]]) = {
-    reflectEffect(DeLisztInit(args))
     reflectPure(DeLisztLoadCfgMesh(args))
   }
 
@@ -418,7 +419,6 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
-      case DeLisztInit(args) => emitValDef(sym, "Liszt.init(" + quote(args) + ")")
       case DeLisztLoadCfgMesh(args) => emitValDef(sym, "Liszt.load(" + quote(args) + ")")
       case DeLisztMesh(mesh) => emitValDef(sym, quote(mesh))
 

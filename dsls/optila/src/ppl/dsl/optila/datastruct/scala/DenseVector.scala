@@ -15,6 +15,8 @@ class DenseVector[@specialized T: Manifest](__length: Int, __isRow: Boolean) {
 
   override def toString() = "DenseVector : " + _data.toList.toString
 
+  def apply(i : Int) : T = _data(i)
+
   /**
    * These are temporarily needed because they are hard-coded into DeliteOp code gen. 
    */    

@@ -10,10 +10,6 @@ package ppl.dsl.deliszt.datastruct.scala
 
 object Liszt {
 
-  def init(args: Array[String]) {
-    MeshLoader.init()
-  }
-
   def load(args: Array[String]) = {
     val cfgFile = if(args.length > 0) args(0) else "liszt.cfg"
     MeshLoader.loadMesh(cfgFile)

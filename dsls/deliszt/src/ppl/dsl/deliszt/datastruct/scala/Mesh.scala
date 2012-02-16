@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import net.liftweb.json._
 import net.liftweb.json.Serialization._
 import scala.Array
+import ppl.dsl.deliszt.datastruct.scala.MetaInteger._ 
 
 /**
  * author: Michael Wu (mikemwu@stanford.edu)
@@ -19,8 +20,6 @@ object Mesh {
   var mesh: Mesh = null
 
   var maxId = 0
-
-  val loader: MeshLoader = new MeshLoader
 
   val DMASK = 0x80000000
   val IMASK = 0x7FFFFFFF
@@ -73,14 +72,13 @@ case class LabelData(booleanData : List[(String, Array[Boolean])], intData : Lis
     case Manifest.Long => longData.find(_._1 == name).get._2
     case Manifest.Boolean => booleanData.find(_._1 == name).get._2
     case Manifest.Float => floatData.find(_._1 == name).get._2
-    case _ => m.toString match {
-      case "generated.scala.DenseVector[Float]" => floatData.find(_._1 == name).get._2.grouped(3).map{
-	x=>
-	val v = new ppl.dsl.optila.datastruct.scala.DenseVector[Float](3, false)
-	v.unsafeSetData(Array[Float](x.head, x.tail.head, x.tail.tail.head), 3)
-        v 
+//    case _ => m.toString match {
+ //     case "generated.scala.DoubleVec3Impl" 
+    case _ => doubleData.find(_._1 == name).get._2.grouped(3).map{
+	x=> new Vec[_3, Double](x.head, x.tail.head, x.tail.tail.head)         
       }.toArray
-    } 
+  //    case _ => throw new Exception("not supported type " + m.toString)
+//    } 
   }).asInstanceOf[Array[T]]	 
 
   
@@ -111,15 +109,15 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
   def verticesMesh: MeshSet = MeshSetImpl(nvertices)
 
   def boundarySetCells(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(this, name, MeshObj.CELL_TYPE)
+    MeshLoader.loadBoundarySet(this, name, MeshObj.CELL_TYPE)
   }
 
   def boundarySetEdges(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(this, name, MeshObj.EDGE_TYPE)
+    MeshLoader.loadBoundarySet(this, name, MeshObj.EDGE_TYPE)
   }
 
   def boundarySetFaces(name: String): BoundarySet = {
-    Mesh.loader.loadBoundarySet(this, name, MeshObj.FACE_TYPE)
+    MeshLoader.loadBoundarySet(this, name, MeshObj.FACE_TYPE)
   }
 
   def boundarySetVertices(name: String): BoundarySet = {
@@ -127,7 +125,7 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
       val a = vboundaries(name)
       new BoundarySetRangeImpl(a.start, a.end)
     } else {
-      Mesh.loader.loadBoundarySet(this, name, MeshObj.VERTEX_TYPE)
+      MeshLoader.loadBoundarySet(this, name, MeshObj.VERTEX_TYPE)
     }
   }
 

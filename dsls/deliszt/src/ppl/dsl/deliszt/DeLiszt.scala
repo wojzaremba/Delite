@@ -163,15 +163,17 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
   
   val IR: DeliteApplication with DeLisztExp
 
-  override val specialize = Set("FieldImpl", "LabelFieldImpl", "Vec3Impl", "VecImpl", "VecViewImpl")
+ /* override val specialize = Set("FieldImpl", "LabelFieldImpl", "Vec3Impl", "VecImpl", "VecViewImpl")
 
   override def genSpec(f: File, dsOut: String) {
-    for (s <- List("Double","Int","Float","Long","Boolean")) {
-      val outFile = dsOut + s + f.getName
+    for {
+	typeName <- List("Double","Int","Float","Long","Boolean")
+        dataSize <- 2 to 22
+        generator <- specializeGen
+    } {
+      val outFile = dsOut + generator.getFileName(typeName, dataSize) 
       val out = new BufferedWriter(new FileWriter(outFile))
-      for (line <- scala.io.Source.fromFile(f).getLines) {
-        out.write(specmap(line, s) + "\n")
-      }
+      out.write(generator.getContent(typeName, dataSize))
       out.close()
     }
   }
@@ -193,14 +195,9 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
   override def specmap(line: String, t: String) : String = {
     var res = line.replaceAll("class ", "class " + t)
     res = res.replaceAll("object ", "object " + t)
-    //in case class A[T] (bla : T) we want to generate IntA ( bla : Int) - not IntA[Int](bla:Int), because then [Int] will mean any type
-    res = res.replaceAll("\\[\\s*@specialized\\s*T\\s*:\\s*ClassManifest\\s*\\]", "")
-    res = res.replaceAll("\\[\\s*T\\s*:\\s*ClassManifest\\s*\\]", "")    
-    res = res.replaceAll("\\[\\s*@specialized\\s*T\\s*:\\s*Manifest\\s*\\]", "")
-    res = res.replaceAll("\\[\\s*T\\s*:\\s*Manifest\\s*\\]", "")
-    //res = res.replaceAll("\\bT:Manifest\\b", t)
-    res = res.replaceAll("\\bT\\b", t)
-    //res = res.replaceAll("\\bT: ClassManifest, V: ClassManifest\\b", "\\b" + t + ",V\\b")
+    //in case class A[T] (bla : T) we want to generate IntA ( bla : Int) - not IntA[Int](bla:Int), because then [Int] would mean any type
+    res = res.replaceAll("\\[.*Manifest\\s*]", "")
+    res = res.replaceAll("\\b\\s*T\\s*\\b", t)
     val size = t match {
     	case "Double" => 8
 	case _ => 4
@@ -221,21 +218,59 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     res = res.replaceAll("\\bT\\b", t1)
     res = res.replaceAll("\\bL\\b", t2)
     parmap(res)
-  }
+  }*/
   
 
-  override def remap(s: String) = parmap(s)
+/*  override def remap(s: String) = parmap(s)
   override def remap[A](m: Manifest[A]): String = {
     var res = super.remap(m)
     res = res.replaceAllLiterally("package$", "")
     parmap(res)
   }
-
+*/
   override def parmap(line: String): String = {
     var res = line
+    // MeshSet
+    val meshSetExpr = ("MeshSet\\[.+\\]").r  
+    res = meshSetExpr.replaceAllIn(res, m => "MeshSet")
+    
+    // MeshObject types
+    for(s <- List("Cell", "Edge", "Face", "Vertex")) {
+      val expr = ("(ppl\\.dsl\\.deliszt|generated\\.scala)\\." + s + "\\b").r  
+      res = expr.replaceAllIn(res, "Int")
+    }  
+
+    // Field, anything with that final parameter of some value type
+    if (res.indexOf("Field") != -1)
+    for{f <- List("Field")
+        tpe <- List("Double","Int","Float","Long","Boolean")
+    } {
+      res = res.replace(f + "[Int," + tpe + "]", "Array[" + tpe + "]")
+    } 
+
+
+    if (res.indexOf("Vec") != -1)
+    for{f <- List("Field")
+        tpe <- List("Double","Int","Float","Long","Boolean")
+        t <- 2 until 22
+    } { 
+      val str = "generated.scala.Vec[" + ("generated.scala.Succ[" * t) + "generated.scala.Zero" + ("]" * t) + "," + tpe + "]" 
+      res = res.replace(f + "[Int," + str + "]", f + "[" + str + "]")
+    } 
+
+
+
+    super.parmap(res)
+  }
+/*
     
     val moSub = (m: Regex.Match) => {
-      "[" + m.group(1) + "]"
+      val num = m.group(0)
+      val succNr = (0 to num.length).map (num.indexOf("generated.scala.Succ", _)).distinct.length - 1
+      if (succNr > 1) 
+        m.group(1) + succNr + "Impl"
+      else
+        "[" + m.group(1) + "]"
     }    
     
     // Vec, Mat, Field, anything with that final parameter of some value type        
@@ -254,12 +289,12 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
       val expr = ("(ppl\\.dsl\\.deliszt|generated\\.scala)\\." + s + "\\b").r  
       res = expr.replaceAllIn(res, "Int")
     }
-    
+   */ 
     // Replace fields with just flat arrays
     /* val fieldExpr = ("(ppl\\.dsl\\.deliszt|generated\\.scala)\\.Field\\b").r  
     res = fieldExpr.replaceAllIn(res, "Array") */
     
-    for(tpe1 <- List("Int","Long","Double","Float","Boolean")) {
+    /*for(tpe1 <- List("Int","Long","Double","Float","Boolean")) {
       val parSub = (m: Regex.Match) => {
         val rest = (m.group(2) + m.group(4)).replaceAll("""^\s+""", "")
         val fun = if(m.group(1) != null) m.group(1) else ""
@@ -302,7 +337,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     }
     
     dsmap(res)
-  }
+  }*/
 
   override def dsmap(line: String) : String = {
     var res = line.replaceAll("ppl.dsl.deliszt.datastruct", "generated")

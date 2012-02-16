@@ -45,7 +45,7 @@ trait MeshBuilderOps extends Base with OverloadHack {
 
     def addCell(ids: Face*)(implicit o: Overloaded1): Cell = meshAddCellByFace(meshId, ids: _*)
 
-    def setPosition(v: Int, x: Float, y: Float, z: Float) = setData("position", Vertex(v), x, y, z)
+    def setPosition(v: Int, x: Double, y: Double, z: Double) = setData("position", Vertex(v), x, y, z)
 
     def setData[T:Manifest](name: String, v: Vertex, value: T*) = meshSetData(meshId, name, v, value : _*)
 
@@ -261,7 +261,7 @@ class MeshSkeleton(meshId: Int) {
       val m = (man.toString) match {
         case "int" | "Int" => intData
         case "float" | "Float" => floatData
-        case "double" | "Double" => floatData
+        case "double" | "Double" => doubleData
         case "long" | "Long" => longData
         case "boolean" | "Boolean" => booleanData
         case _ => throw new Exception("Not supported format for mesh element data " + man.toString)

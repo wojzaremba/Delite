@@ -13,14 +13,7 @@ class StackSpec extends FlatSpec with ShouldMatchers {
     val cfg = getClass.getResource("/liszt.cfg").getPath()
     println("Liszt CFG")
     println(cfg)
-
-    try {
-      MeshLoader.init()
-      MeshLoader.loadMesh(cfg)
-    }
-    catch {
-      case e:java.lang.UnsatisfiedLinkError => {println(e); fail}
-    }
+    MeshLoader.loadMesh(cfg)
   }
   
   it should "load a mesh into Mesh" in {

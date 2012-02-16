@@ -1,6 +1,7 @@
 package ppl.dsl.deliszt
 
 import ppl.delite.framework.datastruct.scala.DeliteCollection
+import ppl.dsl.optila._
 
 /**
  * DeLiszt compiler types
@@ -9,10 +10,12 @@ import ppl.delite.framework.datastruct.scala.DeliteCollection
 //////////////////
 // DeLiszt
 
-trait Vec[N<:IntM,T] extends DeliteCollection[T]
+trait Vec[N<:IntM,T] extends DenseVector[T]
+trait VecView[N<:IntM,T] extends Vec[N,T]
+
+
 trait Mat[R<:IntM,C<:IntM,T] extends DeliteCollection[T]
 
-trait VecView[N<:IntM,T] extends Vec[N,T]
 trait MatRow[C<:IntM,T] extends VecView[C,T]
 trait MatCol[R<:IntM,T] extends VecView[R,T]
 
