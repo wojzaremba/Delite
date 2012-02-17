@@ -18,6 +18,7 @@ def main():
     parser.add_option("-t", "--threads", dest="num_threads", default="1", help="num execution threads e.g. 4")
     parser.add_option("-g", "--gpu", action="store_const", const="1", dest="num_gpus", default="0", help="enable gpu execution")
     parser.add_option("-r", "--runs", dest="num_runs", default="1", type="string", help="the number of times the runtime will execute the applications")
+    parser.add_option("-p", "--profile", dest="profile", action="store_true", default=False, help="enables application profiling")
 
     (opts, args) = parser.parse_args()
     if len(args) < 1:
@@ -59,6 +60,9 @@ def run(deg, params, opts):
 
 
     java_opts = java_opts + " -Ddelite.home=" + DELITE_HOME + " -Ddelite.threads=" + str(opts.num_threads) + " -Ddelite.gpus=" + opts.num_gpus + " -Ddelite.runs=" + opts.num_runs + " -Xbootclasspath/p:" + DELITE_HOME + "/unsafe_classes/unsafe.jar" #+ " -Ddelite.usefsc=true"
+    
+    if opts.profile == True:
+        java_opts = java_opts + " -Dstats.output.dir=profile -Dstats.dump.component=prof -Ddelite.debug.profile=true"
 
     #add classpaths
     cp = " -cp "

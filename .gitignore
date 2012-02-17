@@ -41,3 +41,5 @@ scripts/delitec
 scripts/shared
 .settings
 apps/liszt/src/ppl/apps/
+dsls/deliszt/lisztlib
+profiler/less
