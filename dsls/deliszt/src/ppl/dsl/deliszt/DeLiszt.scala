@@ -221,41 +221,42 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
   }*/
   
 
-/*  override def remap(s: String) = parmap(s)
-  override def remap[A](m: Manifest[A]): String = {
-    var res = super.remap(m)
+  override def remap(s: String) = {
+    var res = super.remap(s)
     res = res.replaceAllLiterally("package$", "")
     parmap(res)
   }
-*/
+
+  override def remap[A](m: Manifest[A]): String = remap(m.toString)
+  
+
   override def parmap(line: String): String = {
-    var res = line
-    // MeshSet
-    val meshSetExpr = ("MeshSet\\[.+\\]").r  
-    res = meshSetExpr.replaceAllIn(res, m => "MeshSet")
+    var res = dsmap(line)
     
     // MeshObject types
     for(s <- List("Cell", "Edge", "Face", "Vertex")) {
-      val expr = ("(ppl\\.dsl\\.deliszt|generated\\.scala)\\." + s + "\\b").r  
-      res = expr.replaceAllIn(res, "Int")
-    }  
+      res = res.replace("generated.scala." + s, "Int")
+    }
+  
+    // MeshSet
+    res = res.replace("MeshSet[Int]", "MeshSet")
 
     // Field, anything with that final parameter of some value type
     if (res.indexOf("Field") != -1)
     for{f <- List("Field")
         tpe <- List("Double","Int","Float","Long","Boolean")
     } {
-      res = res.replace(f + "[Int," + tpe + "]", "Array[" + tpe + "]")
+      res = res.replace("generated.scala." + f + "[Int, " + tpe + "]", "generated.scala." + f + "[" + tpe + "]")
     } 
 
 
     if (res.indexOf("Vec") != -1)
     for{f <- List("Field")
         tpe <- List("Double","Int","Float","Long","Boolean")
-        t <- 2 until 22
+        t <- 2 until 7
     } { 
-      val str = "generated.scala.Vec[" + ("generated.scala.Succ[" * t) + "generated.scala.Zero" + ("]" * t) + "," + tpe + "]" 
-      res = res.replace(f + "[Int," + str + "]", f + "[" + str + "]")
+      val str = "generated.scala.Vec[" + ("generated.scala.Succ[" * t) + "generated.scala.Zero" + ("]" * t) + ", " + tpe + "]" 
+      res = res.replace(f + "[Int, " + str + "]", f + "[" + str + "]")
     } 
 
 

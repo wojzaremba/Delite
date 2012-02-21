@@ -56,6 +56,8 @@ object DeliteBuild extends Build {
 
   // _ forces sbt to choose it as default
   // useless base directory is to avoid compiling leftover .scala files in the project root directory
+
+
   lazy val _delite = Project("delite", file("project/boot")) aggregate(framework, dsls, runtime, apps, tests)
 
   lazy val framework = Project("framework", file("framework"), settings = virtBuildSettings) dependsOn(runtime) // dependency to runtime because of Scopes
@@ -80,6 +82,6 @@ object DeliteBuild extends Build {
     libraryDependencies += scalatest,
     parallelExecution in Test := false
     // don't appear to be able to depend on a different scala version simultaneously, so just using scala-virtualized for everything
-  )) dependsOn(framework, runtime, optiml, optimlApps, deliszt, runtime)
+  )) dependsOn(framework, runtime, optiml, deliszt, optimlApps, runtime)
 
 }

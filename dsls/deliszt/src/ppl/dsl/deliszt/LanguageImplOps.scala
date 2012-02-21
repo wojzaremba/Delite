@@ -1,17 +1,12 @@
 package ppl.dsl.deliszt
 
 import ppl.dsl.deliszt.datastruct.scala._
+import ppl.dsl.deliszt.MetaInteger._
 
 trait LanguageImplOps {
   this: DeLisztExp =>
-  
-  def print_impl(as : Seq[Exp[Any]]) {
-    for(a <- as) {
-      print(a)
-    }
-    
-    print(unit("""\n"""))
-  }
+
+
 }
 
 trait LanguageImplOpsStandard extends LanguageImplOps {

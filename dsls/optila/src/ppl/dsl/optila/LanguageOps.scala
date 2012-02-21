@@ -107,7 +107,7 @@ trait LanguageOps extends Base { this: OptiLA =>
 
   /**
    * mean
-   * TODO: implement this in vector/matrix
+   * TODO: implement this in vec/matrix
    */
 
 

@@ -53,7 +53,7 @@ trait OptiLAScalaOpsPkg extends Base
   with ImplicitOps with OrderingOps with StringOps
   with BooleanOps with PrimitiveOps with MiscOps with TupleOps
   with CastingOps with ObjectOps with IOOps
-  // only included because of args. TODO: investigate passing args as a vector
+  // only included because of args. TODO: investigate passing args as a vec
   with ArrayOps with ExceptionOps
 
 trait OptiLAScalaOpsPkgExp extends OptiLAScalaOpsPkg with DSLOpsExp

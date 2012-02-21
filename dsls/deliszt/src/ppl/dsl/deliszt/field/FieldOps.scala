@@ -51,8 +51,8 @@ trait FieldOps extends Base with Variables with OverloadHack {
     def apply(mo : Rep[MO]) = field_mo_apply(x, mo)
     def update(mo: Rep[MO], v: Rep[T]) = field_mo_update(x,mo,v)
 
-    def apply(n : Rep[Int])(implicit o: Overloaded1) = field_apply(x, n)
-    def update(n : Rep[Int], v : Rep[T])(implicit o: Overloaded1) = field_update(x,n,v)
+    //def apply(n : Rep[Int])(implicit o: Overloaded1) = field_apply(x, n)
+    //def update(n : Rep[Int], v : Rep[T])(implicit o: Overloaded1) = field_update(x,n,v)
     def size = field_size(x)
   }
 
@@ -385,14 +385,14 @@ trait ScalaGenFieldOps extends ScalaGenBase {
          if (isVec3(x)) {
            emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".cellWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-           emitValDef(sym, remap(f.t) + fieldImplPath + ".cellWithConst(" + quote(x) + ", " + quote(m) +  ")")
+           emitValDef(sym, remap(f.t) + fieldImplPath + ".cellWithConst[" + remap(f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
          }
       }
       case f@DeLisztFieldWithConstEdge(x, m) => {
          if (isVec3(x)) {
-             emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".edgeWithConst(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, vec3FieldImplPath + ".edgeWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
          } else {
-             emitValDef(sym, remap(f.t) + fieldImplPath + ".edgeWithConst(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, fieldImplPath + ".edgeWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
          }
       }
 
@@ -400,14 +400,14 @@ trait ScalaGenFieldOps extends ScalaGenBase {
          if (isVec3(x)) {
              emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".faceWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-             emitValDef(sym, remap(f.t) + fieldImplPath + ".faceWithConst(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, fieldImplPath + ".faceWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
          }
       }
       case f@DeLisztFieldWithConstVertex(x, m) => {
          if (isVec3(x)) {
              emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".vertexWithConst(" + quote(x) + ", " + quote(m) +  ")")
          } else {
-             emitValDef(sym, remap(f.t) + fieldImplPath + ".vertexWithConst(" + quote(x) + ", " + quote(m) +  ")")
+             emitValDef(sym, fieldImplPath + ".vertexWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
          }
       }
       case f@FieldObjectNewCell() => emitValDef(sym, remap(f.t) + fieldImplPath + ".ofCell()")

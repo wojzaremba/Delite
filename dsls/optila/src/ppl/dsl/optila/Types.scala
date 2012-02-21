@@ -20,14 +20,14 @@ import ppl.delite.framework.datastruct.scala.DeliteCollection
  * Vector 
  */
  
-// involve representation & require their own ops to implement vector abstract methods
+// involve representation & require their own ops to implement vec abstract methods
 abstract class Vector[T] extends DeliteCollection[T]
 trait DenseVector[T] extends Vector[T]
 //trait SparseVector[T] extends Vector[T]
 //trait ZeroVector[T] extends DenseVector[T]
 //trait EmptyVector[T] extends DenseVector[T]
 
-// Range and View should never dispatch to Dense ops, because the Dense implementation of abstract vector methods is incorrect for them
+// Range and View should never dispatch to Dense ops, because the Dense implementation of abstract vec methods is incorrect for them
 trait RangeVector extends Vector[Int] with VectorRow[Int]
 trait VectorView[T] extends Vector[T] //DenseVector[T] 
 

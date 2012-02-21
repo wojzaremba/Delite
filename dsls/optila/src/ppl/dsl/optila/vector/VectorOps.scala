@@ -283,12 +283,12 @@ trait VectorOps extends Variables {
    * Interface[Vector] 
    */
    
-  // clients that can handle multiple kinds of vector must accept an Interface[Vector[T]],  not a Rep[Vector[T]]
+  // clients that can handle multiple kinds of vec must accept an Interface[Vector[T]],  not a Rep[Vector[T]]
   class VInterface[A:Manifest](val ops: VecOpsCls[A]) extends DCInterface[Vector[A],A] {// clients use Interface[Vector]
     override def toString = "VInterface(" + ops.elem.toString + "  [manifest: " + ops.mA.toString + "])"
   }
 
-  // then we convert from a Interface[Vector[T]] to an interfaceVecToOpsCls, providing all of the original vector methods  
+  // then we convert from a Interface[Vector[T]] to an interfaceVecToOpsCls, providing all of the original vec methods
   implicit def interfaceToVecOps[A:Manifest](intf: Interface[Vector[A]]): InterfaceVecOpsCls[A] = new InterfaceVecOpsCls(intf.asInstanceOf[VInterface[A]]) // all Interface[Vector] should be instances of VInterface, but can we enforce this?
   
   class InterfaceVecOpsCls[A:Manifest](val intf: VInterface[A]) {
@@ -1269,7 +1269,7 @@ trait VectorOpsExpOpt extends VectorOpsExp { this: OptiLAExp =>
   }
   
   override def vector_plusequals[A:Manifest:Arith](x: Interface[Vector[A]], y: Interface[Vector[A]]) = (x, y) match {
-    // remove runtime check on zero vector being same length as argument
+    // remove runtime check on zero vec being same length as argument
     case (a, Def(VectorObjectZeros(len))) => ()
     //case (Def(VectorObjectZeros(len)), b) => b  // this is unsafe because we lose the effectful operation (e.g. accumulation)
     case _ => super.vector_plusequals(x,y)

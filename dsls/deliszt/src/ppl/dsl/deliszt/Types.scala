@@ -10,14 +10,18 @@ import ppl.dsl.optila._
 //////////////////
 // DeLiszt
 
-trait Vec[N<:IntM,T] extends DenseVector[T]
-trait VecView[N<:IntM,T] extends Vec[N,T]
+trait ShortVector[N<:IntM,T] extends Vector[T]
+
+
+/*trait VecView[N<:IntM,T] extends Vec[N,T]
 
 
 trait Mat[R<:IntM,C<:IntM,T] extends DeliteCollection[T]
 
 trait MatRow[C<:IntM,T] extends VecView[C,T]
-trait MatCol[R<:IntM,T] extends VecView[R,T]
+trait MatCol[R<:IntM,T] extends VecView[R,T]*/
+
+
 
 // Mesh objects
 trait MeshObj {

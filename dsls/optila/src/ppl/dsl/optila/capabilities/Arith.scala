@@ -159,9 +159,9 @@ trait ArithOps extends Variables with OverloadHack {
     
     /**
      * zero for Vector[T] is a little tricky. It is used in nested Vector/Matrix operations, e.g.
-     * a reduction on a Vector[Vector[T]]. For a variable dimension nested vector, the empty vector is the only
+     * a reduction on a Vector[Vector[T]]. For a variable dimension nested vec, the empty vec is the only
      * right answer. For a fixed dimension nested Vector, such as [[1,2,3],[4,5,6]], you'd ideally want the 
-     * k-dimension zero vector, e.g. [0,0,0] in this example. However, this is the dimension
+     * k-dimension zero vec, e.g. [0,0,0] in this example. However, this is the dimension
      * of v(0).dim, not v.dim, and cannot be statically enforced with our types, and furthermore would need to
      * correctly handled multiple levels of nesting. This situation is resolved by the DeliteOpReduce contract to
      * never use zero except in the case of the empty collection.

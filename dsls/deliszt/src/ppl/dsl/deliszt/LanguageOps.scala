@@ -1,8 +1,8 @@
 package ppl.dsl.deliszt
 
 import java.io.PrintWriter
-import reflect.Manifest
-
+import reflect.{Manifest, SourceContext}
+import ppl.dsl.deliszt.MetaInteger._
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
 import scala.virtualization.lms.common._
 
@@ -22,15 +22,12 @@ trait LanguageOps extends Base { this: DeLiszt =>
   def infix_toInt[T : Numeric:Manifest](d: Rep[T]) : Rep[Int]
 
   //SyncedFile should be part of Delite - common mechanism to deal with distributed file (current implementation is faked)
+  //will be remove
   def SyncedFile(name: Rep[String]) : Rep[SyncedFile]
   def infix_write(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
   def infix_writeln(f: Rep[SyncedFile], as: Rep[Any]*) : Unit
   def infix_close(f: Rep[SyncedFile]) : Unit
-  
-  
 
-
-  def Print(as: Rep[Any]*) : Unit
   //Boundary set without mesh parameter reference to default mesh from cfg file (to keep programs working)
   def BoundarySet[MO<:Cell:Manifest](name: Rep[String])(implicit ev : MO =:= Cell) : Rep[MeshSet[Cell]]
   def BoundarySet[MO<:Edge:Manifest](name: Rep[String])(implicit ev : MO =:= Edge, o: Overloaded1) : Rep[MeshSet[Edge]]
@@ -108,17 +105,12 @@ trait LanguageOps extends Base { this: DeLiszt =>
 trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   this: LanguageImplOps with DeLisztExp =>
 
-
-
   case class NumericToInt[T:Numeric:Manifest](e: Exp[T]) extends Def[Int]
 
-  /******* Ops *********/
   case class DeLisztLoadCfgMesh(args: Exp[Array[String]]) extends Def[Mesh]
   case class DeLisztFile(name: Exp[String]) extends Def[SyncedFile]
   case class DeLisztCloseFile(file: Exp[SyncedFile]) extends Def[Unit]
   case class DeLisztWrite(file : Exp[SyncedFile], as : Exp[Any]) extends Def[Unit]
-  case class DeLisztPrint(as: Seq[Exp[Any]])(block: Exp[Unit]) // stupid limitation...
-    extends DeliteOpSingleTask(block)
 
   case class DeLisztBoundarySetContains[MO <: MeshObj : Manifest](b : Exp[MeshSet[MO]], e : Exp[MO]) extends Def[Boolean]
 
@@ -208,6 +200,7 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   case class WallTime() extends Def[Double]
   case class ProcessorTime() extends Def[Double]
 
+
   //def findMesh[MO <: {val mesh : Exp[Mesh]}](e: MO) : Exp[Mesh] = e.mesh
 
   def findMesh[MO <: MeshObj](e: Exp[MO]) : Exp[Mesh] = {
@@ -254,8 +247,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
     infix_write(f, Const("""\n"""))
   }
   def infix_close(f : Rep[SyncedFile]) = reflectWrite(f)(DeLisztCloseFile(f))
-
-  def Print(as: Exp[Any]*) = reflectEffect(DeLisztPrint(as)(reifyEffectsHere(print_impl(as))))
 
   //I had to copy this lines, because of abstract definition
   def BoundarySet[MO<:Cell:Manifest](name: Exp[String])(implicit ev : MO =:= Cell) = BoundarySet[MO](name, mesh)
@@ -358,47 +349,47 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   
   def wall_time() = reflectEffect(WallTime())
   def processor_time() = reflectEffect(ProcessorTime())
-  
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {    
-    case DeLisztVerticesCell(e, mesh) => reflectPure(DeLisztVerticesCell(f(e),f(mesh)))
-    case DeLisztVerticesEdge(e, mesh) => reflectPure(DeLisztVerticesEdge(f(e),f(mesh)))
-    case DeLisztVerticesFace(e, mesh) => reflectPure(DeLisztVerticesFace(f(e),f(mesh)))
-    case DeLisztVerticesVertex(e, mesh) => reflectPure(DeLisztVerticesVertex(f(e),f(mesh)))
-    case DeLisztVerticesMesh(e) => reflectPure(DeLisztVerticesMesh(f(e)))
-    case DeLisztVertexFace(e,i, mesh) => reflectPure(DeLisztVertexFace(f(e),f(i),f(mesh)))
-    case DeLisztVertexCell(e,i, mesh) => reflectPure(DeLisztVertexCell(f(e),f(i),f(mesh)))
-    case DeLisztFaceVerticesCCW(e, mesh) => reflectPure(DeLisztFaceVerticesCCW(f(e),f(mesh)))
-    case DeLisztFaceVerticesCW(e, mesh) => reflectPure(DeLisztFaceVerticesCW(f(e),f(mesh)))
-    case DeLisztCellsCell(e, mesh) => reflectPure(DeLisztCellsCell(f(e),f(mesh)))
-    case DeLisztCellsEdge(e, mesh) => reflectPure(DeLisztCellsEdge(f(e),f(mesh)))
-    case DeLisztCellsFace(e, mesh) => reflectPure(DeLisztCellsFace(f(e),f(mesh)))
-    case DeLisztCellsVertex(e, mesh) => reflectPure(DeLisztCellsVertex(f(e),f(mesh)))
-    case DeLisztCellsMesh(e) => reflectPure(DeLisztCellsMesh(f(e)))
-    case DeLisztEdgeCellsCCW(e, mesh) => reflectPure(DeLisztEdgeCellsCCW(f(e),f(mesh)))
-    case DeLisztEdgeCellsCW(e, mesh) => reflectPure(DeLisztEdgeCellsCW(f(e),f(mesh)))
-    case DeLisztEdgesCell(e, mesh) => reflectPure(DeLisztEdgesCell(f(e),f(mesh)))
-    case DeLisztEdgesFace(e, mesh) => reflectPure(DeLisztEdgesFace(f(e),f(mesh)))
-    case DeLisztEdgesVertex(e, mesh) => reflectPure(DeLisztEdgesVertex(f(e),f(mesh)))
-    case DeLisztEdgesMesh(e) => reflectPure(DeLisztEdgesMesh(f(e)))
-    case DeLisztFacesEdge(e, mesh) => reflectPure(DeLisztFacesEdge(f(e),f(mesh)))
-    case DeLisztFacesCell(e, mesh) => reflectPure(DeLisztFacesCell(f(e),f(mesh)))
-    case DeLisztFacesVertex(e, mesh) => reflectPure(DeLisztFacesVertex(f(e),f(mesh)))
-    case DeLisztFacesMesh(e) => reflectPure(DeLisztFacesMesh(f(e)))
-    case DeLisztFaceInside(e, mesh) => reflectPure(DeLisztFaceInside(f(e),f(mesh)))
-    case DeLisztFaceOutside(e, mesh) => reflectPure(DeLisztFaceOutside(f(e),f(mesh)))
-    case DeLisztEdgeFacesCCW(e, mesh) => reflectPure(DeLisztEdgeFacesCCW(f(e),f(mesh)))
-    case DeLisztEdgeFacesCW(e, mesh) => reflectPure(DeLisztEdgeFacesCW(f(e),f(mesh)))
-    case DeLisztFaceEdgesCCW(e, mesh) => reflectPure(DeLisztFaceEdgesCCW(f(e),f(mesh)))
-    case DeLisztFaceEdgesCW(e, mesh) => reflectPure(DeLisztFaceEdgesCW(f(e),f(mesh)))
-    case DeLisztEdgeHead(e, mesh) => reflectPure(DeLisztEdgeHead(f(e),f(mesh)))
-    case DeLisztEdgeTail(e, mesh) => reflectPure(DeLisztEdgeTail(f(e),f(mesh)))
-    case DeLisztFace(e,i, mesh) => reflectPure(DeLisztFace(f(e),f(i),f(mesh)))
-    case DeLisztFlipEdge(e) => reflectPure(DeLisztFlipEdge(f(e)))
-    case DeLisztFlipFace(e) => reflectPure(DeLisztFlipFace(f(e)))
-    case DeLisztTowardsEdgeVertex(e,v, mesh) => reflectPure(DeLisztTowardsEdgeVertex(f(e),f(v),f(mesh)))
-    case DeLisztTowardsFaceCell(e,c, mesh) => reflectPure(DeLisztTowardsFaceCell(f(e),f(c),f(mesh)))   
+
+
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {    
+    case DeLisztVerticesCell(e, mesh) => reflectPure(DeLisztVerticesCell(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztVerticesEdge(e, mesh) => reflectPure(DeLisztVerticesEdge(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztVerticesFace(e, mesh) => reflectPure(DeLisztVerticesFace(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztVerticesVertex(e, mesh) => reflectPure(DeLisztVerticesVertex(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztVerticesMesh(e) => reflectPure(DeLisztVerticesMesh(f(e)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztVertexFace(e,i, mesh) => reflectPure(DeLisztVertexFace(f(e),f(i),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztVertexCell(e,i, mesh) => reflectPure(DeLisztVertexCell(f(e),f(i),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFaceVerticesCCW(e, mesh) => reflectPure(DeLisztFaceVerticesCCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFaceVerticesCW(e, mesh) => reflectPure(DeLisztFaceVerticesCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztCellsCell(e, mesh) => reflectPure(DeLisztCellsCell(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztCellsEdge(e, mesh) => reflectPure(DeLisztCellsEdge(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztCellsFace(e, mesh) => reflectPure(DeLisztCellsFace(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztCellsVertex(e, mesh) => reflectPure(DeLisztCellsVertex(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztCellsMesh(e) => reflectPure(DeLisztCellsMesh(f(e)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgeCellsCCW(e, mesh) => reflectPure(DeLisztEdgeCellsCCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgeCellsCW(e, mesh) => reflectPure(DeLisztEdgeCellsCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgesCell(e, mesh) => reflectPure(DeLisztEdgesCell(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgesFace(e, mesh) => reflectPure(DeLisztEdgesFace(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgesVertex(e, mesh) => reflectPure(DeLisztEdgesVertex(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgesMesh(e) => reflectPure(DeLisztEdgesMesh(f(e)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFacesEdge(e, mesh) => reflectPure(DeLisztFacesEdge(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFacesCell(e, mesh) => reflectPure(DeLisztFacesCell(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFacesVertex(e, mesh) => reflectPure(DeLisztFacesVertex(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFacesMesh(e) => reflectPure(DeLisztFacesMesh(f(e)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFaceInside(e, mesh) => reflectPure(DeLisztFaceInside(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFaceOutside(e, mesh) => reflectPure(DeLisztFaceOutside(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgeFacesCCW(e, mesh) => reflectPure(DeLisztEdgeFacesCCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgeFacesCW(e, mesh) => reflectPure(DeLisztEdgeFacesCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFaceEdgesCCW(e, mesh) => reflectPure(DeLisztFaceEdgesCCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFaceEdgesCW(e, mesh) => reflectPure(DeLisztFaceEdgesCW(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgeHead(e, mesh) => reflectPure(DeLisztEdgeHead(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztEdgeTail(e, mesh) => reflectPure(DeLisztEdgeTail(f(e),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFace(e,i, mesh) => reflectPure(DeLisztFace(f(e),f(i),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFlipEdge(e) => reflectPure(DeLisztFlipEdge(f(e)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztFlipFace(e) => reflectPure(DeLisztFlipFace(f(e)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztTowardsEdgeVertex(e,v, mesh) => reflectPure(DeLisztTowardsEdgeVertex(f(e),f(v),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
+    case DeLisztTowardsFaceCell(e,c, mesh) => reflectPure(DeLisztTowardsFaceCell(f(e),f(c),f(mesh)))(mtype(manifest[A]),implicitly[SourceContext])
     case DeLisztID(e) => ID(f(e))
-    case Reflect(e@DeLisztPrint(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with DeLisztPrint(f(x))(f(e.block)), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(WallTime(), u, es) => reflectMirrored(Reflect(WallTime(), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]] // why??  
@@ -419,6 +410,7 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
+
       case DeLisztLoadCfgMesh(args) => emitValDef(sym, "Liszt.load(" + quote(args) + ")")
       case DeLisztMesh(mesh) => emitValDef(sym, quote(mesh))
 
