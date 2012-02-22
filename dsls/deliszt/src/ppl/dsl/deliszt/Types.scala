@@ -10,7 +10,7 @@ import ppl.dsl.optila._
 //////////////////
 // DeLiszt
 
-trait ShortVector[N<:IntM,T] extends Vector[T]
+trait ShortVector[N<:IntM,T] extends DenseVector[T]
 
 
 /*trait VecView[N<:IntM,T] extends Vec[N,T]

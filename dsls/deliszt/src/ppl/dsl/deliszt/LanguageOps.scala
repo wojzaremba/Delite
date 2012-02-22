@@ -15,11 +15,8 @@ import scala.virtualization.lms.common._
  * Stanford University
  */
 
-trait LanguageOps extends Base { this: DeLiszt =>
+trait LanguageOps extends ppl.dsl.optila.LanguageOps { this: DeLiszt =>
   def _init(args: Rep[Array[String]]) : Unit
-
-  //should be part of LMS
-  def infix_toInt[T : Numeric:Manifest](d: Rep[T]) : Rep[Int]
 
   //SyncedFile should be part of Delite - common mechanism to deal with distributed file (current implementation is faked)
   //will be remove
@@ -103,9 +100,7 @@ trait LanguageOps extends Base { this: DeLiszt =>
 }
 
 trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
-  this: LanguageImplOps with DeLisztExp =>
-
-  case class NumericToInt[T:Numeric:Manifest](e: Exp[T]) extends Def[Int]
+  this: DeLisztExp with LanguageImplOps =>
 
   case class DeLisztLoadCfgMesh(args: Exp[Array[String]]) extends Def[Mesh]
   case class DeLisztFile(name: Exp[String]) extends Def[SyncedFile]
@@ -237,8 +232,6 @@ trait LanguageOpsExp extends LanguageOps with BaseFatExp with EffectExp {
   def _init(args: Exp[Array[String]]) = {
     reflectPure(DeLisztLoadCfgMesh(args))
   }
-
-  def infix_toInt[T : Numeric : Manifest](d: Exp[T]) = reflectPure(NumericToInt(d))
 
   def SyncedFile(name: Exp[String]) = reflectMutable(DeLisztFile(name))
   def infix_write(f : Rep[SyncedFile], as: Exp[Any]*) = for (a <- as) reflectWrite(f)(DeLisztWrite(f, a))
@@ -414,8 +407,6 @@ trait ScalaGenLanguageOps extends ScalaGenBase {
       case DeLisztLoadCfgMesh(args) => emitValDef(sym, "Liszt.load(" + quote(args) + ")")
       case DeLisztMesh(mesh) => emitValDef(sym, quote(mesh))
 
-      case NumericToInt(e) => emitValDef(sym, quote(e) + ".toInt" )
-
       case DeLisztFile(name) => emitValDef(sym, "new SyncedFile(" + quote(name) + ")" )
       case DeLisztWrite(f, str) => emitValDef(sym, quote(f) + ".write(" + quote(str) + ")" )
 
@@ -578,8 +569,6 @@ trait CudaGenLanguageOps extends CudaGenBase {
     case DeLisztTowardsFaceCell(e,c, mesh) => emitValDef(sym, quote(mesh) + ".towardsFaceCell(" + quote(e) + "," + quote(c) + ")")
 
     case DeLisztID(x) => emitValDef(sym, "internal(" + quote(x) + ")")
-
-    //TODO: Why is this node here?
 
     case _ => super.emitNode(sym, rhs)
   }

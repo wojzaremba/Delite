@@ -1,12 +1,23 @@
-import Liszt.Language._
-import Liszt.MetaInteger._
+package ppl.tests.scalatest.dsl.deliszt
 
+import ppl.dsl.deliszt.{DeLisztApplication, DeLisztApplicationRunner}
+import ppl.dsl.optiml.{OptiMLApplicationRunner, OptiMLApplication}
+import ppl.tests.scalatest._
+import ppl.dsl.optila.{DenseVector}
 
-@lisztcode
-object VecArith {
+object VecArithRunner extends DeliteTestRunner with DeLisztApplicationRunner with VecArith
+
+trait VecArith extends DeliteTestModule with DeLisztApplication {
+
 	def main() {
-		val a = Vec(1,2,3)
-		val b = Vec(4.,5.,6.)
+		val a = ShortVector(1,2,3)
+    val b = ShortVector(2,3,4)
+    val res = ShortVector(-1, 2, -1)
+    collect(a *:* b == 20)
+    collect((a cross b) == res)
+    collect(true)
+    mkReport
+		/*val b = Vec(4.,5.,6.)
 		val c = Vec(7.,8.,9.)
 		val d = b + c
 		val e = Vec(7,8,9) + a
@@ -67,6 +78,10 @@ object VecArith {
 		val max4 = Vec(0, 10, 5, 40) max Vec(5, 5, 5, 45) // (0, 5, 5, 40))
 		
 		val len = length(Vec(3.f,4.f))
-		Print(max1, " ", max2, " ", max3, " ", max4, " ", len)
+		Print(max1, " ", max2, " ", max3, " ", max4, " ", len)*/
 	}
+}
+
+class VecSuite extends DeliteSuite {
+  def testVec() { compileAndTest(VecArithRunner) }
 }

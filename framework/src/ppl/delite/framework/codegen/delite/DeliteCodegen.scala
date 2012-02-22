@@ -122,7 +122,7 @@ trait DeliteCodegen extends GenericFatCodegen with BaseGenStaticData with ppl.de
 
     val staticData = getFreeDataBlock(y)
 
-    printlog("-- emitSource")
+    printlog("  -- emitSource")
     availableDefs.foreach(printlog(_))
     
     stream.println("{\"DEG\":{\n"+

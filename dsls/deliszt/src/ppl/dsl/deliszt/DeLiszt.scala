@@ -1,5 +1,6 @@
 package ppl.dsl.deliszt
 
+import ppl.delite.framework.datastructures._
 import datastruct.{CudaGenDataStruct,CGenDataStruct}
 import extern.{DeLisztCudaGenExternal, DeLisztScalaGenExternal}
 import java.io._
@@ -23,10 +24,12 @@ import ppl.dsl.deliszt.field._
 import ppl.dsl.deliszt.intm._
 import ppl.dsl.deliszt.mesh._
 import ppl.dsl.deliszt.meshset._
+import ppl.dsl.deliszt.vector._
 
 import ppl.dsl.deliszt.analysis.{DeLisztCodeGenAnalysis, LoopColoringOpt, LoopColoringOpsExp, ScalaGenLoopColoringOps}
+import reflect.SourceContext
 
-trait DeLisztApplicationRunner extends DeLisztApplication with DeliteApplication with DeLisztExp {
+trait DeLisztApplicationRunner extends DeLisztApplication with DeliteApplication with DeLisztExp /*{
   override def liftedMain(x: Rep[Array[String]]) = {
     _init(x)
     this.args = x
@@ -38,12 +41,15 @@ trait DeLisztApplicationRunner extends DeLisztApplication with DeliteApplication
   //FIXME
   //override val deliteGenerator = new DeliteCodeGenPkg with LoopColoringOpt { val IR: DeLisztApplicationRunner.this.type = DeLisztApplicationRunner.this;
     //                                                                        val generators = DeLisztApplicationRunner.this.generators }
+}*/
+
+trait DeLisztApplication extends OptiLAApplication with DeLiszt with DeLisztLift with DeLisztLibrary {
+  var args: Rep[Array[String]]
+  def main(): Unit
 }
 
-trait DeLisztApplication extends OptiLAApplication with DeLiszt with DeLisztLift with DeLisztLibrary
-
 trait DeLisztLibrary {
-  this: DeLisztApplication =>
+  this: DeLisztApplication with DeLisztLift =>
 }
 
 trait DeLisztLift extends OptiLALift {
@@ -66,7 +72,7 @@ trait DeLisztCCodeGenPkg extends OptiLACCodeGenPkg
 /**
  * This the trait that every DeLiszt application must extend.
  */
-trait DeLiszt extends DeLisztScalaOpsPkg with OptiLA with LanguageOps with MeshBuilderOps
+trait DeLiszt extends DeLisztScalaOpsPkg with OptiLA with RecordOps with LanguageOps with ShortVectorOps with MeshBuilderOps
   with MeshPrivateOps with MeshSetOps
   with IntMOps
   with SeqOps
@@ -76,27 +82,28 @@ trait DeLiszt extends DeLisztScalaOpsPkg with OptiLA with LanguageOps with MeshB
 }
 
 // these ops are only available to the compiler (they are restricted from application use)
-trait DeLisztCompiler extends OptiLACompiler with DeLiszt with ListOps {  // FieldPrivateOps, MeshPrivateOps
+trait DeLisztCompiler extends OptiLACompiler with DeLiszt with DeLisztUtilities with ListOps with DeliteCollectionOps {  // FieldPrivateOps, MeshPrivateOps
   this: DeLisztApplication with DeLisztExp =>
 }
 
 /**
  * These are the corresponding IR nodes for DeLiszt.
  */
-trait DeLisztExp extends OptiLAExp with DeLisztCompiler with DeLisztScalaOpsPkgExp with LanguageOpsExpOpt with MeshBuilderOpsExp
+trait DeLisztExp extends OptiLAExp with DeLisztCompiler with DeLisztScalaOpsPkgExp with RecordOpsExp with LanguageOpsExpOpt with ShortVectorOpsExp with ShortVectorImplOpsStandard with MeshBuilderOpsExp
   with LanguageImplOpsStandard
   with MeshSetOpsExp
   with MeshPrivateOpsExp
   with OrderingOpsExp
   with MathOpsExp
   with IntMOpsExp
-  with LoopColoringOpsExp
+  //with LoopColoringOpsExp
   with DeliteOpsExp with VariantsOpsExp with DeliteAllOverridesExp
   with FieldOpsExpOpt with FieldImplOpsStandard {
 
   this: DeliteApplication with DeLisztApplication with DeLisztExp => // can't be DeLisztApplication right now because code generators depend on stuff inside DeliteApplication (via IR)
 
   override def getCodeGenPkg(t: Target{val IR: DeLisztExp.this.type}) : GenericFatCodegen{val IR: DeLisztExp.this.type} = {
+    Predef.println("getCodeGenPkg")
     t match {
       case _:TargetScala => new DeLisztCodeGenScala{val IR: DeLisztExp.this.type = DeLisztExp.this}
       case _:TargetCuda => new DeLisztCodeGenCuda{val IR: DeLisztExp.this.type = DeLisztExp.this}
@@ -107,6 +114,16 @@ trait DeLisztExp extends OptiLAExp with DeLisztCompiler with DeLisztScalaOpsPkgE
 
   //FIXME
   //override lazy val analyses = scala.collection.immutable.List(new DeLisztCodeGenAnalysis{val IR: DeLisztExp.this.type = DeLisztExp.this})
+}
+
+
+trait DeLisztUtilities extends OptiLAUtilities {
+  override def err(s: String)(implicit ctx: SourceContext) = {
+    println("[deliszt error]: " + s)
+    println("  at " + (ctx.fileName.split("/").last + ":" + ctx.line).mkString("//").mkString(";"))
+    exit(1)
+  }
+  override def warn(s: String) = println("[deliszt warning]: " + s)
 }
 
 
@@ -122,6 +139,7 @@ trait DeLisztCodeGenBase extends OptiLACodeGenBase {
   def genSpec2(f: File, outPath: String) = {}
 
   override def emitDataStructures(path: String) {
+    super.emitDataStructures(path)
     val s = File.separator
     val dsRoot = Config.homeDir + s+"dsls"+s+"deliszt"+s+"src"+s+"ppl"+s+"dsl"+s+"deliszt"+s+"datastruct"+s + this.toString
 
@@ -150,17 +168,16 @@ trait DeLisztCodeGenBase extends OptiLACodeGenBase {
       }
       out.close()
     }
-    
-    super.emitDataStructures(path)
   }
 }
 
-trait DeLisztCodeGenScala extends OptiLACodeGenScala with DeLisztCodeGenBase with DeLisztScalaCodeGenPkg with ScalaGenDeliteOps with ScalaGenLanguageOps
+trait DeLisztCodeGenScala extends OptiLACodeGenScala with DeLisztCodeGenBase with DeLisztScalaCodeGenPkg with ScalaGenRecordOps with
+ScalaGenDeliteOps with ScalaGenLanguageOps
 with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps
   with ScalaGenFieldOps with ScalaGenIntMOps with ScalaGenMeshPrivateOps with ScalaGenMeshSetOps
-  with ScalaGenLoopColoringOps /*with LoopColoringOpt*/ // LoopColoringOpt only needed here for debugging (it's mixed into DeLiszt's DeliteCodeGenPkg)
-  with DeliteScalaGenAllOverrides with DeLisztScalaGenExternal { //with ScalaGenMLInputReaderOps {
-  
+  //with ScalaGenLoopColoringOps /*with LoopColoringOpt*/ // LoopColoringOpt only needed here for debugging (it's mixed into DeLiszt's DeliteCodeGenPkg)
+  with DeliteScalaGenAllOverrides {
+
   val IR: DeliteApplication with DeLisztExp
 
  /* override val specialize = Set("FieldImpl", "LabelFieldImpl", "Vec3Impl", "VecImpl", "VecViewImpl")
@@ -191,6 +208,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     }
   }
 
+
   
   override def specmap(line: String, t: String) : String = {
     var res = line.replaceAll("class ", "class " + t)
@@ -219,16 +237,13 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     res = res.replaceAll("\\bL\\b", t2)
     parmap(res)
   }*/
-  
 
-  override def remap(s: String) = {
-    var res = super.remap(s)
-    res = res.replaceAllLiterally("package$", "")
-    parmap(res)
+
+  override def remap[A](m: Manifest[A]): String = {
+   Predef.println("DeLiszt" + m.toString)
+   super.remap(m)
   }
 
-  override def remap[A](m: Manifest[A]): String = remap(m.toString)
-  
 
   override def parmap(line: String): String = {
     var res = dsmap(line)
@@ -241,23 +256,18 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     // MeshSet
     res = res.replace("MeshSet[Int]", "MeshSet")
 
+    for(tpe1 <- List("Int","Long","Double","Float","Boolean")) {
+      res = res.replaceAll("ShortVector\\[.*?,"+tpe1+"\\]", "DenseVector[" + tpe1 + "]")//not greed replaceAll
+    }
+
     // Field, anything with that final parameter of some value type
     if (res.indexOf("Field") != -1)
     for{f <- List("Field")
         tpe <- List("Double","Int","Float","Long","Boolean")
     } {
-      res = res.replace("generated.scala." + f + "[Int, " + tpe + "]", "generated.scala." + f + "[" + tpe + "]")
-    } 
-
-
-    if (res.indexOf("Vec") != -1)
-    for{f <- List("Field")
-        tpe <- List("Double","Int","Float","Long","Boolean")
-        t <- 2 until 7
-    } { 
-      val str = "generated.scala.Vec[" + ("generated.scala.Succ[" * t) + "generated.scala.Zero" + ("]" * t) + ", " + tpe + "]" 
-      res = res.replace(f + "[Int, " + str + "]", f + "[" + str + "]")
-    } 
+      res = res.replace("generated.scala." + f + "[Int," + tpe + "]", "generated.scala." + f + "[" + tpe + "]")
+      res = res.replace("generated.scala." + f + "[Int,generated.scala." + tpe + "DenseVector]", "generated.scala." + f + "[generated.scala." + tpe + "DenseVector]")
+    }
 
 
 

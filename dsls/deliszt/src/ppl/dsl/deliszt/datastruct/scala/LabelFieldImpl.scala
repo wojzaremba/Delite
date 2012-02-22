@@ -28,4 +28,15 @@ object LabelFieldImpl {
     val data = mesh.labelVertex[T](url)
     new FieldImpl[T](data)
   }
+
+
+  def ofVertex[T:Manifest](mesh: Mesh, url: String) : Field[T] = {
+    val data = mesh.labelVertex[T](url)
+    new FieldImpl[T](data)
+  }
+
+  def ofVertexVec[T:Manifest](mesh: Mesh, url: String) : Field[T] = {
+    val data = mesh.labelVertex[T](url)
+    new VecFieldImpl[T](data)
+  }
 }

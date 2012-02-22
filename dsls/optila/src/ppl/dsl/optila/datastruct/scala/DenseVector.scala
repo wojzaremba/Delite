@@ -13,7 +13,7 @@ class DenseVector[@specialized T: Manifest](__length: Int, __isRow: Boolean) {
   var _isRow = __isRow
   var _data: Array[T] = new Array[T](_length)
 
-  override def toString() = "DenseVector : " + _data.toList.toString
+  override def toString() = _data.mkString("(", ", ", ")")
 
   def apply(i : Int) : T = _data(i)
 

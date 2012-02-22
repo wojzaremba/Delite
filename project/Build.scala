@@ -8,13 +8,14 @@ object DeliteBuild extends Build {
   val dropboxScalaTestRepo = "Dropbox" at "http://dl.dropbox.com/u/12870350/scala-virtualized"
   val scalatest = "org.scalatest" % "scalatest_2.10.0-virtualized-SNAPSHOT" % "1.6.1-SNAPSHOT" //% "test"
 
-  val virtScala = "2.10.0-virtualized-SNAPSHOT"
-  val virtBuildSettings = Defaults.defaultSettings ++ Seq(
-    scalaSource in Compile <<= baseDirectory(_ / "src"),
+  val virtScala = "2.10.0-M1-virtualized"
+  val virtBuildSettingsBase = Defaults.defaultSettings ++ Seq(
     resolvers += ScalaToolsSnapshots, 
+    organization := "stanford-ppl",
     resolvers += dropboxScalaTestRepo,
     scalaVersion := virtScala,
     scalaBinaryVersion := virtScala,
+    publishArtifact in (Compile, packageDoc) := false,
     libraryDependencies += virtualization_lms_core,
     // needed for scala.tools, which is apparently not included in sbt's built in version
     libraryDependencies += "org.scala-lang" % "scala-library" % virtScala,
@@ -22,15 +23,22 @@ object DeliteBuild extends Build {
     // used in delitec to access jars
     retrieveManaged := true,
     scalacOptions += "-Yno-generic-signatures",
-    scalacOptions += "-Yvirtualize", 
-    unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
-    unmanagedSourceDirectories in Test := Nil
+    scalacOptions += "-Yvirtualize"
   )
 
-  val virtBuildSettingsDeliszt = virtBuildSettings ++ Seq(       
+  val virtBuildSettings = virtBuildSettingsBase ++ Seq(
+    scalaSource in Compile <<= baseDirectory(_ / "src")
+  )
+
+  val virtBuildSettingsBaseDeliszt = virtBuildSettingsBase ++ Seq(       
     libraryDependencies += "net.liftweb" % "lift-json_2.9.0" % "2.4",
     libraryDependencies += "com.thoughtworks.paranamer" % "paranamer" % "2.3"
   )
+
+  val virtBuildSettingsDeliszt = virtBuildSettingsBaseDeliszt ++ Seq(  
+    scalaSource in Compile <<= baseDirectory(_ / "src")
+  )
+
 
 
   /*
@@ -76,7 +84,7 @@ object DeliteBuild extends Build {
 
   lazy val runtime = Project("runtime", file("runtime"), settings = virtBuildSettings)
 
-  lazy val tests = Project("tests", file("tests"), settings = virtBuildSettings ++ Seq(
+  lazy val tests = Project("tests", file("tests"), settings = virtBuildSettingsBaseDeliszt ++ Seq(
     scalaSource := file("tests/main-src"),
     scalaSource in Test := file("tests/src"),
     libraryDependencies += scalatest,

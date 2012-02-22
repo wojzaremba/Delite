@@ -132,7 +132,7 @@ trait DeliteSuite extends Suite with DeliteTestConfig {
     buf.toString
   }
 
-  private def checkTest(app: DeliteTestRunner, outStr: String) {
+  private def   checkTest(app: DeliteTestRunner, outStr: String) {
     println("CHECKING...")
     val resultStr = outStr substring (outStr.indexOf(MAGICDELIMETER) + MAGICDELIMETER.length, outStr.lastIndexOf(MAGICDELIMETER))
     val results = resultStr split ","

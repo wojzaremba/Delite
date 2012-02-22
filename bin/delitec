@@ -89,12 +89,13 @@ def stage(runner, opts):
         java_opts = java_opts + " -Ddelite.enable.fusion=false"
     if opts.profile == True:
         java_opts = java_opts + " -Ddelite.enable.profiler=true"
-    if opts.debug == True:
-        java_opts = java_opts + " -Ddelite.debug"
-    if opts.xdebug == True:
-        java_opts = java_opts + " -Dlms.verbosity=3"
+ #   if opts.debug == True:
+    java_opts = java_opts + " -Ddelite.debug"
+  #  if opts.xdebug == True:
+    java_opts = java_opts + " -Dlms.verbosity=3"
     java_opts = java_opts + " -Dnested.variants.level=0"
-    java_opts = java_opts + " -Ddelite.usefsc=true"
+ #   java_opts = java_opts + " -Ddelite.usefsc=true"
+    java_opts = java_opts + " -Ddelite.debug"
     
     DELITE_HOME = delitecommon.DELITE_HOME
     SCALA_VIRT_HOME = delitecommon.SCALA_VIRT_HOME
@@ -121,8 +122,7 @@ def stage(runner, opts):
     cp = cp + preparePath(DELITE_HOME + "/apps/deliszt/target/SCALA/classes") + os.pathsep
 
     #test cp
-    cp = cp + preparePath(DELITE_HOME + "/tests/target/SCALA/classes") + os.pathsep
-    cp = cp + preparePath(DELITE_HOME + "/target/SCALA/test-classes") + os.pathsep
+    cp = cp + preparePath(DELITE_HOME + "/tests/target/SCALA/test-classes") + os.pathsep
 
     #framework
     cp = cp + preparePath(DELITE_HOME + "/framework/target/SCALA/classes") + os.pathsep
@@ -130,6 +130,9 @@ def stage(runner, opts):
     cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/net.liftweb/lift-json_2.9.0/lift-json_2.9.0-2.4.jar") + os.pathsep
     cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/com.thoughtworks.paranamer/paranamer/paranamer-2.3.jar") + os.pathsep
 
+    #scalatest
+    cp = cp + preparePath(DELITE_HOME + "/lib_managed/jars/org.scalatest/scalatest_2.10.0-virtualized-SNAPSHOT/scalatest_2.10.0-virtualized-SNAPSHOT-1.6.1-SNAPSHOT.jar") + os.pathsep
+   
 
     #scala-virt cp
     cp = cp + preparePath(SCALA_VIRT_HOME + "/scala-library.jar") + os.pathsep
@@ -141,10 +144,10 @@ def stage(runner, opts):
     #MKL ENV
     os.putenv("LD_PRELOAD", delitecommon.JAVA_HOME + "/jre/lib/amd64/libjsig.so")
     
-    if opts.verbose:
-       delitecommon.printEnv()
-       print("LMS_HOME = " + LMS_HOME)
-       print("java_opts = " + java_opts)
+ #   if opts.verbose:
+    delitecommon.printEnv()
+    print("LMS_HOME = " + LMS_HOME)
+    print("java_opts = " + java_opts)
 
     print "==  Generating DEG file with options: " + str(opts)
     java_cmd = delitecommon.JAVA_HOME + "/bin/java " + java_opts + " " + runner
