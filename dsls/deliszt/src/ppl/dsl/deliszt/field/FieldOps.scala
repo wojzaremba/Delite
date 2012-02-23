@@ -10,6 +10,8 @@ import ppl.delite.framework.datastruct.scala.DeliteCollection
 import ppl.dsl.optila.capabilities._
 
 import ppl.dsl.deliszt._
+import ppl.dsl.optila.vector._
+import ppl.delite.framework.ops._
 
 trait FieldOps extends Base with Variables with OverloadHack {
   this: DeLiszt =>
@@ -69,7 +71,7 @@ trait FieldOps extends Base with Variables with OverloadHack {
   def field_size[MO<:MeshObj:Manifest,T:Manifest](x: Rep[Field[MO,T]]): Rep[Int]
 }
 
-trait FieldOpsExp extends FieldOps with VariablesExp with BaseFatExp {
+trait FieldOpsExp extends FieldOps with VariablesExp with DenseVectorOpsExp with BaseFatExp {
   this: DeLisztExp with FieldImplOps =>
 
   //def reflectPure[T:Manifest](x: Def[T]): Exp[T] = toAtom(x) // TODO: just to make refactoring easier in case we want to change to reflectSomething
@@ -343,31 +345,15 @@ trait ScalaGenFieldOps extends ScalaGenBase {
   val fieldImplPath = "FieldImpl"
   val labelImplPath = "LabelFieldImpl"
   val vec3FieldImplPath = "Vec3FieldImpl"
-    
-  //FIXME  
-  def isVec3[A](x: Exp[Any]) : Boolean = false 
-     /*x match {
-    case Def(Vec3New(a,b,c)) => true
-    case Def(Reify(Def(Reflect(Vec3New(a,b,c),u,es)),_,_)) => true
-    case Def(e: DeliteOpMap[A,_,_]) => e.body match {
-      case ce: DeliteCollectElem[_,_] => ce.alloc match {
-        case Def(Vec3New(a,b,c)) => true
-        case Def(Reify(Def(Reflect(Vec3New(a,b,c),u,es)),_,_)) => true
-        case _ => false
-      }   
-      case _ => false
-    }   
-    case Def(e: DeliteOpZipWith[A,A,_,_]) => e.body match {
-      case ce: DeliteCollectElem[_,_] => ce.alloc match {
-        case Def(Vec3New(a,b,c)) => true
-        case Def(Reify(Def(Reflect(Vec3New(a,b,c),u,es)),_,_)) => true
-        case _ => false
-      }   
-      case _ => false
-    }   
-    case _ => false
-  }  */
-
+  def isVec[T](x: Manifest[T]) : Boolean = x.toString.contains("VectorView")
+  //def shortVecLen[T](x: Manifest[T]) : Int = x.toString.split("Succ").length - 1
+  def innerType[T](x: Manifest[T]) : String = {
+    val str = x.toString
+    for(tpe <- List("Double","Int","Float","Long","Boolean")) {
+      if (str.contains(tpe)) return tpe
+    }
+    ""
+  }
   
   override def emitNode(sym: Sym[Any], rhs: Def[Any])(implicit stream: PrintWriter) = {
     rhs match {
@@ -382,33 +368,33 @@ trait ScalaGenFieldOps extends ScalaGenBase {
       case FieldDivideUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") /= " + quote(v))
 
       case f@DeLisztFieldWithConstCell(x, m) => {
-         if (isVec3(x)) {
-           emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".cellWithConst(" + quote(x) + ", " + quote(m) +  ")")
-         } else {
+//         if (isVec(x)) {
+//           emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".cellWithConst(" + quote(x) + ", " + quote(m) +  ")")
+//         } else {
            emitValDef(sym, remap(f.t) + fieldImplPath + ".cellWithConst[" + remap(f.t) + "(" + quote(x) + ", " + quote(m) +  ")")
-         }
+//         }
       }
       case f@DeLisztFieldWithConstEdge(x, m) => {
-         if (isVec3(x)) {
-             emitValDef(sym, vec3FieldImplPath + ".edgeWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
-         } else {
+//         if (isVec(x)) {
+//             emitValDef(sym, vec3FieldImplPath + ".edgeWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
+//         } else {
              emitValDef(sym, fieldImplPath + ".edgeWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
-         }
+//         }
       }
 
       case f@DeLisztFieldWithConstFace(x, m) => {
-         if (isVec3(x)) {
-             emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".faceWithConst(" + quote(x) + ", " + quote(m) +  ")")
-         } else {
+//         if (isVec(x)) {
+//             emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".faceWithConst(" + quote(x) + ", " + quote(m) +  ")")
+//         } else {
              emitValDef(sym, fieldImplPath + ".faceWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
-         }
+//         }
       }
       case f@DeLisztFieldWithConstVertex(x, m) => {
-         if (isVec3(x)) {
-             emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".vertexWithConst(" + quote(x) + ", " + quote(m) +  ")")
-         } else {
+//         if (isVec(x)) {
+//             emitValDef(sym, remap(f.t) + vec3FieldImplPath + ".vertexWithConst(" + quote(x) + ", " + quote(m) +  ")")
+//         } else {
              emitValDef(sym, fieldImplPath + ".vertexWithConst[" + remap(f.t) + "](" + quote(x) + ", " + quote(m) +  ")")
-         }
+//         }
       }
       case f@FieldObjectNewCell() => emitValDef(sym, remap(f.t) + fieldImplPath + ".ofCell()")
       case f@FieldObjectNewEdge() => emitValDef(sym, remap(f.t) + fieldImplPath + ".ofEdge()")
@@ -418,7 +404,13 @@ trait ScalaGenFieldOps extends ScalaGenBase {
       case f@LabelFieldNewCell(url, m) => emitValDef(sym, labelImplPath + ".ofCell[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
       case f@LabelFieldNewEdge(url, m) => emitValDef(sym, labelImplPath + ".ofEdge[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
       case f@LabelFieldNewFace(url, m) => emitValDef(sym, labelImplPath + ".ofFace[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
-      case f@LabelFieldNewVertex(url, m) => emitValDef(sym, labelImplPath + ".ofVertex[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
+      case f@LabelFieldNewVertex(url, m) => if (isVec(f.t)) {
+        emitValDef(sym, labelImplPath + ".ofVertexVec[" + innerType(f.t) + "](" + quote(m) + "," + quote(url) + ")")
+      } else {
+        emitValDef(sym, labelImplPath + ".ofVertex[" + remap(f.t) + "](" + quote(m) + "," + quote(url) + ")")
+      }
+
+
       
       //case FieldIntApply(x,n) => emitValDef(sym, quote(x) + "(" + quote(n) + ")")
       //case FieldIntUpdate(x,n,v) => emitValDef(sym, quote(x) + "(" + quote(n) + ") = " + quote(v))

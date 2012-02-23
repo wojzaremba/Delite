@@ -57,12 +57,10 @@ def run(deg, params, opts):
     ld_library_path = filter(len, os.getenv("LD_LIBRARY_PATH", "").split(":"))
     ld_library_path.append(build_dir+"/libraries")
     os.putenv("LD_LIBRARY_PATH", ":".join(ld_library_path))
-
-
-    java_opts = java_opts + " -Ddelite.home=" + DELITE_HOME + " -Ddelite.threads=" + str(opts.num_threads) + " -Ddelite.gpus=" + opts.num_gpus + " -Ddelite.runs=" + opts.num_runs + " -Xbootclasspath/p:" + DELITE_HOME + "/unsafe_classes/unsafe.jar" #+ " -Ddelite.usefsc=true"
-    
     if opts.profile == True:
         java_opts = java_opts + " -Dstats.output.dir=profile -Dstats.dump.component=prof -Ddelite.debug.profile=true"
+
+    java_opts = java_opts + " -Ddelite.home=" + DELITE_HOME + " -Ddelite.threads=" + str(opts.num_threads) + " -Ddelite.gpus=" + opts.num_gpus + " -Ddelite.runs=" + opts.num_runs + " -Xbootclasspath/p:" + DELITE_HOME + "/unsafe_classes/unsafe.jar" #+ " -Ddelite.usefsc=true"
 
     #add classpaths
     cp = " -cp "

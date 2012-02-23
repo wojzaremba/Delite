@@ -20,15 +20,23 @@ class MeshSetImpl(override val size : Int) extends MeshSet {
 }
 
 class MeshSetImpl2(override val size : Int) extends MeshSet {
-  var length = 0                 
-  val data = new Array[Int](size)
+  var _length = 0
+  var _data = new Array[Int](size)
   def apply(i : Int) = {
-    data(i)
+    _data(i)
   }
 
   def insert(i : Int, e : Int) = {
-    length = length max i + 1
-    data(i) = e
+    _length = _length max i + 1
+    _data(i) = e
+  }
+
+  /**
+   * These are temporarily needed because they are hard-coded into DeliteOp code gen.
+   */
+  def unsafeSetData(xs: Array[Int], len: Int) {
+    _data = xs
+    _length = len
   }
   
   

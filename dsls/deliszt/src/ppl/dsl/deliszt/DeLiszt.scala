@@ -29,19 +29,21 @@ import ppl.dsl.deliszt.vector._
 import ppl.dsl.deliszt.analysis.{DeLisztCodeGenAnalysis, LoopColoringOpt, LoopColoringOpsExp, ScalaGenLoopColoringOps}
 import reflect.SourceContext
 
-trait DeLisztApplicationRunner extends DeLisztApplication with DeliteApplication with DeLisztExp /*{
-  override def liftedMain(x: Rep[Array[String]]) = {
-    _init(x)
+trait DeLisztApplicationRunner extends DeLisztApplication with DeliteApplication with DeLisztExp {
+ /* override def liftedMain(x: Rep[Array[String]]) = {
+    //_init(x)
+    //reflectEffect(mesh2)
     this.args = x
+    //this.mesh2 = mesh2
     val y = main()
     this.args = null
     unit(y)
-  }
+  }*/
 
   //FIXME
   //override val deliteGenerator = new DeliteCodeGenPkg with LoopColoringOpt { val IR: DeLisztApplicationRunner.this.type = DeLisztApplicationRunner.this;
     //                                                                        val generators = DeLisztApplicationRunner.this.generators }
-}*/
+}
 
 trait DeLisztApplication extends OptiLAApplication with DeLiszt with DeLisztLift with DeLisztLibrary {
   var args: Rep[Array[String]]
@@ -240,8 +242,10 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
 
 
   override def remap[A](m: Manifest[A]): String = {
-   Predef.println("DeLiszt" + m.toString)
-   super.remap(m)
+   m.toString match {
+     case "ppl.dsl.deliszt.MeshObj" => "Int"
+     case _ => super.remap(m)
+   }
   }
 
 
@@ -256,6 +260,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
     // MeshSet
     res = res.replace("MeshSet[Int]", "MeshSet")
 
+
     for(tpe1 <- List("Int","Long","Double","Float","Boolean")) {
       res = res.replaceAll("ShortVector\\[.*?,"+tpe1+"\\]", "DenseVector[" + tpe1 + "]")//not greed replaceAll
     }
@@ -266,7 +271,7 @@ with ScalaGenMeshBuilderOps with ScalaGenVariantsOps with ScalaGenDeliteCollecti
         tpe <- List("Double","Int","Float","Long","Boolean")
     } {
       res = res.replace("generated.scala." + f + "[Int," + tpe + "]", "generated.scala." + f + "[" + tpe + "]")
-      res = res.replace("generated.scala." + f + "[Int,generated.scala." + tpe + "DenseVector]", "generated.scala." + f + "[generated.scala." + tpe + "DenseVector]")
+      res = res.replace("generated.scala." + f + "[Int,generated.scala.VectorView[" + tpe + "]]", "generated.scala." + f + "[generated.scala.VectorView[Double]]")
     }
 
 

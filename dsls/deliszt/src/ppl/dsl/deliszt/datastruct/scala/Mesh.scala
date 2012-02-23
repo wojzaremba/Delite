@@ -72,13 +72,7 @@ case class LabelData(booleanData : List[(String, Array[Boolean])], intData : Lis
     case Manifest.Long => longData.find(_._1 == name).get._2
     case Manifest.Boolean => booleanData.find(_._1 == name).get._2
     case Manifest.Float => floatData.find(_._1 == name).get._2
-//    case _ => m.toString match {
- //     case "generated.scala.DoubleVec3Impl" 
-    case _ => doubleData.find(_._1 == name).get._2.grouped(3).map{
-	x=> new Vec[_3, Double](x.head, x.tail.head, x.tail.tail.head)         
-      }.toArray
-  //    case _ => throw new Exception("not supported type " + m.toString)
-//    } 
+    case _ => throw new Exception("not supported type " + m.toString)
   }).asInstanceOf[Array[T]]	 
 
   
@@ -258,13 +252,29 @@ case class Mesh(size : MeshSize, vtov: CRSImpl, vtoe: CRSImpl, vtof: CRSImpl, vt
     if (facing) e else Mesh.flip(e)
   }
 
-  def labelCell[T: Manifest](url: String): Array[T] = cellData[T](url)
+  def labelCell[T: Manifest](url: String): (Array[T], Int) = {
+    val res = cellData[T](url)
+    if (res.length % ncells != 0) throw new Exception("Size of data should be multiplication of number of elements for cell. Problem occured for " + url)
+    (res, res.length / ncells)
+  }
 
-  def labelEdge[T: Manifest](url: String): Array[T] = edgeData[T](url)
+  def labelEdge[T: Manifest](url: String): (Array[T], Int) = {
+    val res = edgeData[T](url)
+    if (res.length % nedges != 0) throw new Exception("Size of data should be multiplication of number of elements for edge. Problem occured for " + url)
+    (res, res.length / nedges)
+  }
 
-  def labelFace[T: Manifest](url: String): Array[T] = faceData[T](url)
+  def labelFace[T: Manifest](url: String): (Array[T], Int) = {
+    val res = faceData[T](url)
+    if (res.length % nfaces != 0) throw new Exception("Size of data should be multiplication of number of elements for face. Problem occured for " + url)
+    (res, res.length / nfaces)
+  }
 
-  def labelVertex[T: Manifest](url: String): Array[T] = vertexData[T](url)
+  def labelVertex[T: Manifest](url: String): (Array[T], Int) = {
+    val res = vertexData[T](url)
+    if (res.length % nvertices != 0) throw new Exception("Size of data should be multiplication of number of elements for vertex. Problem occured for " + url)
+    (res, res.length / nvertices)
+  }
   
   
   // Use special CellSetImpl, don't expose 0 cell
