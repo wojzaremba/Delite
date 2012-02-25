@@ -304,6 +304,9 @@ class MeshSkeleton(meshId: Int) {
     def swap(a : Int, b : Int) {
       swap(intData, a, b)
       swap(floatData, a, b)
+      swap(doubleData, a, b)
+      swap(longData, a, b)
+      swap(booleanData, a, b)
     }
   }
 

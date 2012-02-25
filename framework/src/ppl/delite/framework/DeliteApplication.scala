@@ -74,7 +74,6 @@ trait DeliteApplication extends DeliteOpsExp with ScalaCompile {
     deliteGenerator.emitDataStructures(Config.buildDir + File.separator)
 
     for (g <- generators) {
-      println("generator ")
       val baseDir = Config.buildDir + File.separator + g.toString + File.separator
       writeModules(baseDir)
       g.emitDataStructures(baseDir + "datastructures" + File.separator)

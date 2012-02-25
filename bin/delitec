@@ -85,14 +85,14 @@ def stage(runner, opts):
         java_opts = java_opts + " -Ddelite.extern.blas"
     if opts.gpu == True:
         java_opts = java_opts + " -Ddelite.generate.cuda"
-    if opts.no_fusion == True:
-        java_opts = java_opts + " -Ddelite.enable.fusion=false"
+ #   if opts.no_fusion == True:
+    java_opts = java_opts + " -Ddelite.enable.fusion=false"
     if opts.profile == True:
         java_opts = java_opts + " -Ddelite.enable.profiler=true"
  #   if opts.debug == True:
     java_opts = java_opts + " -Ddelite.debug"
   #  if opts.xdebug == True:
-    java_opts = java_opts + " -Dlms.verbosity=3"
+  #  java_opts = java_opts + " -Dlms.verbosity=3"
     java_opts = java_opts + " -Dnested.variants.level=0"
  #   java_opts = java_opts + " -Ddelite.usefsc=true"
     java_opts = java_opts + " -Ddelite.debug"

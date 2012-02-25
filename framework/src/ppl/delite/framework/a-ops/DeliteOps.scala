@@ -959,9 +959,14 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
       stream.print("if (" + elem.cond.map(c=>quote(getBlockResult(c))).mkString(" && ") + ") ")
       if (deliteKernel)
         stream.println(prefixSym + quote(sym) + "_buf_append(" + quote(getBlockResult(elem.func)) + ")")
-      else
+      else {
         //stream.println("throw new RuntimeException(\"FIXME: buffer growing\")")
-        stream.println(prefixSym + quote(sym) + ".insert(" + prefixSym + quote(sym) + ".length, " + quote(getBlockResult(elem.func)) + ") // FIXME: buffer growing")
+        //stream.println(prefixSym + quote(sym) + ".insert(" + prefixSym + quote(sym) + ".length, " + quote(getBlockResult(elem.func)) + ") // FIXME: buffer growing")
+        stream.println("{")
+        stream.println(prefixSym + quote(sym) + "_data(" + quote(sym) + "_size) = " + quote(getBlockResult(elem.func)))
+        stream.println(quote(sym) + "_size += 1")
+        stream.println("}")
+      }
     } else {
       stream.println(prefixSym + quote(sym) + "_data(" + quote(op.v) + ") = " + quote(getBlockResult(elem.func)))
     }
@@ -1067,19 +1072,20 @@ trait ScalaGenDeliteOps extends ScalaGenLoopsFat with ScalaGenStaticDataDelite w
     // initialization             
     (symList zip op.body) foreach {
       case (sym, elem: DeliteCollectElem[_,_]) =>
-        if (elem.cond.nonEmpty) {
+       /* if (elem.cond.nonEmpty) {
           stream.println("var " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = _ // FIXME: buffer handling")
-        } else {
+        } else {*/
           stream.println("val " + quote(sym) + "_data: Array[" + remap(getBlockResult(elem.func).Type) + "] = new Array(" + quote(op.size) + ")")
-        }
+          stream.println("var " + quote(sym) + "_size = 0")
+        //}
 
-       /* stream.println("val " + quote(sym) + " = {"/*}*/)
+        /*stream.println("val " + quote(sym) + "_data : Array[" + remap(getBlockResult(elem.func).Type) + "] = {"/*}*/)
         emitBlock(elem.alloc) // FIXME: how do we know it is the right size? conditions could have been added retrospectively!!
         if (elem.cond.nonEmpty)
           stream.println("//TODO: buffer size might be wrong (loop has conditions)")
         stream.println(quote(getBlockResult(elem.alloc)))
-        stream.println(/*{*/"}")
-         */
+        stream.println(/*{*/"}")*/
+
       case (sym, elem: DeliteForeachElem[_]) => 
         stream.println("var " + quotearg(sym) + " = ()") // must be type Unit
       case (sym, elem: DeliteReduceElem[_]) =>

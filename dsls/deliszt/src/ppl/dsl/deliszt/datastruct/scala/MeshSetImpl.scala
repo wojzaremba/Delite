@@ -26,8 +26,10 @@ class MeshSetImpl2(override val size : Int) extends MeshSet {
     _data(i)
   }
 
+  var length = 0
+
   def insert(i : Int, e : Int) = {
-    _length = _length max i + 1
+    length = length max i + 1
     _data(i) = e
   }
 

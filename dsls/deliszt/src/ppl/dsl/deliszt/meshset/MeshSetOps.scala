@@ -100,10 +100,12 @@ trait MeshSetOpsExp extends MeshSetOps with DeliteCollectionOpsExp with  Variabl
   case class MeshSetMapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](in: Exp[MeshSet[MO]], map : Exp[MO] => Exp[A])
     extends DeliteOpMapReduce[MO, A] {
     def reduce = (a, b) => a + b
-    def m = manifest[A]
-    def a = implicitly[Arith[A]]   
     val size = copyTransformedOrElse(_.size)(dc_size(in))
-    val zero = a.empty
+    val zero = implicitly[Arith[A]].empty
+    val mMO = manifest[MO]
+    val mA = manifest[A]
+    def a = implicitly[Arith[A]]
+
   }  
 
   // e comes in as an internal id of a face
@@ -126,33 +128,38 @@ trait MeshSetOpsExp extends MeshSetOps with DeliteCollectionOpsExp with  Variabl
   override def syms(e: Any): List[Sym[Any]] = e match {
     // DOES NOT USE IN, only the index
     case f@NestedMeshSetForeach(m, crs, e, fn) => f.mo :: syms(crs):::syms(e):::syms(f.body)
+    //case f@MeshSetMapReduce(m, map) => syms(f.body)
     case f@DirectedNestedMeshSetForeach(m, crs, dir, e, fn) => f.mo :: syms(crs):::syms(e):::syms(f.eid):::syms(f.body)
     case _ => super.syms(e)
   }
 
   override def boundSyms(e: Any): List[Sym[Any]] = e match {
     case f@NestedMeshSetForeach(m, crs, e, fn) => f.mo :: effectSyms(crs):::effectSyms(e):::effectSyms(f.body)
+    //case f@MeshSetMapReduce(m, map) => Nil//effectSyms(f.body)
     case f@DirectedNestedMeshSetForeach(m, crs, dir, e, fn) => f.mo :: effectSyms(crs):::effectSyms(e):::effectSyms(f.eid):::effectSyms(f.body)
     case _ => super.boundSyms(e)
   }
-
-  override def symsFreq(e: Any): List[(Sym[Any], Double)] = e match {
-    case f@NestedMeshSetForeach(m, crs, e, fn) => (f.mo,1.0) :: freqNormal(crs) ++ freqNormal(e) ++ freqHot(f.body)
-    case f@DirectedNestedMeshSetForeach(m, crs, dir, e, fn) => (f.mo,1.0) :: freqNormal(crs) ++ freqNormal(e) ++ freqNormal(f.eid) ++ freqHot(f.body)
-    case _ => super.symsFreq(e)
-  }
+//
+//  override def symsFreq(e: Any): List[(Sym[Any], Double)] = e match {
+//    case f@NestedMeshSetForeach(m, crs, e, fn) => (f.mo,1.0) :: freqNormal(crs) ++ freqNormal(e) ++ freqHot(f.body)
+//    case f@DirectedNestedMeshSetForeach(m, crs, dir, e, fn) => (f.mo,1.0) :: freqNormal(crs) ++ freqNormal(e) ++ freqNormal(f.eid) ++ freqHot(f.body)
+//    case _ => super.symsFreq(e)
+//  }
   
   //////////////
   // mirroring
 
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
     // case f@NestedMeshSetForeach(crs,e,func) => reflectPure(NestedMeshSetForeach(f(crs),f(e),f(func))(f.m))(mtype(manifest[A]))
-    case MeshSetApply(e, mesh) => reflectPure(MeshSetApply(f(e),f(mesh)))
-    case Reflect(e@MeshSetApply(a, b), u, es) => reflectMirrored(Reflect(MeshSetApply(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))
+    //case MeshSetApply(e, mesh) => reflectPure(MeshSetApply(f(e),f(mesh)))
+    //case e@MeshSetMapReduce(a, b) => reflectPure(new { override val original = Some(f,e) } with MeshSetMapReduce(f(a), f(b))(e.mA, e.a))(mtype(manifest[A]), implicitly[SourceContext])
+    //case e@VectorSum(x) => reflectPure(new { override val original = Some(f,e) } with VectorSum(f(x))(e.mA, e.a))(mtype(manifest[A]),implicitly[SourceContext])
+    case Reflect(e@MeshSetApply(a, b), u, es) => reflectMirrored(Reflect(MeshSetApply(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))//, implicitly[SourceContext])
     case Reflect(e@NestedMeshSetForeach(m,crs,i,func), u, es) => reflectMirrored(Reflect(NestedMeshSetForeach(f(m),f(crs),f(i),f(func)), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(e@MeshSetForeach(a,b), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetForeach(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case Reflect(e@MeshSetFilter(a,b,c), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetFilter(f(a),f(b),f(c)), mapOver(f,u), f(es)))(mtype(manifest[A]))
-    //case Reflect(e@MeshSetMapReduce(a,b), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetMapReduce(f(a),f(b)), mapOver(f,u), f(es)))(mtype(manifest[A]))    
+    case Reflect(e@MeshSetMapReduce(a,b), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with MeshSetMapReduce(f(a),f(b))(e.mMO, e.mA, e.a), mapOver(f,u), f(es)))(mtype(manifest[A]))
+    //case Reflect(e@VectorSum(x), u, es) => reflectMirrored(Reflect(new { override val original = Some(f,e) } with VectorSum(f(x))(e.mA, e.a), mapOver(f,u), f(es)))(mtype(manifest[A]))
     case _ => super.mirror(e, f)
   }).asInstanceOf[Exp[A]] // why??
   
@@ -195,8 +202,9 @@ trait MeshSetOpsExp extends MeshSetOps with DeliteCollectionOpsExp with  Variabl
   }
   
   def meshset_mapReduce[MO<:MeshObj:Manifest, A:Manifest:Arith](x: Rep[MeshSet[MO]], block: Rep[MO] => Rep[A]) = {
-    val t = MeshSetMapReduce(x, block) 
-    reflectEffect(t, summarizeEffects(t.body).star)
+    reflectPure(MeshSetMapReduce(x, block))
+    //val t = MeshSetMapReduce(x, block)
+    //reflectEffect(t, summarizeEffects(t.body).star)
   }
 
   def meshset_filter[MO<:MeshObj:Manifest](x: Exp[MeshSet[MO]], block: Exp[MO] => Exp[Boolean]) : Rep[MeshSet[MO]] = {
@@ -239,38 +247,38 @@ trait ScalaGenMeshSetOps extends ScalaGenBase {
       case MeshSetSize(x) => emitValDef(sym, quote(x) + ".size" )
 
 
-      case f@NestedMeshSetForeach(m,crs,i,body) => {
-        stream.println("val " + quote(sym) + " = { // Begin nested foreach " + sym.id)
-          stream.println("var i = " + quote(crs) + ".row(" + quote(i) + ")")
-          stream.println("val end = " + quote(crs) + ".row(" + quote(i) + "+1)")
-          stream.println("while (i < end) {")
-            stream.println("val " + quote(f.mo) + " = " + quote(crs) + ".values(i)") 
-            emitBlock(f.body)
-            stream.println("i += 1")
-            stream.print(quote(getBlockResult(f.body)))
-        stream.println("}} // End nested foreach " + sym.id)
-      }
-      
-      case f@DirectedNestedMeshSetForeach(m,crs,dir,i,body) => {
-        stream.println("val " + quote(sym) + " = { // Begin directed foreach " + sym.id)
-          stream.println("if((" + quote(i) + " >>> generated.scala.Mesh.SHIFT) == " + dir + ") {")
-            stream.println("var i = " + quote(crs) + ".row(" + quote(f.eid) + ")")
-            stream.println("val end = " + quote(crs) + ".row(" + quote(f.eid) + "+1)")
-            stream.println("while (i < end) {")
-              stream.println("val " + quote(f.mo) + " = " + quote(crs) + ".values(i)") 
-              emitBlock(f.body)
-              stream.println("i += 1")
-              stream.print(quote(getBlockResult(f.body)))
-          stream.println("}} else {")
-            stream.println("var i = " + quote(crs) + ".row(" + quote(f.eid) + "+1)-1")
-            stream.println("val end = " + quote(crs) + ".row(" + quote(f.eid) + ")-1")
-            stream.println("while (i > end) {")
-              stream.println("val " + quote(f.mo) + " = " + quote(crs) + ".values(i) ^ generated.scala.Mesh.DMASK") 
-              emitBlock(f.body)
-              stream.println("i -= 1")
-              stream.print(quote(getBlockResult(f.body)))
-        stream.println("}}} // End directed foreach " + sym.id)
-      }
+//      case f@NestedMeshSetForeach(m,crs,i,body) => {
+//        stream.println("val " + quote(sym) + " = { // Begin nested foreach " + sym.id)
+//          stream.println("var i = " + quote(crs) + ".row(" + quote(i) + ")")
+//          stream.println("val end = " + quote(crs) + ".row(" + quote(i) + "+1)")
+//          stream.println("while (i < end) {")
+//            stream.println("val " + quote(f.mo) + " = " + quote(crs) + ".values(i)")
+//            emitBlock(f.body)
+//            stream.println("i += 1")
+//            stream.print(quote(getBlockResult(f.body)))
+//        stream.println("}} // End nested foreach " + sym.id)
+//      }
+//
+//      case f@DirectedNestedMeshSetForeach(m,crs,dir,i,body) => {
+//        stream.println("val " + quote(sym) + " = { // Begin directed foreach " + sym.id)
+//          stream.println("if((" + quote(i) + " >>> generated.scala.Mesh.SHIFT) == " + dir + ") {")
+//            stream.println("var i = " + quote(crs) + ".row(" + quote(f.eid) + ")")
+//            stream.println("val end = " + quote(crs) + ".row(" + quote(f.eid) + "+1)")
+//            stream.println("while (i < end) {")
+//              stream.println("val " + quote(f.mo) + " = " + quote(crs) + ".values(i)")
+//              emitBlock(f.body)
+//              stream.println("i += 1")
+//              stream.print(quote(getBlockResult(f.body)))
+//          stream.println("}} else {")
+//            stream.println("var i = " + quote(crs) + ".row(" + quote(f.eid) + "+1)-1")
+//            stream.println("val end = " + quote(crs) + ".row(" + quote(f.eid) + ")-1")
+//            stream.println("while (i > end) {")
+//              stream.println("val " + quote(f.mo) + " = " + quote(crs) + ".values(i) ^ generated.scala.Mesh.DMASK")
+//              emitBlock(f.body)
+//              stream.println("i -= 1")
+//              stream.print(quote(getBlockResult(f.body)))
+//        stream.println("}}} // End directed foreach " + sym.id)
+//      }
     
       // these are the ops that call through to the underlying real data structure
       case _ => super.emitNode(sym, rhs)

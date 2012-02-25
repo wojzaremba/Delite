@@ -1,7 +1,6 @@
 package ppl.dsl.deliszt.field
 
 import java.io.PrintWriter
-import reflect.Manifest
 import scala.virtualization.lms.common._
 import scala.virtualization.lms.util.OverloadHack
 import scala.virtualization.lms.internal.{GenericFatCodegen, GenerationFailedException}
@@ -12,6 +11,7 @@ import ppl.dsl.optila.capabilities._
 import ppl.dsl.deliszt._
 import ppl.dsl.optila.vector._
 import ppl.delite.framework.ops._
+import reflect.{SourceContext, Manifest}
 
 trait FieldOps extends Base with Variables with OverloadHack {
   this: DeLiszt =>
@@ -175,7 +175,7 @@ trait FieldOpsExp extends FieldOps with VariablesExp with DenseVectorOpsExp with
 
   //////////////
   // mirroring
-  override def mirror[A:Manifest](e: Def[A], f: Transformer): Exp[A] = (e match {
+  override def mirror[A:Manifest](e: Def[A], f: Transformer)(implicit ctx: SourceContext): Exp[A] = (e match {
     case e@FieldApply(x, i) => field_apply(f(x), f(i))(e.moM, e.vtM)
     // Read/write effects
     case Reflect(e@FieldApply(l,r), u, es) => reflectMirrored(Reflect(FieldApply(f(l),f(r))(e.moM, e.vtM), mapOver(f,u), f(es)))(mtype(manifest[A]))
